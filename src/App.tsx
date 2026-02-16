@@ -49,7 +49,7 @@ function App() {
   return (
     <div className="App">
       <header className="app-header">
-        <img src="/logo.svg" className="app-logo" alt="logo" />
+        <img src="/logo.svg?v=1.0" className="app-logo" alt="logo" />
         <h1>Schedule Wizard</h1>
       </header>
       <div className="main-layout">
