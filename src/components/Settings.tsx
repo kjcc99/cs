@@ -36,11 +36,9 @@ const Settings: React.FC<SettingsProps> = ({
 
 2.  *Enter Course Details:* Input the units for Lecture/Lab and choose the days for each.
 
-3.  *Generate Schedule:** Click the button to see a schedule.
+3.  *Advanced Mode:* Select individual days for each component. Click the lock for separate Lecture/Lab start times.
 
-4.  *Advanced Mode:* Select individual days for each component.
-
-5.  *24-Hour:* Select 12 (default) or 24 hour clock.`;
+4.  *24-Hour:* Select 12 (default) or 24 hour clock.`;
     alert(helpText);
   };
 
