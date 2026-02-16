@@ -86,11 +86,11 @@ const Settings: React.FC<SettingsProps> = ({ weeks, setWeeks, startTime, setStar
         </div>
       </div>
       <div className="setting-item">
-        <label htmlFor="daySelectionMode">Day Selection Mode:</label>
-        <select id="daySelectionMode" value={daySelectionMode} onChange={(e) => setDaySelectionMode(e.target.value as 'simple' | 'advanced')}>
-          <option value="simple">Simple</option>
-          <option value="advanced">Advanced</option>
-        </select>
+        <label htmlFor="daySelectionMode">Advanced Day Selection:</label>
+        <label className="switch">
+            <input id="daySelectionMode" type="checkbox" checked={daySelectionMode === 'advanced'} onChange={(e) => setDaySelectionMode(e.target.checked ? 'advanced' : 'simple')} />
+            <span className="slider round"></span>
+        </label>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
           <div className="setting-item" style={{ marginBottom: 0 }}>

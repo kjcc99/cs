@@ -27,14 +27,24 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
   const [simpleLectureDays, setSimpleLectureDays] = useState<number>(1);
   const [simpleLabDays, setSimpleLabDays] = useState<number>(1);
 
+  const resetToSimpleDefaults = () => {
+    setSimpleLectureDays(1);
+    setSimpleLabDays(1);
+    setLectureDays(WEEK_DAYS.slice(0, 1));
+    setLabDays(WEEK_DAYS.slice(0, 1));
+  };
+
+  const resetToAdvancedDefaults = () => {
+    setLectureDays([]);
+    setLabDays([]);
+  }
+
   // When switching modes, reset the selections to avoid confusion
   useEffect(() => {
-    if (daySelectionMode === 'simple') {
-      setLectureDays(WEEK_DAYS.slice(0, simpleLectureDays));
-      setLabDays(WEEK_DAYS.slice(0, simpleLabDays));
-    } else { // switching to advanced
-      setLectureDays([]);
-      setLabDays([]);
+    if (daySelectionMode === 'advanced') {
+      resetToAdvancedDefaults();
+    } else { // switching back to simple
+      resetToSimpleDefaults();
     }
   }, [daySelectionMode]);
 
@@ -51,7 +61,6 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
     }
   }, [simpleLabDays]);
 
-
   const handleLectureDayToggle = (day: string) => {
     const newDays = lectureDays.includes(day)
       ? lectureDays.filter(d => d !== day)
@@ -66,6 +75,16 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
       : [...labDays, day];
     newDays.sort((a, b) => WEEK_DAYS.indexOf(a) - WEEK_DAYS.indexOf(b));
     setLabDays(newDays);
+  };
+  
+  const handleClearAll = () => {
+    setLectureUnits(0);
+    setLabUnits(0);
+    if (daySelectionMode === 'simple') {
+      resetToSimpleDefaults();
+    } else {
+      resetToAdvancedDefaults();
+    }
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -97,7 +116,10 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
 
   return (
     <form onSubmit={handleSubmit} className="course-input-panel">
-      <h2 style={{margin: '0', padding: '10px 0'}}>Enter Course Details</h2>
+      <div className="course-input-header">
+        <h2>Enter Course Details</h2>
+        <button type="button" onClick={handleClearAll} className="clear-all-btn">Clear All</button>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
         {/* Lecture Column */}
         <div style={{ padding: '15px', border: '1px solid var(--border-color)', borderRadius: '5px' }}>
@@ -111,7 +133,7 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
             <div className="setting-item">
                 <label>Days:</label>
                 {daySelectionMode === 'simple' ? (
-                    <select value={lectureDays.length} onChange={(e) => setLectureDays(WEEK_DAYS.slice(0, parseInt(e.target.value)))}>
+                    <select value={simpleLectureDays} onChange={(e) => setSimpleLectureDays(parseInt(e.target.value))}>
                         {[1, 2, 3, 4, 5, 6, 7].map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                 ) : (
@@ -136,7 +158,7 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
             <div className="setting-item">
                 <label>Days:</label>
                 {daySelectionMode === 'simple' ? (
-                    <select value={labDays.length} onChange={(e) => setLabDays(WEEK_DAYS.slice(0, parseInt(e.target.value)))}>
+                    <select value={simpleLabDays} onChange={(e) => setSimpleLabDays(parseInt(e.target.value))}>
                         {[1, 2, 3, 4, 5, 6, 7].map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
                 ) : (
