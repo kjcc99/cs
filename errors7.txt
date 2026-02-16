@@ -1,0 +1,52 @@
+Compiled with problems:
+×
+ERROR in ./src/components/CourseInput.tsx
+Module build failed (from ./node_modules/babel-loader/lib/index.js):
+SyntaxError: C:\Users\whoop\Gemini\my-schedule-app\src\components\CourseInput.tsx: 'return' outside of function. (147:2)
+
+  145 | };
+  146 |
+> 147 |   return (
+      |   ^
+  148 |     <form onSubmit={handleSubmit} className="course-input-panel">
+  149 |       <h2 style={{margin: '0', padding: '10px 0'}}>Enter Course Details</h2>
+  150 |       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+    at constructor (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:365:19)
+    at TypeScriptParserMixin.raise (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:6599:19)
+    at TypeScriptParserMixin.parseReturnStatement (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:13136:12)
+    at TypeScriptParserMixin.parseStatementContent (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:12798:21)
+    at TypeScriptParserMixin.parseStatementContent (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:9508:18)
+    at TypeScriptParserMixin.parseStatementLike (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:12767:17)
+    at TypeScriptParserMixin.parseModuleItem (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:12744:17)
+    at TypeScriptParserMixin.parseBlockOrModuleBlockBody (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:13316:36)
+    at TypeScriptParserMixin.parseBlockBody (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:13309:10)
+    at TypeScriptParserMixin.parseProgram (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:12622:10)
+    at TypeScriptParserMixin.parseTopLevel (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:12612:25)
+    at TypeScriptParserMixin.parse (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:14488:25)
+    at TypeScriptParserMixin.parse (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:10126:18)
+    at parse (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:14522:38)
+    at parser (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\core\lib\parser\index.js:41:34)
+    at parser.next (<anonymous>)
+    at normalizeFile (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\core\lib\transformation\normalize-file.js:64:37)
+    at normalizeFile.next (<anonymous>)
+    at run (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\core\lib\transformation\index.js:22:50)
+    at run.next (<anonymous>)
+    at transform (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\core\lib\transform.js:22:33)
+    at transform.next (<anonymous>)
+    at step (C:\Users\whoop\Gemini\my-schedule-app\node_modules\gensync\index.js:261:32)
+    at C:\Users\whoop\Gemini\my-schedule-app\node_modules\gensync\index.js:273:13
+    at async.call.result.err.err (C:\Users\whoop\Gemini\my-schedule-app\node_modules\gensync\index.js:223:11)
+ERROR
+[eslint] 
+src\components\CourseInput.tsx
+  Line 197:  Parsing error: Declaration or statement expected
+
+ERROR in src/components/CourseInput.tsx:197:1
+TS1128: Declaration or statement expected.
+    195 |     </form>
+    196 |   );
+  > 197 | };
+        | ^
+    198 |
+    199 | export default CourseInput;
+    200 |

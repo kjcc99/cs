@@ -1,0 +1,86 @@
+Compiled with problems:
+×
+ERROR in ./src/components/Settings.tsx
+Module build failed (from ./node_modules/babel-loader/lib/index.js):
+SyntaxError: C:\Users\whoop\Gemini\my-schedule-app\src\components\Settings.tsx: 'return' outside of function. (27:2)
+
+  25 |   const minuteOptions = Array.from({ length: 12 }, (_, i) => i * 5); // 0, 5, 10, ..., 55
+  26 |
+> 27 |   return (
+     |   ^
+  28 |     <div className="settings-panel">
+  29 |       <h2>Term Settings</h2>
+  30 |       <div className="setting-item">
+    at constructor (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:365:19)
+    at TypeScriptParserMixin.raise (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:6599:19)
+    at TypeScriptParserMixin.parseReturnStatement (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:13136:12)
+    at TypeScriptParserMixin.parseStatementContent (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:12798:21)
+    at TypeScriptParserMixin.parseStatementContent (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:9508:18)
+    at TypeScriptParserMixin.parseStatementLike (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:12767:17)
+    at TypeScriptParserMixin.parseModuleItem (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:12744:17)
+    at TypeScriptParserMixin.parseBlockOrModuleBlockBody (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:13316:36)
+    at TypeScriptParserMixin.parseBlockBody (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:13309:10)
+    at TypeScriptParserMixin.parseProgram (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:12622:10)
+    at TypeScriptParserMixin.parseTopLevel (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:12612:25)
+    at TypeScriptParserMixin.parse (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:14488:25)
+    at TypeScriptParserMixin.parse (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:10126:18)
+    at parse (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\parser\lib\index.js:14522:38)
+    at parser (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\core\lib\parser\index.js:41:34)
+    at parser.next (<anonymous>)
+    at normalizeFile (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\core\lib\transformation\normalize-file.js:64:37)
+    at normalizeFile.next (<anonymous>)
+    at run (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\core\lib\transformation\index.js:22:50)
+    at run.next (<anonymous>)
+    at transform (C:\Users\whoop\Gemini\my-schedule-app\node_modules\@babel\core\lib\transform.js:22:33)
+    at transform.next (<anonymous>)
+    at step (C:\Users\whoop\Gemini\my-schedule-app\node_modules\gensync\index.js:261:32)
+    at C:\Users\whoop\Gemini\my-schedule-app\node_modules\gensync\index.js:273:13
+    at async.call.result.err.err (C:\Users\whoop\Gemini\my-schedule-app\node_modules\gensync\index.js:223:11)
+ERROR
+[eslint] 
+src\components\Settings.tsx
+  Line 78:  Parsing error: Declaration or statement expected
+
+ERROR in src/components/Settings.tsx:13:36
+TS2304: Cannot find name 'startTime'.
+    11 | }
+    12 |
+  > 13 |   const [startHour, startMinute] = startTime.split(':').map(Number);
+       |                                    ^^^^^^^^^
+    14 |
+    15 |   const handleHourChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    16 |     const newHour = parseInt(e.target.value);
+ERROR in src/components/Settings.tsx:17:5
+TS2304: Cannot find name 'setStartTime'.
+    15 |   const handleHourChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    16 |     const newHour = parseInt(e.target.value);
+  > 17 |     setStartTime(`${String(newHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`);
+       |     ^^^^^^^^^^^^
+    18 |   };
+    19 |
+    20 |   const handleMinuteChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+ERROR in src/components/Settings.tsx:22:5
+TS2304: Cannot find name 'setStartTime'.
+    20 |   const handleMinuteChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    21 |     const newMinute = parseInt(e.target.value);
+  > 22 |     setStartTime(`${String(startHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`);
+       |     ^^^^^^^^^^^^
+    23 |   };
+    24 |
+    25 |   const minuteOptions = Array.from({ length: 12 }, (_, i) => i * 5); // 0, 5, 10, ..., 55
+ERROR in src/components/Settings.tsx:78:1
+TS1128: Declaration or statement expected.
+    76 |     </div>
+    77 |   );
+  > 78 | };
+       | ^
+    79 |
+    80 | export default Settings;
+    81 |
+ERROR in src/components/Settings.tsx:80:16
+TS2304: Cannot find name 'Settings'.
+    78 | };
+    79 |
+  > 80 | export default Settings;
+       |                ^^^^^^^^
+    81 |
