@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/cs/static/css/main.8a3fb7d2.css",
-    "main.js": "/cs/static/js/main.9a5c957e.js",
+    "main.css": "/cs/static/css/main.6bae499e.css",
+    "main.js": "/cs/static/js/main.6556b8cd.js",
     "static/js/453.6ed6e179.chunk.js": "/cs/static/js/453.6ed6e179.chunk.js",
     "static/media/contact_hours_rules.md": "/cs/static/media/contact_hours_rules.4e8a7daf776a76adfed1.md",
     "index.html": "/cs/index.html",
-    "main.8a3fb7d2.css.map": "/cs/static/css/main.8a3fb7d2.css.map",
-    "main.9a5c957e.js.map": "/cs/static/js/main.9a5c957e.js.map",
+    "main.6bae499e.css.map": "/cs/static/css/main.6bae499e.css.map",
+    "main.6556b8cd.js.map": "/cs/static/js/main.6556b8cd.js.map",
     "453.6ed6e179.chunk.js.map": "/cs/static/js/453.6ed6e179.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.8a3fb7d2.css",
-    "static/js/main.9a5c957e.js"
+    "static/css/main.6bae499e.css",
+    "static/js/main.6556b8cd.js"
   ]
 }
