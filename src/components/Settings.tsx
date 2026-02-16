@@ -4,62 +4,89 @@ import React from 'react';
 interface SettingsProps {
   weeks: number;
   setWeeks: (weeks: number) => void;
-  startTime: string; // e.g. "08:00"
-  setStartTime: (time: string) => void;
-  theme: 'light' | 'dark';
-  setTheme: (theme: 'light' | 'dark') => void;
-}
-
-interface SettingsProps {
-  weeks: number;
-  setWeeks: (weeks: number) => void;
   startTime: string;
   setStartTime: (time: string) => void;
+  labStartTime: string | null;
+  setLabStartTime: (time: string | null) => void;
   theme: 'light' | 'dark';
   setTheme: (theme: 'light' | 'dark') => void;
   daySelectionMode: 'simple' | 'advanced';
   setDaySelectionMode: (mode: 'simple' | 'advanced') => void;
+  timeFormat: '12h' | '24h';
+  setTimeFormat: (format: '12h' | '24h') => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ weeks, setWeeks, startTime, setStartTime, theme, setTheme, daySelectionMode, setDaySelectionMode }) => {
+const Settings: React.FC<SettingsProps> = ({ 
+    weeks, setWeeks, 
+    startTime, setStartTime, 
+    labStartTime, setLabStartTime,
+    theme, setTheme, 
+    daySelectionMode, setDaySelectionMode,
+    timeFormat, setTimeFormat
+}) => {
   
-  const handleThemeToggle = () => {
-    setTheme(theme === 'light' ? 'dark' : 'light');
+  const handleLockToggle = () => {
+    setLabStartTime(labStartTime === null ? '13:00' : null);
   };
 
   const handleHelpClick = () => {
-    const helpText = `**How to Use the Course Scheduler**
+    const helpText = `**How to Use Schedule Wizard**
 
-1.  **Term Settings:** Use this panel to set the overall term length, start time, and day selection mode.
-    - Simple Mode: Select the total number of days per week.
-    - Advanced Mode: Click specific days of the week.
+1.  *Term Settings:* Use this panel to set the overall term length, start time, and selection modes.
 
-2.  **Enter Course Details:** Input the units for Lecture/Lab and choose the days.
+2.  *Enter Course Details:* Input the units for Lecture/Lab and choose the days for each.
 
-3.  **Generate Example:** Click the button to see the schedule.`;
+3.  *Generate Schedule:** Click the button to see a schedule.
+
+4.  *Advanced Mode:* Select individual days for each component.
+
+5.  *24-Hour:* Select 12 (default) or 24 hour clock.`;
     alert(helpText);
   };
 
-  const [startHour, startMinute] = startTime.split(':').map(Number);
-
-  const handleHourChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newHour = parseInt(e.target.value);
-    setStartTime(`${String(newHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')}`);
+  const formatHour12 = (hour: number) => {
+    if (hour === 0 || hour === 24) return '12 AM';
+    if (hour === 12) return '12 PM';
+    if (hour < 12) return `${hour} AM`;
+    return `${hour - 12} PM`;
   };
 
-  const handleMinuteChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newMinute = parseInt(e.target.value);
-    setStartTime(`${String(startHour).padStart(2, '0')}:${String(newMinute).padStart(2, '0')}`);
-  };
+  const TimeSelector: React.FC<{time: string, onTimeChange: (newTime: string) => void}> = ({ time, onTimeChange }) => {
+    const [hour, minute] = time.split(':').map(Number);
+    const minuteOptions = Array.from({ length: 12 }, (_, i) => i * 5);
 
-  const minuteOptions = Array.from({ length: 12 }, (_, i) => i * 5);
+    const handleHourChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      onTimeChange(`${e.target.value}:${String(minute).padStart(2, '0')}`);
+    };
+    const handleMinuteChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      onTimeChange(`${String(hour).padStart(2, '0')}:${e.target.value}`);
+    };
+
+    return (
+        <div style={{ display: 'flex', gap: '5px' }}>
+            <select value={hour} onChange={handleHourChange} style={{ flex: 1 }}>
+                {Array.from({ length: 15 }, (_, i) => i + 6).map(h => ( // 6 AM to 8 PM
+                    <option key={h} value={h}>
+                        {timeFormat === '12h' ? formatHour12(h) : String(h).padStart(2, '0')}
+                    </option>
+                ))}
+            </select>
+            <span>:</span>
+            <select value={minute} onChange={handleMinuteChange} style={{ flex: 1 }}>
+                {minuteOptions.map(m => (
+                    <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
+                ))}
+            </select>
+        </div>
+    );
+  };
 
   return (
     <div className="settings-panel">
-      <h2>Term Settings</h2>
+      <h2>Settings</h2>
       <div className="setting-item">
-        <label htmlFor="weeks">Term Length:</label>
-        <select id="weeks" value={weeks} onChange={(e) => setWeeks(parseInt(e.target.value))}>
+        <label>Term Length:</label>
+        <select value={weeks} onChange={(e) => setWeeks(parseInt(e.target.value))}>
           <option value="17">Full Term (semester)</option>
           <option value="15">15 Weeks</option>
           <option value="12">12 Weeks</option>
@@ -68,41 +95,50 @@ const Settings: React.FC<SettingsProps> = ({ weeks, setWeeks, startTime, setStar
         </select>
       </div>
       <div className="setting-item">
-        <label htmlFor="startTimeHour">Start Time:</label>
-        <div style={{ display: 'flex', gap: '5px' }}>
-          <select id="startTimeHour" value={startHour} onChange={handleHourChange} style={{ flex: 1 }}>
-            {Array.from({ length: 14 }, (_, i) => i + 6).map(hour => ( // 6 AM to 7 PM
-              <option key={hour} value={hour}>{String(hour).padStart(2, '0')}</option>
-            ))}
-          </select>
-          <span>:</span>
-          <select id="startTimeMinute" value={startMinute} onChange={handleMinuteChange} style={{ flex: 1 }}>
-            {minuteOptions.map(minute => (
-              <option key={minute} value={minute}>
-                {String(minute).padStart(2, '0')}
-              </option>
-            ))}
-          </select>
-        </div>
+        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>{labStartTime === null ? 'Start Time' : 'Lec Start'}</span>
+            <button onClick={handleLockToggle} className="lock-button" title={labStartTime === null ? 'Set separate lab start time' : 'Lock lab start time to lecture'}>
+                {labStartTime === null ? '🔒' : '🔓'}
+            </button>
+        </label>
+        <TimeSelector time={startTime} onTimeChange={setStartTime} />
       </div>
+
+      {labStartTime !== null && (
+        <div className="setting-item">
+            <label>Lab Start Time</label>
+            <TimeSelector time={labStartTime} onTimeChange={setLabStartTime} />
+        </div>
+      )}
+
       <div className="setting-item">
-        <label htmlFor="daySelectionMode">Advanced Day Selection:</label>
+        <label>Advanced Mode:</label>
         <label className="switch">
-            <input id="daySelectionMode" type="checkbox" checked={daySelectionMode === 'advanced'} onChange={(e) => setDaySelectionMode(e.target.checked ? 'advanced' : 'simple')} />
+            <input type="checkbox" checked={daySelectionMode === 'advanced'} onChange={(e) => setDaySelectionMode(e.target.checked ? 'advanced' : 'simple')} />
             <span className="slider round"></span>
         </label>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
-          <div className="setting-item" style={{ marginBottom: 0 }}>
-            <label htmlFor="themeToggle">Dark Mode:</label>
+      
+      <div className="setting-item-row">
+          <div className="setting-item">
+            <label>Dark Mode:</label>
             <label className="switch">
-                <input id="themeToggle" type="checkbox" checked={theme === 'dark'} onChange={handleThemeToggle} />
+                <input type="checkbox" checked={theme === 'dark'} onChange={() => setTheme(theme === 'light' ? 'dark' : 'light')} />
                 <span className="slider round"></span>
             </label>
           </div>
-          <button onClick={handleHelpClick} style={{ padding: '8px 12px', fontSize: '14px', backgroundColor: 'transparent', border: '1px solid var(--header-color)', color: 'var(--header-color)', borderRadius: '5px', cursor: 'pointer' }}>
+          <div className="setting-item">
+            <label>24-Hour:</label>
+            <label className="switch">
+                <input type="checkbox" checked={timeFormat === '24h'} onChange={(e) => setTimeFormat(e.target.checked ? '24h' : '12h')} />
+                <span className="slider round"></span>
+            </label>
+          </div>
+      </div>
+      <div style={{textAlign: 'center', marginTop: '20px'}}>
+        <button onClick={handleHelpClick} className="help-button">
             HELP!
-          </button>
+        </button>
       </div>
     </div>
   );

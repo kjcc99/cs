@@ -6,41 +6,42 @@ import { ScheduleRequest } from './CourseInput';
 interface ScheduleDisplayProps {
   schedule: GeneratedSchedule | null;
   request: ScheduleRequest | null;
+  timeFormat: '12h' | '24h';
 }
 
 const FULL_DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-// Helper to convert minutes to a readable format
+// Helper to convert minutes to a readable "Xh Ym" format
 const formatMinutes = (totalMinutes: number) => {
-    if (totalMinutes === 0) return '0 minutes';
+    if (!totalMinutes || totalMinutes === 0) return '0m';
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     let result = '';
-    if (hours > 0) result += `${hours} hour${hours > 1 ? 's' : ''}`;
-    if (minutes > 0) result += `${hours > 0 ? ', ' : ''}${minutes} minute${minutes > 1 ? 's' : ''}`;
-    return result;
+    if (hours > 0) result += `${hours}h `;
+    if (minutes > 0) result += `${minutes}m`;
+    return result.trim();
 };
 
+const formatTime = (time: string, format: '12h' | '24h') => {
+    if (format === '24h' || !time) return time;
+    const [h, m] = time.split(':');
+    const hour = parseInt(h);
+    const suffix = hour >= 12 ? 'PM' : 'AM';
+    const convertedHour = ((hour + 11) % 12 + 1);
+    return `${String(convertedHour).padStart(2, '0')}:${m} ${suffix}`;
+};
 
 const InfoCard: React.FC<{title: string, info: any, units: number | undefined, color: string}> = ({ title, info, units, color }) => (
-    <div style={{ flex: 1, minWidth: '250px' }}>
+    <div className="summary-details-card">
         <h4>
-            <span style={{
-                display: 'inline-block',
-                width: '12px',
-                height: '12px',
-                backgroundColor: color,
-                marginRight: '8px',
-                borderRadius: '3px',
-                verticalAlign: 'middle'
-            }}></span>
+            <span className="summary-dot" style={{backgroundColor: color}}></span>
             <span style={{ verticalAlign: 'middle' }}>{title}</span>
         </h4>
         <div className="summary-details">
             <p><strong>Time Block Per Day:</strong> {formatMinutes(info.totalBreakMinutesPerDay + (info.contactHoursPerDay * 50))}</p>
             {units !== undefined && units > 0 && <p><strong>Selected Units:</strong> {units}</p>}
             <p><strong>Contact Hours for Course:</strong> {info.contactHoursForTerm.toFixed(2)}</p>
-            <p><strong>Total Scheduled Contact Hours:</strong> {info.totalScheduledContactHours.toFixed(2)}</p>
+            <p><strong>Total Scheduled Hours:</strong> {info.totalScheduledContactHours.toFixed(2)}</p>
             <p><strong>Contact Hours Per Day:</strong> {info.contactHoursPerDay.toFixed(1)}</p>
             <p><strong>Break Minutes Per Day:</strong> {info.totalBreakMinutesPerDay}</p>
         </div>
@@ -48,13 +49,35 @@ const InfoCard: React.FC<{title: string, info: any, units: number | undefined, c
 );
 
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request }) => {
+const MinimalSummary: React.FC<{ blocks: ScheduleBlock[], type: 'lecture' | 'lab', timeFormat: '12h' | '24h' }> = ({ blocks, type, timeFormat }) => {
+    if (blocks.length === 0) return null;
+
+    const days = Array.from(new Set(blocks.map(b => b.dayOfWeek))).sort((a,b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b)).join('/');
+    
+    // Find the earliest start and latest end time across all blocks of this type
+    const startTimes = blocks.map(b => b.startTime);
+    const endTimes = blocks.map(b => b.endTime);
+    const startTime = startTimes.reduce((min, t) => t < min ? t : min, startTimes[0]);
+    const endTime = endTimes.reduce((max, t) => t > max ? t : max, endTimes[0]);
+
+
+    return (
+        <p className="minimal-summary-item">
+            <span className="summary-dot" style={{backgroundColor: `var(--${type}-color)`}}></span>
+            <strong>{type.charAt(0).toUpperCase() + type.slice(1)}:</strong> {days} ({formatTime(startTime, timeFormat)} - {formatTime(endTime, timeFormat)})
+        </p>
+    )
+};
+
+
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, timeFormat }) => {
   const [copyButtonText, setCopyButtonText] = useState('Copy Summary');
+  const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
 
   if (!schedule) {
     return (
-      <div style={{ marginTop: '20px', padding: '20px', border: '1px solid #eee', borderRadius: '8px' }}>
-        <p>Enter course units and click "Generate Example" to see a schedule.</p>
+      <div className="placeholder-text">
+        <p>Enter course units and click 'Schedule Course' to see a sample schedule.</p>
       </div>
     );
   }
@@ -78,7 +101,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request }) 
         if (blocksByDay[day]) {
             summaryText += `${day}:\n`;
             blocksByDay[day].forEach(block => {
-                summaryText += `  ${block.startTime} - ${block.endTime} (${block.type})\n`;
+                summaryText += `  ${formatTime(block.startTime, timeFormat)} - ${formatTime(block.endTime, timeFormat)} (${block.type})\n`;
             });
         }
     });
@@ -86,8 +109,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request }) 
     navigator.clipboard.writeText(summaryText).then(() => {
         setCopyButtonText('Copied!');
         setTimeout(() => setCopyButtonText('Copy Summary'), 2000);
-    }, (err) => {
-        console.error('Could not copy text: ', err);
+    }, () => {
         setCopyButtonText('Error!');
         setTimeout(() => setCopyButtonText('Copy Summary'), 2000);
     });
@@ -95,33 +117,47 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request }) 
 
   const hasLecture = schedule.lectureInfo.contactHoursForTerm > 0;
   const hasLab = schedule.labInfo.contactHoursForTerm > 0;
-  const showCombinedSummary = hasLecture && hasLab;
+  
+  const lectureBlocks = schedule.scheduleBlocks.filter(b => b.type === 'lecture');
+  const labBlocks = schedule.scheduleBlocks.filter(b => b.type === 'lab');
 
   return (
-    <div style={{ marginTop: '30px' }}>
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-        <h2>Schedule Example</h2>
-        {schedule.scheduleBlocks.length > 0 && <button onClick={handleCopyClick} className="copy-button">{copyButtonText}</button>}
-      </div>
-
-      {/* --- Combined, Lecture, and Lab Summaries --- */}
-      {showCombinedSummary && (
-        <div className="summary-card combined-summary-card">
-          <h4>Full Schedule Summary</h4>
-          <div className="summary-details combined-summary-details">
-            <p><strong>Total Contact Hours for Course:</strong> {(schedule.lectureInfo.contactHoursForTerm + schedule.labInfo.contactHoursForTerm).toFixed(2)}</p>
-            <p><strong>Total Scheduled Contact Hours:</strong> {(schedule.lectureInfo.totalScheduledContactHours + schedule.labInfo.totalScheduledContactHours).toFixed(2)}</p>
-            <p style={{marginTop: '10px'}}><strong>Lecture Time Block Per Day:</strong> {formatMinutes(schedule.lectureInfo.totalBreakMinutesPerDay + (schedule.lectureInfo.contactHoursPerDay * 50))}</p>
-            <p><strong>Lab Time Block Per Day:</strong> {formatMinutes(schedule.labInfo.totalBreakMinutesPerDay + (schedule.labInfo.contactHoursPerDay * 50))}</p>
-          </div>
+    <div className="schedule-display-container">
+      <div className="schedule-display-header">
+        <h2>Example Schedule</h2>
+        <div className="header-buttons">
+            <button onClick={() => setIsDetailsExpanded(!isDetailsExpanded)} className="details-toggle-btn">
+                {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
+            </button>
+            {schedule.scheduleBlocks.length > 0 && <button onClick={handleCopyClick} className="copy-button">{copyButtonText}</button>}
         </div>
-      )}
-      <div className="summary-card">
-        {hasLecture && <InfoCard title="Lecture Summary" info={schedule.lectureInfo} units={request?.lectureUnits} color="var(--lecture-color)" />}
-        {hasLab && <InfoCard title="Lab Summary" info={schedule.labInfo} units={request?.labUnits} color="var(--lab-color)" />}
+      </div>
+      
+      <div className="minimal-summary-container">
+          {hasLecture && <MinimalSummary blocks={lectureBlocks} type="lecture" timeFormat={timeFormat} />}
+          {hasLab && <MinimalSummary blocks={labBlocks} type="lab" timeFormat={timeFormat} />}
       </div>
 
-      {/* --- Warnings --- */}
+      {isDetailsExpanded && (
+          <div className="details-container">
+              {hasLecture && hasLab && (
+                <div className="summary-card combined-summary-card">
+                  <h4>Full Schedule Summary</h4>
+                  <div className="summary-details combined-summary-details">
+                    <p><strong>Total Contact Hours for Course:</strong> {(schedule.lectureInfo.contactHoursForTerm + schedule.labInfo.contactHoursForTerm).toFixed(2)}</p>
+                    <p><strong>Total Scheduled Hours:</strong> {(schedule.lectureInfo.totalScheduledContactHours + schedule.labInfo.totalScheduledContactHours).toFixed(2)}</p>
+                    <p style={{marginTop: '10px'}}><strong>Lecture Time Block Per Day:</strong> {formatMinutes(schedule.lectureInfo.totalBreakMinutesPerDay + (schedule.lectureInfo.contactHoursPerDay * 50))}</p>
+                    <p><strong>Lab Time Block Per Day:</strong> {formatMinutes(schedule.labInfo.totalBreakMinutesPerDay + (schedule.labInfo.contactHoursPerDay * 50))}</p>
+                  </div>
+                </div>
+              )}
+              <div className="summary-card">
+                {hasLecture && <InfoCard title="Lecture Summary" info={schedule.lectureInfo} units={request?.lectureUnits} color="var(--lecture-color)" />}
+                {hasLab && <InfoCard title="Lab Summary" info={schedule.labInfo} units={request?.labUnits} color="var(--lab-color)" />}
+              </div>
+          </div>
+      )}
+
       {schedule.warnings.length > 0 && (
         <div className="warning-card">
           <h3>Warnings</h3>
@@ -133,7 +169,6 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request }) 
         </div>
       )}
 
-      {/* --- Weekly Schedule View --- */}
       {schedule.scheduleBlocks.length > 0 && (
          <div className="weekly-grid">
          {FULL_DAYS_OF_WEEK.map(day => {
@@ -145,10 +180,10 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request }) 
                  {blocksForDay.length > 0 ? (
                    blocksForDay.map((block: ScheduleBlock, index: number) => (
                      <div key={index} className="schedule-block" style={{ borderLeft: `5px solid ${block.type === 'lecture' ? 'var(--lecture-color)' : 'var(--lab-color)'}` }}>
-                       <p><strong>{block.startTime} - {block.endTime}</strong> ({block.type})</p>
+                       <p><strong>{formatTime(block.startTime, timeFormat)} - {formatTime(block.endTime, timeFormat)}</strong></p>
                        <p className="schedule-block-description">
-                           {block.instructionalMinutes} min instruction
-                           {block.breakMinutes > 0 && `, ${block.breakMinutes} min break`}
+                           {block.instructionalMinutes > 0 && `${block.instructionalMinutes} min instruction`}
+                           {block.breakMinutes > 0 && <span style={{color: 'var(--danger-color)'}}>{`, ${block.breakMinutes} min break`}</span>}
                        </p>
                      </div>
                    ))

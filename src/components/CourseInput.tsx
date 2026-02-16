@@ -122,7 +122,7 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
         {/* Lecture Column */}
-        <div style={{ padding: '15px', border: '1px solid var(--border-color)', borderRadius: '5px' }}>
+        <div className="lecture-panel">
             <h4>Lecture</h4>
             <UnitSelector 
                 label="Units"
@@ -147,7 +147,7 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
             </div>
         </div>
         {/* Lab Column */}
-        <div style={{ padding: '15px', border: '1px solid var(--border-color)', borderRadius: '5px' }}>
+        <div className="lab-panel">
             <h4>Lab</h4>
             <UnitSelector 
                 label="Units"
@@ -172,8 +172,8 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
             </div>
         </div>
       </div>
-      <button type="submit" style={{ padding: '12px 15px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '16px', marginTop: '10px' }}>
-        Generate Example
+      <button type="submit" style={{ padding: '12px 15px', backgroundColor: 'var(--lab-color)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '16px', marginTop: '10px' }}>
+        Schedule Course
       </button>
     </form>
   );
