@@ -54,6 +54,23 @@ body {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Accessibility: Skip Link */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: var(--header-color);
+    color: white;
+    padding: 8px;
+    z-index: 100;
+    transition: top 0.3s;
+    text-decoration: none;
+    border-bottom-right-radius: 8px;
+}
+.skip-link:focus {
+    top: 0;
+}
+
 .app-header {
   display: flex;
   align-items: center;
@@ -102,6 +119,11 @@ body {
 .course-input-panel {
   flex: 2;
   min-width: 450px;
+  background-color: var(--card-background-color);
+  padding: 25px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .course-input-header {
@@ -275,19 +297,9 @@ input:checked + .slider:before { transform: translateX(26px); }
 }
 
 .details-container {
-    animation: fadeIn 0.4s ease;
+    overflow: hidden;
+    transition: all 0.2s ease-out; /* Snappy animation */
 }
-
-.placeholder-text {
-    margin-top: 20px;
-    padding: 20px;
-    border: 1px dashed var(--border-color);
-    border-radius: 8px;
-    text-align: center;
-    color: var(--text-color);
-    opacity: 0.7;
-}
-
 
 .summary-card {
   margin-bottom: 20px;
@@ -502,6 +514,18 @@ input:checked + .slider:before { transform: translateX(26px); }
     color: var(--header-color);
 }
 
+/* Split Copy Button Styles */
+.copy-button-container {
+    position: relative;
+    display: inline-block;
+}
+
+.copy-button-group {
+    display: inline-flex;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
 .copy-button {
     padding: 6px 12px;
     font-size: 0.9em;
@@ -517,18 +541,80 @@ input:checked + .slider:before { transform: translateX(26px); }
     color: var(--header-color);
 }
 
-/* Thematic Panel Backgrounds */
-.lecture-panel {
-    padding: 25px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--lecture-bg-color);
+.copy-button-group .copy-button {
+    border-radius: 0;
+    margin-top: 0;
 }
-.lab-panel {
-    padding: 25px;
+
+.copy-button-group .copy-button.main-copy-button {
+    border-right: 1px solid var(--border-color);
+}
+
+.copy-button-group .dropdown-toggle-button {
+    padding: 6px 8px;
+    background-color: var(--sub-header-bg);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
-    background-color: var(--lab-bg-color);
+    border-left: none;
+    color: var(--text-color);
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+.copy-button-group .dropdown-toggle-button:hover {
+    background-color: var(--border-color);
+}
+
+.copy-dropdown-content {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: var(--card-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    min-width: 180px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    padding: 5px 0;
+}
+
+.copy-dropdown-content button {
+    background: none;
+    border: none;
+    padding: 8px 15px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.9em;
+    color: var(--text-color);
+    transition: background-color 0.2s;
+    width: 100%;
+}
+
+.copy-dropdown-content button:hover {
+    background-color: var(--sub-header-bg);
+    transform: none;
+    opacity: 1;
+}
+
+/* Thematic Panel Backgrounds & Transitions */
+.lecture-panel, .lab-panel {
+    padding: 25px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    transition: all 0.2s ease-in-out;
+}
+
+.lecture-panel { background-color: var(--lecture-bg-color); }
+.lab-panel { background-color: var(--lab-bg-color); }
+
+.lecture-panel.active {
+    border-color: var(--lecture-color);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.15);
+}
+.lab-panel.active {
+    border-color: var(--lab-color);
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.15);
 }
 
 .lock-button {
@@ -549,6 +635,18 @@ input:checked + .slider:before { transform: translateX(26px); }
     cursor: pointer;
 }
 
+.generate-button {
+    padding: 12px 15px;
+    background-color: var(--lab-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 15px;
+    width: 100%;
+}
+
 .setting-item-row {
     display: flex;
     justify-content: space-between;
@@ -562,4 +660,41 @@ input:checked + .slider:before { transform: translateX(26px); }
     font-size: 0.9em;
     color: var(--text-color);
     opacity: 0.8;
+}
+
+/* Empty State Styles */
+.empty-schedule-state {
+    margin-top: 30px;
+    padding: 40px 20px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    text-align: center;
+    color: var(--text-color);
+    background-color: var(--card-background-color);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    animation: fadeIn 0.6s ease-in-out;
+}
+
+.empty-schedule-icon {
+    color: var(--header-color);
+    width: 60px;
+    height: 60px;
+}
+
+.empty-schedule-message {
+    font-size: 1.3em;
+    font-weight: 600;
+    margin: 0;
+    color: var(--header-color);
+}
+
+.empty-schedule-subtext {
+    font-size: 0.9em;
+    color: var(--text-color);
+    opacity: 0.7;
+    margin: 0;
+    max-width: 400px;
 }

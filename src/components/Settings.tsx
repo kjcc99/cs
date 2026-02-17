@@ -1,9 +1,14 @@
 // src/components/Settings.tsx
 import React from 'react';
+import { AcademicTerm } from '../App';
 
 interface SettingsProps {
-  weeks: number;
-  setWeeks: (weeks: number) => void;
+  calendar: AcademicTerm[];
+  selectedTerm: AcademicTerm; // New prop
+  selectedTermId: string;
+  setSelectedTermId: (id: string) => void;
+  selectedSessionId: string;
+  setSelectedSessionId: (id: string) => void;
   startTime: string;
   setStartTime: (time: string) => void;
   labStartTime: string | null;
@@ -17,7 +22,8 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ 
-    weeks, setWeeks, 
+    calendar, selectedTerm, selectedTermId, setSelectedTermId, // Added selectedTerm
+    selectedSessionId, setSelectedSessionId,
     startTime, setStartTime, 
     labStartTime, setLabStartTime,
     theme, setTheme, 
@@ -30,15 +36,15 @@ const Settings: React.FC<SettingsProps> = ({
   };
 
   const handleHelpClick = () => {
-    const helpText = `**How to Use Schedule Wizard**
+    const helpText = `**How to Use the Course Scheduler**
 
-1.  *Term Settings:* Use this panel to set the overall term length, start time, and selection modes.
+1.  **Settings:** Use this panel to set the overall Term, Session length, Start Time, and other display preferences.
+    - Click the lock icon (🔒) to set a different start time for a lab.
 
-2.  *Enter Course Details:* Input the units for Lecture/Lab and choose the days for each.
+2.  **Enter Course Details:** Input the units for Lecture/Lab and choose the days for each.
+    - 'Advanced Days' allows you to pick specific days of the week.
 
-3.  *Advanced Mode:* Select individual days for each component. Click the lock for separate Lecture/Lab start times.
-
-4.  *24-Hour:* Select 12 (default) or 24 hour clock.`;
+3.  **Schedule Course:** Click the button to see a sample schedule based on your settings.`;
     alert(helpText);
   };
 
@@ -83,19 +89,25 @@ const Settings: React.FC<SettingsProps> = ({
     <div className="settings-panel">
       <h2>Settings</h2>
       <div className="setting-item">
-        <label>Term Length:</label>
-        <select value={weeks} onChange={(e) => setWeeks(parseInt(e.target.value))}>
-          <option value="17">Full Term (semester)</option>
-          <option value="15">15 Weeks</option>
-          <option value="12">12 Weeks</option>
-          <option value="8">8 Weeks</option>
-          <option value="5">5 Weeks</option>
+        <label>Term:</label>
+        <select value={selectedTermId} onChange={(e) => setSelectedTermId(e.target.value)}>
+          {calendar.map(term => (
+            <option key={term.id} value={term.id}>{term.name}</option>
+          ))}
+        </select>
+      </div>
+      <div className="setting-item">
+        <label>Session:</label>
+        <select value={selectedSessionId} onChange={(e) => setSelectedSessionId(e.target.value)}>
+          {selectedTerm.sessions.map(session => (
+            <option key={session.id} value={session.id}>{session.name}</option>
+          ))}
         </select>
       </div>
       <div className="setting-item">
         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>{labStartTime === null ? 'Start Time' : 'Lec Start'}</span>
-            <button onClick={handleLockToggle} className="lock-button" title={labStartTime === null ? 'Set separate lab start time' : 'Lock lab start time to lecture'}>
+            <button onClick={handleLockToggle} className="lock-button" title="Set separate lab start time">
                 {labStartTime === null ? '🔒' : '🔓'}
             </button>
         </label>
@@ -109,15 +121,14 @@ const Settings: React.FC<SettingsProps> = ({
         </div>
       )}
 
-      <div className="setting-item">
-        <label>Advanced Mode:</label>
-        <label className="switch">
-            <input type="checkbox" checked={daySelectionMode === 'advanced'} onChange={(e) => setDaySelectionMode(e.target.checked ? 'advanced' : 'simple')} />
-            <span className="slider round"></span>
-        </label>
-      </div>
-      
       <div className="setting-item-row">
+          <div className="setting-item">
+            <label>Adv. Days:</label>
+            <label className="switch">
+                <input type="checkbox" checked={daySelectionMode === 'advanced'} onChange={(e) => setDaySelectionMode(e.target.checked ? 'advanced' : 'simple')} />
+                <span className="slider round"></span>
+            </label>
+          </div>
           <div className="setting-item">
             <label>Dark Mode:</label>
             <label className="switch">
@@ -133,7 +144,7 @@ const Settings: React.FC<SettingsProps> = ({
             </label>
           </div>
       </div>
-      <div style={{textAlign: 'center', marginTop: '20px'}}>
+       <div style={{textAlign: 'center', marginTop: '20px'}}>
         <button onClick={handleHelpClick} className="help-button">
             HELP!
         </button>

@@ -1,5 +1,5 @@
 // src/components/ScheduleDisplay.tsx
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { GeneratedSchedule, ScheduleBlock } from '../utils/scheduleGenerator';
 import { ScheduleRequest } from './CourseInput';
 
@@ -7,11 +7,11 @@ interface ScheduleDisplayProps {
   schedule: GeneratedSchedule | null;
   request: ScheduleRequest | null;
   timeFormat: '12h' | '24h';
+  resultsHeadingRef: React.RefObject<HTMLHeadingElement | null>;
 }
 
 const FULL_DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-// Helper to convert minutes to a readable "Xh Ym" format
 const formatMinutes = (totalMinutes: number) => {
     if (!totalMinutes || totalMinutes === 0) return '0m';
     const hours = Math.floor(totalMinutes / 60);
@@ -38,29 +38,23 @@ const InfoCard: React.FC<{title: string, info: any, units: number | undefined, c
             <span style={{ verticalAlign: 'middle' }}>{title}</span>
         </h4>
         <div className="summary-details">
-            <p><strong>Time Block Per Day:</strong> {formatMinutes(info.totalBreakMinutesPerDay + (info.contactHoursPerDay * 50))}</p>
             {units !== undefined && units > 0 && <p><strong>Selected Units:</strong> {units}</p>}
             <p><strong>Contact Hours for Course:</strong> {info.contactHoursForTerm.toFixed(2)}</p>
-            <p><strong>Total Scheduled Hours:</strong> {info.totalScheduledContactHours.toFixed(2)}</p>
+            <p><strong>Actual Meeting Days:</strong> {info.actualMeetingDays}</p>
             <p><strong>Contact Hours Per Day:</strong> {info.contactHoursPerDay.toFixed(1)}</p>
-            <p><strong>Break Minutes Per Day:</strong> {info.totalBreakMinutesPerDay}</p>
+            <p><strong>Time Block Per Day:</strong> {formatMinutes(info.totalBreakMinutesPerDay + (info.contactHoursPerDay * 50))}</p>
+            <p><strong>Total Scheduled Hours:</strong> {info.totalScheduledContactHours.toFixed(2)}</p>
         </div>
     </div>
 );
 
-
 const MinimalSummary: React.FC<{ blocks: ScheduleBlock[], type: 'lecture' | 'lab', timeFormat: '12h' | '24h' }> = ({ blocks, type, timeFormat }) => {
     if (blocks.length === 0) return null;
-
     const days = Array.from(new Set(blocks.map(b => b.dayOfWeek))).sort((a,b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b)).join('/');
-    
-    // Find the earliest start and latest end time across all blocks of this type
     const startTimes = blocks.map(b => b.startTime);
     const endTimes = blocks.map(b => b.endTime);
     const startTime = startTimes.reduce((min, t) => t < min ? t : min, startTimes[0]);
     const endTime = endTimes.reduce((max, t) => t > max ? t : max, endTimes[0]);
-
-
     return (
         <p className="minimal-summary-item">
             <span className="summary-dot" style={{backgroundColor: `var(--${type}-color)`}}></span>
@@ -69,20 +63,60 @@ const MinimalSummary: React.FC<{ blocks: ScheduleBlock[], type: 'lecture' | 'lab
     )
 };
 
-
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, timeFormat }) => {
-  const [copyButtonText, setCopyButtonText] = useState('Copy Summary');
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, timeFormat, resultsHeadingRef }) => {
+  const [copyButtonText, setCopyButtonText] = useState('Copy');
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+  const [showCopyOptions, setShowCopyOptions] = useState(false);
+  const copyGroupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (copyGroupRef.current && !copyGroupRef.current.contains(event.target as Node)) {
+        setShowCopyOptions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [copyGroupRef]);
+
 
   if (!schedule) {
     return (
-      <div className="placeholder-text">
-        <p>Enter course units and click 'Schedule Course' to see a sample schedule.</p>
+      <div className="empty-schedule-state">
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="empty-schedule-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <p className="empty-schedule-message">
+          Enter course units and click 'Schedule Course' to generate your weekly schedule!
+        </p>
+        <p className="empty-schedule-subtext">
+            Start by selecting a Term and entering Lecture and Lab units for your course.
+        </p>
       </div>
     );
   }
 
-  const handleCopyClick = () => {
+  const generateSimpleSummaryText = () => {
+    const lectureBlocks = schedule.scheduleBlocks.filter(b => b.type === 'lecture');
+    const labBlocks = schedule.scheduleBlocks.filter(b => b.type === 'lab');
+
+    let text = '';
+    if (lectureBlocks.length > 0) {
+        const days = Array.from(new Set(lectureBlocks.map(b => b.dayOfWeek))).sort((a,b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b)).join('/');
+        const startTime = lectureBlocks.reduce((min, b) => b.startTime < min ? b.startTime : min, lectureBlocks[0].startTime);
+        const endTime = lectureBlocks.reduce((max, b) => b.endTime > max ? b.endTime : max, lectureBlocks[0].endTime);
+        text += `Lecture: ${days} (${formatTime(startTime, timeFormat)} - ${formatTime(endTime, timeFormat)})\n`;
+    }
+    if (labBlocks.length > 0) {
+        const days = Array.from(new Set(labBlocks.map(b => b.dayOfWeek))).sort((a,b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b)).join('/');
+        const startTime = labBlocks.reduce((min, b) => b.startTime < min ? b.startTime : min, labBlocks[0].startTime);
+        const endTime = labBlocks.reduce((max, b) => b.endTime > max ? b.endTime : max, labBlocks[0].endTime);
+        text += `Lab: ${days} (${formatTime(startTime, timeFormat)} - ${formatTime(endTime, timeFormat)})\n`;
+    }
+    return text.trim();
+  };
+
+  const generateDetailedSummaryText = () => {
     let summaryText = '--- Course Schedule Example ---\n';
     if (request) {
         if(request.lectureUnits > 0) summaryText += `Lecture: ${request.lectureUnits} units, ${request.lectureDays.length} day(s)/week (${request.lectureDays.join('/')})\n`;
@@ -98,20 +132,27 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ti
     });
 
     FULL_DAYS_OF_WEEK.forEach(day => {
-        if (blocksByDay[day]) {
+        if (blocksByDay[day] && blocksByDay[day].length > 0) {
             summaryText += `${day}:\n`;
             blocksByDay[day].forEach(block => {
                 summaryText += `  ${formatTime(block.startTime, timeFormat)} - ${formatTime(block.endTime, timeFormat)} (${block.type})\n`;
             });
         }
     });
+    return summaryText.trim();
+  };
 
-    navigator.clipboard.writeText(summaryText).then(() => {
+
+  const handleCopy = (summaryType: 'simple' | 'detailed') => {
+    const textToCopy = summaryType === 'simple' ? generateSimpleSummaryText() : generateDetailedSummaryText();
+    navigator.clipboard.writeText(textToCopy).then(() => {
         setCopyButtonText('Copied!');
-        setTimeout(() => setCopyButtonText('Copy Summary'), 2000);
+        setShowCopyOptions(false);
+        setTimeout(() => setCopyButtonText('Copy'), 2000);
     }, () => {
         setCopyButtonText('Error!');
-        setTimeout(() => setCopyButtonText('Copy Summary'), 2000);
+        setShowCopyOptions(false);
+        setTimeout(() => setCopyButtonText('Copy'), 2000);
     });
   };
 
@@ -124,20 +165,34 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ti
   return (
     <div className="schedule-display-container">
       <div className="schedule-display-header">
-        <h2>Example Schedule</h2>
+        <h2 ref={resultsHeadingRef} tabIndex={-1}>Example Schedule</h2>
         <div className="header-buttons">
             <button onClick={() => setIsDetailsExpanded(!isDetailsExpanded)} className="details-toggle-btn">
                 {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
             </button>
-            {schedule.scheduleBlocks.length > 0 && <button onClick={handleCopyClick} className="copy-button">{copyButtonText}</button>}
+            {schedule.scheduleBlocks.length > 0 && (
+                <div className="copy-button-container" ref={copyGroupRef}>
+                    <div className="copy-button-group">
+                      <button onClick={() => handleCopy('simple')} className="copy-button main-copy-button">{copyButtonText}</button>
+                      <button onClick={() => setShowCopyOptions(!showCopyOptions)} className="copy-button dropdown-toggle-button" aria-expanded={showCopyOptions}>
+                          ▼
+                      </button>
+                    </div>
+                    {showCopyOptions && (
+                        <div className="copy-dropdown-content">
+                            <button onClick={() => handleCopy('detailed')}>Copy Detailed Summary</button>
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
       </div>
       
-      <div className="minimal-summary-container">
+      <div className="minimal-summary-container" aria-live="polite">
           {hasLecture && <MinimalSummary blocks={lectureBlocks} type="lecture" timeFormat={timeFormat} />}
           {hasLab && <MinimalSummary blocks={labBlocks} type="lab" timeFormat={timeFormat} />}
       </div>
-
+      
       {isDetailsExpanded && (
           <div className="details-container">
               {hasLecture && hasLab && (
@@ -200,4 +255,4 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ti
   );
 };
 
-export default ScheduleDisplay;
+export default React.memo(ScheduleDisplay);

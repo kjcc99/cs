@@ -1,8 +1,30 @@
 // src/utils/scheduleGenerator.ts
 import { ScheduleRequest } from '../components/CourseInput';
-import { ContactHourCalculationRules } from './ruleParser';
+import { AcademicTerm, TermSession } from '../App';
+import { ContactHourCalculationRules, AttendanceAccountingRules } from './ruleParser';
 
-// --- INTERFACES ---
+// --- Date Helpers ---
+const addDays = (date: Date, days: number): Date => {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+};
+
+const addWeeks = (date: Date, weeks: number): Date => {
+  // To span exactly X weeks, we add (X * 7) - 1 days.
+  // e.g. Start Monday, add 6 days = Sunday (1 week span)
+  return addDays(date, (weeks * 7) - 1);
+};
+
+// Timezone-safe YYYY-MM-DD string from local Date object
+const getDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+// --- Interfaces ---
 export interface ScheduleBlock {
   dayOfWeek: string;
   type: 'lecture' | 'lab';
@@ -19,6 +41,7 @@ export interface ScheduleInfo {
     totalScheduledContactHours: number;
     contactHoursPerDay: number;
     totalBreakMinutesPerDay: number;
+    actualMeetingDays: number;
 }
 
 export interface GeneratedSchedule {
@@ -28,10 +51,15 @@ export interface GeneratedSchedule {
   warnings: string[];
 }
 
-// --- CONSTANTS ---
-const DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+export interface RuleAndTermContext {
+    contactHourRules: ContactHourCalculationRules;
+    attendanceRules: AttendanceAccountingRules;
+    term: AcademicTerm;
+    session: TermSession;
+}
 
-// --- HELPER FUNCTIONS ---
+
+// --- Main Calculation Logic ---
 function calculateTimeMetrics(dailyCH: number): { totalClockMinutes: number, numStandardBreaks: number, manualBreak: number } {
     const dailyCHDecimal = parseFloat((dailyCH - Math.floor(dailyCH)).toFixed(1));
     const instructionalMinutes = dailyCH * 50;
@@ -45,71 +73,111 @@ function calculateTimeMetrics(dailyCH: number): { totalClockMinutes: number, num
 
 function calculateDailySchedule(
     units: number, 
-    days: string[],
+    daysOfWeek: string[], 
     type: 'lecture' | 'lab',
-    weeks: number,
+    context: RuleAndTermContext,
     warnings: string[]
 ): { dailyBlocks: Omit<ScheduleBlock, 'dayOfWeek' | 'startTime' | 'endTime'>[], info: ScheduleInfo } | null {
-    const rate = type === 'lecture' ? 18 : 54;
-    const contactHoursForTerm = units * rate;
-    const rawWeeklyContactHours = contactHoursForTerm / weeks;
-    const weeklyContactHours = Math.round(rawWeeklyContactHours * 10) / 10;
-    
-    if (weeklyContactHours === 0) {
-        return { dailyBlocks: [], info: { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0 }};
+    const { term, session, attendanceRules } = context;
+    const { weeks } = session;
+
+    let attendanceMethodKey = term.type.toUpperCase();
+    if (term.type === 'semester' && session.method !== 'FULL_TERM') {
+        attendanceMethodKey = 'SEMESTER_SHORT_TERM';
+    }
+    const accountingRule = attendanceRules[attendanceMethodKey] || attendanceRules['SEMESTER_FULL_TERM'];
+
+    // 1. Calculate Session Start and End Dates
+    const termStartDate = new Date(term.startDate + 'T00:00:00');
+    const termEndDate = new Date(term.endDate + 'T00:00:00');
+    let sessionStartDate = termStartDate;
+    let sessionEndDate = termEndDate;
+
+    if (session.method === 'EARLY_START') {
+        sessionEndDate = addWeeks(sessionStartDate, weeks);
+    } else if (session.method === 'LATE_START') {
+        sessionStartDate = addDays(addWeeks(termEndDate, -weeks), 1);
     }
     
-    const idealContactHoursPerDay = weeklyContactHours / days.length;
+    // 2. Count the actual number of meeting days
+    let actualMeetingDays = 0;
+    const dayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const holidaySet = new Set(term.holidays);
+
+    if (accountingRule.METHOD === 'COUNT_HOLIDAYS' && daysOfWeek.length > 0) {
+        for (let d = new Date(sessionStartDate); d <= sessionEndDate; d.setDate(d.getDate() + 1)) {
+            const dayStr = dayMap[d.getDay()];
+            const dateStr = getDateString(d);
+            if (daysOfWeek.includes(dayStr) && !holidaySet.has(dateStr)) {
+                actualMeetingDays++;
+            }
+        }
+    } else { 
+        actualMeetingDays = weeks * daysOfWeek.length;
+    }
+
+    // 3. Calculate Contact Hours
+    const rate = type === 'lecture' ? 18 : 54;
+    const contactHoursForTerm = units * rate;
+
+    if (contactHoursForTerm === 0) {
+        return { dailyBlocks: [], info: { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 }};
+    }
+    
+    if (actualMeetingDays === 0 && units > 0) {
+        warnings.push(`The selected days for the ${type} do not occur in the chosen session.`);
+        return null;
+    }
+
+    const idealContactHoursPerDay = contactHoursForTerm / actualMeetingDays;
 
     if (idealContactHoursPerDay < 1.0) {
-        warnings.push(`For the ${type}, scheduling for ${days.length} days results in ${idealContactHoursPerDay.toFixed(2)} CH/day, which is less than the minimum of 1.0. Please choose fewer days.`);
+        warnings.push(`For the ${type}, this schedule results in ${idealContactHoursPerDay.toFixed(2)} CH/day, which is less than the minimum of 1.0. Please choose fewer days or a shorter session.`);
         return null;
     }
 
     const finalDailyContactHours = Math.round(idealContactHoursPerDay * 10) / 10;
-
+    
     if (Math.abs(finalDailyContactHours - idealContactHoursPerDay) > 0.01) {
-        warnings.push(`The ideal daily time of ${idealContactHoursPerDay.toFixed(2)} CH for the ${type} has been rounded to ${finalDailyContactHours.toFixed(1)} CH/day for scheduling purposes.`);
+        warnings.push(`Ideal daily time of ${idealContactHoursPerDay.toFixed(2)} CH for the ${type} was rounded to ${finalDailyContactHours.toFixed(1)} CH/day.`);
     }
 
+    // 4. Generate daily blocks
     const { totalClockMinutes, numStandardBreaks, manualBreak } = calculateTimeMetrics(finalDailyContactHours);
     const totalBreakMinutesPerDay = (numStandardBreaks * 10) + manualBreak;
     const instructionalMinutesPerDay = totalClockMinutes - totalBreakMinutesPerDay;
-    const totalScheduledContactHours = (finalDailyContactHours * days.length) * weeks;
-    
-    // --- RESTORE MICRO-BLOCKS ---
+    const totalScheduledContactHours = finalDailyContactHours * actualMeetingDays;
+
     const dailyBlocks: Omit<ScheduleBlock, 'dayOfWeek' | 'startTime' | 'endTime'>[] = [];
     let remainingInstructional = instructionalMinutesPerDay;
     let remainingStdBreaks = numStandardBreaks;
 
     while (remainingInstructional > 0) {
-        const isLastBlock = remainingStdBreaks === 0;
+        const isLastBlock = remainingStdBreaks <= 0;
         const blockInstruction = isLastBlock ? remainingInstructional : 50;
         const blockBreak = isLastBlock ? 0 : 10;
-        const blockDuration = blockInstruction + blockBreak;
 
         dailyBlocks.push({
-            type: type,
-            durationMinutes: blockDuration,
+            type,
+            durationMinutes: blockInstruction + blockBreak,
             instructionalMinutes: blockInstruction,
             breakMinutes: blockBreak,
         });
         remainingInstructional -= blockInstruction;
         if (!isLastBlock) remainingStdBreaks--;
     }
-    
-    // Add manual break to the last block
     if (manualBreak > 0 && dailyBlocks.length > 0) {
         dailyBlocks[dailyBlocks.length - 1].breakMinutes += manualBreak;
         dailyBlocks[dailyBlocks.length - 1].durationMinutes += manualBreak;
     }
-
+    
     const info: ScheduleInfo = { 
         contactHoursForTerm, 
-        weeklyContactHours, 
-        totalScheduledContactHours, 
+        weeklyContactHours: contactHoursForTerm / weeks,
+        totalScheduledContactHours,
         contactHoursPerDay: finalDailyContactHours, 
-        totalBreakMinutesPerDay 
+        totalBreakMinutesPerDay,
+        actualMeetingDays
     };
     
     return { dailyBlocks, info };
@@ -119,19 +187,18 @@ function calculateDailySchedule(
 // --- MAIN GENERATOR ---
 export function generateSchedule(
   request: ScheduleRequest,
-  contactHourRules: ContactHourCalculationRules | null,
-  weeks: number,
+  context: RuleAndTermContext,
   startTime: string,
   labStartTime: string | null
 ): GeneratedSchedule {
   const warnings: string[] = [];
-  const emptyInfo: ScheduleInfo = { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0 };
+  const emptyInfo: ScheduleInfo = { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 };
   const emptySchedule: GeneratedSchedule = { lectureInfo: emptyInfo, labInfo: emptyInfo, scheduleBlocks: [], warnings };
 
   if (request.lectureUnits === 0 && request.labUnits === 0) return emptySchedule;
 
-  const lectureResult = calculateDailySchedule(request.lectureUnits, request.lectureDays, 'lecture', weeks, warnings);
-  const labResult = calculateDailySchedule(request.labUnits, request.labDays, 'lab', weeks, warnings);
+  const lectureResult = calculateDailySchedule(request.lectureUnits, request.lectureDays, 'lecture', context, warnings);
+  const labResult = calculateDailySchedule(request.labUnits, request.labDays, 'lab', context, warnings);
 
   if (!lectureResult || !labResult) {
       return { ...emptySchedule, lectureInfo: lectureResult?.info || emptyInfo, labInfo: labResult?.info || emptyInfo, warnings };
@@ -190,5 +257,11 @@ export function generateSchedule(
     });
   }
 
-  return { lectureInfo, labInfo, scheduleBlocks: finalBlocks.sort((a, b) => a.startTime.localeCompare(b.startTime)), warnings };
+  return { lectureInfo, labInfo, scheduleBlocks: finalBlocks.sort((a, b) => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    if (a.dayOfWeek !== b.dayOfWeek) {
+        return days.indexOf(a.dayOfWeek) - days.indexOf(b.dayOfWeek);
+    }
+    return a.startTime.localeCompare(b.startTime);
+  }), warnings };
 }

@@ -1,55 +1,59 @@
 // src/utils/ruleParser.ts
 
-// The functions no longer import the markdown files.
-// They receive the content as an argument.
-
-// Define interfaces for the parsed rules
+// --- Original Contact Hour Rules ---
+export interface ContactHourRule {
+    MIN: number;
+    MAX: number;
+    CONTACT_HOURS: number;
+}
 export interface ContactHourCalculationRules {
-  classHourMinutes: number;
-  breakMinutes: number;
-  breakCalculationFormula: string;
-  contactHourFormula: string;
-  schedulingConstraints: string[];
+    [key: string]: ContactHourRule;
+}
+export const parseContactHourCalculationRules = (markdown: string): ContactHourCalculationRules => {
+    const rules: ContactHourCalculationRules = {};
+    const lines = markdown.split('\n');
+    let currentKey = '';
+  
+    lines.forEach(line => {
+      if (line.startsWith('## ')) {
+        currentKey = line.substring(3).trim();
+        rules[currentKey] = { MIN: 0, MAX: 0, CONTACT_HOURS: 0 };
+      } else if (line.startsWith('- MIN:') && currentKey) {
+        rules[currentKey].MIN = parseFloat(line.split(':')[1].trim());
+      } else if (line.startsWith('- MAX:') && currentKey) {
+        rules[currentKey].MAX = parseFloat(line.split(':')[1].trim());
+      } else if (line.startsWith('- CONTACT_HOURS:') && currentKey) {
+        rules[currentKey].CONTACT_HOURS = parseFloat(line.split(':')[1].trim());
+      }
+    });
+    return rules;
+};
+
+// --- New Attendance Accounting Rules ---
+export type AttendanceMethod = 'IGNORE_HOLIDAYS' | 'COUNT_HOLIDAYS';
+export interface AttendanceAccountingRules {
+  [key: string]: {
+    METHOD: AttendanceMethod;
+    DESCRIPTION: string;
+  };
 }
 
+export const parseAttendanceAccountingRules = (markdown: string): AttendanceAccountingRules => {
+  const rules: AttendanceAccountingRules = {};
+  const sections = markdown.split('## ').slice(1);
 
-/**
- * Parses the contact_hours_rules.md content to extract general calculation rules and constraints.
- * @param markdownContent The raw string content of the markdown file.
- * @returns A ContactHourCalculationRules object.
- */
-export function parseContactHourCalculationRules(markdownContent: string): ContactHourCalculationRules {
-  const rules: ContactHourCalculationRules = {
-    classHourMinutes: 50,
-    breakMinutes: 10,
-    breakCalculationFormula: '',
-    contactHourFormula: '',
-    schedulingConstraints: [],
-  };
+  sections.forEach(section => {
+    const lines = section.split('\n');
+    const header = lines[0].trim();
+    const methodLine = lines.find(line => line.startsWith('METHOD:'));
+    const descriptionLine = lines.find(line => line.startsWith('DESCRIPTION:'));
 
-  if (!markdownContent) return rules;
-
-  const lines = markdownContent.split('\n');
-  let inSchedulingRulesSection = false;
-
-  lines.forEach(line => {
-    if (line.includes('`NumberOfBreaks = floor((TotalClassMinutes - 50) / 60)`')) {
-      rules.breakCalculationFormula = 'NumberOfBreaks = floor((TotalClassMinutes - 50) / 60)';
-    }
-    if (line.includes('`ContactHours = InstructionalMinutes / 50`')) {
-      rules.contactHourFormula = 'ContactHours = InstructionalMinutes / 50';
-    }
-    if (line.includes('## Scheduling Rules and Constraints')) {
-      inSchedulingRulesSection = true;
-      return;
-    }
-    if (inSchedulingRulesSection && line.startsWith('*')) {
-        rules.schedulingConstraints.push(line.substring(2).trim());
-    }
-    if (inSchedulingRulesSection && (line.startsWith('##') && !line.includes('Scheduling Rules and Constraints'))) {
-        inSchedulingRulesSection = false;
+    if (header && methodLine) {
+      const method = methodLine.split(':')[1].trim() as AttendanceMethod;
+      const description = descriptionLine ? descriptionLine.split(':')[1].trim() : '';
+      rules[header] = { METHOD: method, DESCRIPTION: description };
     }
   });
 
   return rules;
-}
+};
