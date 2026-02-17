@@ -1,6 +1,6 @@
 # Schedule Wizard Quick Start
 
-Schedule Wizard is designed to help you with scheduling a section. This marvelous wonder of modern computing knows your academic calendar, how to handle attendance accounting (hypothetically, anyway), and produces an estimated schedule that's probably better than an estimate, but for legal reasons, is still an estimate. It's always possible there are other considerations or rules the Schedule Wizard doesn't know, and thus, estimate. Always an estimate. Legally an estimate. Not a guarantee. Guaranteed to be an estimate.
+Schedule Wizard is designed to help you with scheduling a section. This marvelous wonder of modern computing knows your academic calendar, how to handle attendance accounting (hypothetically, anyway), and produces an estimated schedule that's probably better than an estimate, but for legal reasons is still an estimate. It's always possible there are other considerations or rules the Schedule Wizard doesn't know, and thus, estimate. Always an estimate. Legally an estimate. Not a guarantee. Guaranteed to be an estimate.
 
 -----------------------------
 
