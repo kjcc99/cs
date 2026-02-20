@@ -1,7 +1,8 @@
 // src/components/ScheduleDisplay.tsx
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GeneratedSchedule, ScheduleBlock } from '../utils/scheduleGenerator';
 import { ScheduleRequest } from './CourseInput';
+import { formatTime } from '../utils/timeUtils';
 
 interface ScheduleDisplayProps {
   schedule: GeneratedSchedule | null;
@@ -20,15 +21,6 @@ const formatMinutes = (totalMinutes: number) => {
     if (hours > 0) result += `${hours}h `;
     if (minutes > 0) result += `${minutes}m`;
     return result.trim();
-};
-
-const formatTime = (time: string, format: '12h' | '24h') => {
-    if (format === '24h' || !time) return time;
-    const [h, m] = time.split(':');
-    const hour = parseInt(h);
-    const suffix = hour >= 12 ? 'PM' : 'AM';
-    const convertedHour = ((hour + 11) % 12 + 1);
-    return `${String(convertedHour).padStart(2, '0')}:${m} ${suffix}`;
 };
 
 const InfoCard: React.FC<{title: string, info: any, units: number | undefined, color: string}> = ({ title, info, units, color }) => (
@@ -63,98 +55,30 @@ const MinimalSummary: React.FC<{ blocks: ScheduleBlock[], type: 'lecture' | 'lab
     )
 };
 
+const ScheduleDisplaySkeleton: React.FC = () => (
+  <div className="schedule-display-container skeleton">
+    <div className="minimal-summary-container" style={{ opacity: 0.5 }}>
+      <div className="skeleton-line" style={{ width: '60%', height: '24px' }}></div>
+    </div>
+    <div className="weekly-grid">
+      {FULL_DAYS_OF_WEEK.map(day => (
+        <div key={day} className="day-column skeleton">
+          <h4 className="weekly-view-header" style={{ opacity: 0.3 }}>{day}</h4>
+          <div className="day-column-content">
+            <div className="skeleton-block"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, timeFormat, resultsHeadingRef }) => {
-  const [copyButtonText, setCopyButtonText] = useState('Copy');
   const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
-  const [showCopyOptions, setShowCopyOptions] = useState(false);
-  const copyGroupRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (copyGroupRef.current && !copyGroupRef.current.contains(event.target as Node)) {
-        setShowCopyOptions(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [copyGroupRef]);
-
 
   if (!schedule) {
-    return (
-      <div className="empty-schedule-state">
-        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="empty-schedule-icon"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-        <p className="empty-schedule-message">
-          Enter course units and click 'Schedule Course' to generate your weekly schedule!
-        </p>
-        <p className="empty-schedule-subtext">
-            Start by selecting a Term and entering Lecture and Lab units for your course.
-        </p>
-      </div>
-    );
+    return <ScheduleDisplaySkeleton />;
   }
-
-  const generateSimpleSummaryText = () => {
-    const lectureBlocks = schedule.scheduleBlocks.filter(b => b.type === 'lecture');
-    const labBlocks = schedule.scheduleBlocks.filter(b => b.type === 'lab');
-
-    let text = '';
-    if (lectureBlocks.length > 0) {
-        const days = Array.from(new Set(lectureBlocks.map(b => b.dayOfWeek))).sort((a,b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b)).join('/');
-        const startTime = lectureBlocks.reduce((min, b) => b.startTime < min ? b.startTime : min, lectureBlocks[0].startTime);
-        const endTime = lectureBlocks.reduce((max, b) => b.endTime > max ? b.endTime : max, lectureBlocks[0].endTime);
-        text += `Lecture: ${days} (${formatTime(startTime, timeFormat)} - ${formatTime(endTime, timeFormat)})\n`;
-    }
-    if (labBlocks.length > 0) {
-        const days = Array.from(new Set(labBlocks.map(b => b.dayOfWeek))).sort((a,b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b)).join('/');
-        const startTime = labBlocks.reduce((min, b) => b.startTime < min ? b.startTime : min, labBlocks[0].startTime);
-        const endTime = labBlocks.reduce((max, b) => b.endTime > max ? b.endTime : max, labBlocks[0].endTime);
-        text += `Lab: ${days} (${formatTime(startTime, timeFormat)} - ${formatTime(endTime, timeFormat)})\n`;
-    }
-    return text.trim();
-  };
-
-  const generateDetailedSummaryText = () => {
-    let summaryText = '--- Course Schedule Example ---\n';
-    if (request) {
-        if(request.lectureUnits > 0) summaryText += `Lecture: ${request.lectureUnits} units, ${request.lectureDays.length} day(s)/week (${request.lectureDays.join('/')})\n`;
-        if(request.labUnits > 0) summaryText += `Lab: ${request.labUnits} units, ${request.labDays.length} day(s)/week (${request.labDays.join('/')})\n\n`;
-    }
-
-    const blocksByDay: { [key: string]: ScheduleBlock[] } = {};
-    schedule.scheduleBlocks.forEach(block => {
-        if (!blocksByDay[block.dayOfWeek]) {
-            blocksByDay[block.dayOfWeek] = [];
-        }
-        blocksByDay[block.dayOfWeek].push(block);
-    });
-
-    FULL_DAYS_OF_WEEK.forEach(day => {
-        if (blocksByDay[day] && blocksByDay[day].length > 0) {
-            summaryText += `${day}:\n`;
-            blocksByDay[day].forEach(block => {
-                summaryText += `  ${formatTime(block.startTime, timeFormat)} - ${formatTime(block.endTime, timeFormat)} (${block.type})\n`;
-            });
-        }
-    });
-    return summaryText.trim();
-  };
-
-
-  const handleCopy = (summaryType: 'simple' | 'detailed') => {
-    const textToCopy = summaryType === 'simple' ? generateSimpleSummaryText() : generateDetailedSummaryText();
-    navigator.clipboard.writeText(textToCopy).then(() => {
-        setCopyButtonText('Copied!');
-        setShowCopyOptions(false);
-        setTimeout(() => setCopyButtonText('Copy'), 2000);
-    }, () => {
-        setCopyButtonText('Error!');
-        setShowCopyOptions(false);
-        setTimeout(() => setCopyButtonText('Copy'), 2000);
-    });
-  };
 
   const hasLecture = schedule.lectureInfo.contactHoursForTerm > 0;
   const hasLab = schedule.labInfo.contactHoursForTerm > 0;
@@ -164,54 +88,33 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ti
 
   return (
     <div className="schedule-display-container">
-      <div className="schedule-display-header">
-        <h2 ref={resultsHeadingRef} tabIndex={-1}>Example Schedule</h2>
-        <div className="header-buttons">
-            <button onClick={() => setIsDetailsExpanded(!isDetailsExpanded)} className="details-toggle-btn">
-                {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
-            </button>
-            {schedule.scheduleBlocks.length > 0 && (
-                <div className="copy-button-container" ref={copyGroupRef}>
-                    <div className="copy-button-group">
-                      <button onClick={() => handleCopy('simple')} className="copy-button main-copy-button">{copyButtonText}</button>
-                      <button onClick={() => setShowCopyOptions(!showCopyOptions)} className="copy-button dropdown-toggle-button" aria-expanded={showCopyOptions}>
-                          ▼
-                      </button>
-                    </div>
-                    {showCopyOptions && (
-                        <div className="copy-dropdown-content">
-                            <button onClick={() => handleCopy('detailed')}>Copy Detailed Summary</button>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-      </div>
-      
       <div className="minimal-summary-container" aria-live="polite">
-          {hasLecture && <MinimalSummary blocks={lectureBlocks} type="lecture" timeFormat={timeFormat} />}
-          {hasLab && <MinimalSummary blocks={labBlocks} type="lab" timeFormat={timeFormat} />}
+          <div style={{ flex: 1 }}>
+            {hasLecture && <MinimalSummary blocks={lectureBlocks} type="lecture" timeFormat={timeFormat} />}
+            {hasLab && <MinimalSummary blocks={labBlocks} type="lab" timeFormat={timeFormat} />}
+          </div>
+          <button onClick={() => setIsDetailsExpanded(!isDetailsExpanded)} className="details-toggle-btn" style={{ alignSelf: 'center' }}>
+                {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
+          </button>
       </div>
       
-      {isDetailsExpanded && (
-          <div className="details-container">
-              {hasLecture && hasLab && (
-                <div className="summary-card combined-summary-card">
-                  <h4>Full Schedule Summary</h4>
-                  <div className="summary-details combined-summary-details">
-                    <p><strong>Total Contact Hours for Course:</strong> {(schedule.lectureInfo.contactHoursForTerm + schedule.labInfo.contactHoursForTerm).toFixed(2)}</p>
-                    <p><strong>Total Scheduled Hours:</strong> {(schedule.lectureInfo.totalScheduledContactHours + schedule.labInfo.totalScheduledContactHours).toFixed(2)}</p>
-                    <p style={{marginTop: '10px'}}><strong>Lecture Time Block Per Day:</strong> {formatMinutes(schedule.lectureInfo.totalBreakMinutesPerDay + (schedule.lectureInfo.contactHoursPerDay * 50))}</p>
-                    <p><strong>Lab Time Block Per Day:</strong> {formatMinutes(schedule.labInfo.totalBreakMinutesPerDay + (schedule.labInfo.contactHoursPerDay * 50))}</p>
-                  </div>
+      <div className={`details-container ${isDetailsExpanded ? 'expanded' : ''}`}>
+          {hasLecture && hasLab && (
+              <div className="summary-card combined-summary-card">
+                <h4>Full Schedule Summary</h4>
+                <div className="summary-details combined-summary-details">
+                  <p><strong>Total Contact Hours for Course:</strong> {(schedule.lectureInfo.contactHoursForTerm + schedule.labInfo.contactHoursForTerm).toFixed(2)}</p>
+                  <p><strong>Total Scheduled Hours:</strong> {(schedule.lectureInfo.totalScheduledContactHours + schedule.labInfo.totalScheduledContactHours).toFixed(2)}</p>
+                  <p style={{marginTop: '10px'}}><strong>Lecture Time Block Per Day:</strong> {formatMinutes(schedule.lectureInfo.totalBreakMinutesPerDay + (schedule.lectureInfo.contactHoursPerDay * 50))}</p>
+                  <p><strong>Lab Time Block Per Day:</strong> {formatMinutes(schedule.labInfo.totalBreakMinutesPerDay + (schedule.labInfo.contactHoursPerDay * 50))}</p>
                 </div>
-              )}
-              <div className="summary-card">
-                {hasLecture && <InfoCard title="Lecture Summary" info={schedule.lectureInfo} units={request?.lectureUnits} color="var(--lecture-color)" />}
-                {hasLab && <InfoCard title="Lab Summary" info={schedule.labInfo} units={request?.labUnits} color="var(--lab-color)" />}
               </div>
+          )}
+          <div className="summary-card">
+            {hasLecture && <InfoCard title="Lecture Summary" info={schedule.lectureInfo} units={request?.lectureUnits} color="var(--lecture-color)" />}
+            {hasLab && <InfoCard title="Lab Summary" info={schedule.labInfo} units={request?.labUnits} color="var(--lab-color)" />}
           </div>
-      )}
+      </div>
 
       {schedule.warnings.length > 0 && (
         <div className="warning-card">
@@ -230,11 +133,11 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ti
            const blocksForDay = schedule.scheduleBlocks.filter(b => b.dayOfWeek === day);
            return (
              <div key={day} className="day-column">
-               <h4 className="weekly-view-header">{day}</h4>
+               <h4 id="results-header" className="weekly-view-header">{day}</h4>
                <div className="day-column-content">
                  {blocksForDay.length > 0 ? (
                    blocksForDay.map((block: ScheduleBlock, index: number) => (
-                     <div key={index} className="schedule-block" style={{ borderLeft: `5px solid ${block.type === 'lecture' ? 'var(--lecture-color)' : 'var(--lab-color)'}` }}>
+                     <div key={index} className={`schedule-block ${block.type}`}>
                        <p><strong>{formatTime(block.startTime, timeFormat)} - {formatTime(block.endTime, timeFormat)}</strong></p>
                        <p className="schedule-block-description">
                            {block.instructionalMinutes > 0 && `${block.instructionalMinutes} min instruction`}

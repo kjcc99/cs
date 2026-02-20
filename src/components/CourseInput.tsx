@@ -15,14 +15,24 @@ export interface ScheduleRequest {
 interface CourseInputProps {
   onGenerate: (request: ScheduleRequest) => void;
   daySelectionMode: 'simple' | 'advanced';
+  lectureUnits: number;
+  setLectureUnits: (v: number) => void;
+  lectureDays: string[];
+  setLectureDays: (v: string[]) => void;
+  labUnits: number;
+  setLabUnits: (v: number) => void;
+  labDays: string[];
+  setLabDays: (v: string[]) => void;
 }
 
-const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode }) => {
-  const [lectureUnits, setLectureUnits] = useState<number>(0);
-  const [lectureDays, setLectureDays] = useState<string[]>([]);
-  const [labUnits, setLabUnits] = useState<number>(0);
-  const [labDays, setLabDays] = useState<string[]>([]);
-
+const CourseInput: React.FC<CourseInputProps> = ({ 
+    onGenerate, 
+    daySelectionMode,
+    lectureUnits, setLectureUnits,
+    lectureDays, setLectureDays,
+    labUnits, setLabUnits,
+    labDays, setLabDays
+}) => {
   // State for simple mode number of days
   const [simpleLectureDays, setSimpleLectureDays] = useState<number>(1);
   const [simpleLabDays, setSimpleLabDays] = useState<number>(1);
@@ -113,7 +123,7 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
   return (
     <form onSubmit={handleSubmit} className="course-input-panel">
       <div className="course-input-header">
-        <h2>Enter Course Details</h2>
+        <h2>Course Configuration</h2>
         <button type="button" onClick={handleClearAll} className="clear-all-btn">Clear All</button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
@@ -167,7 +177,7 @@ const CourseInput: React.FC<CourseInputProps> = ({ onGenerate, daySelectionMode 
         </div>
       </div>
       <button type="submit" className="generate-button">
-        Schedule Course
+        Schedule Section
       </button>
     </form>
   );

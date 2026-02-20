@@ -64,6 +64,20 @@ const UnitSelector: React.FC<UnitSelectorProps> = ({ label, value, step, min = 0
     }
   };
 
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (inputValue === '0') {
+      setInputValue('');
+    }
+    e.target.select(); // Highlight existing text
+  };
+
+  const handleBlur = () => {
+    if (inputValue === '' || inputValue === '.') {
+      setInputValue('0');
+      onChange(0);
+    }
+  };
+
   return (
     <div className="setting-item">
       <label htmlFor={label}>{label}:</label>
@@ -75,6 +89,8 @@ const UnitSelector: React.FC<UnitSelectorProps> = ({ label, value, step, min = 0
           inputMode="decimal"
           value={inputValue}
           onChange={handleInputChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           className="unit-selector-input"
         />
         <button type="button" onClick={handleIncrement} className="unit-selector-btn" aria-label={`Increase ${label}`}>+</button>

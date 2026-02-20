@@ -59,8 +59,8 @@ export interface RuleAndTermContext {
 }
 
 
-// --- Main Calculation Logic ---
-function calculateTimeMetrics(dailyCH: number): { totalClockMinutes: number, numStandardBreaks: number, manualBreak: number } {
+// --- Main Calculation Logic (Exported for UI consistency) ---
+export function calculateTimeMetrics(dailyCH: number): { totalClockMinutes: number, numStandardBreaks: number, manualBreak: number } {
     const dailyCHDecimal = parseFloat((dailyCH - Math.floor(dailyCH)).toFixed(1));
     const instructionalMinutes = dailyCH * 50;
     const numStandardBreaks = instructionalMinutes > 50 ? Math.floor(instructionalMinutes / 50) - 1 : 0;
@@ -132,7 +132,7 @@ function calculateDailySchedule(
     const idealContactHoursPerDay = contactHoursForTerm / actualMeetingDays;
 
     if (idealContactHoursPerDay < 1.0) {
-        warnings.push(`For the ${type}, this schedule results in ${idealContactHoursPerDay.toFixed(2)} CH/day, which is less than the minimum of 1.0. Please choose fewer days or a shorter session.`);
+        warnings.push(`ERROR: Minimum of 1.0 CH/day required. current: ${idealContactHoursPerDay.toFixed(2)}.`);
         return null;
     }
 
@@ -262,6 +262,34 @@ export function generateSchedule(
     if (a.dayOfWeek !== b.dayOfWeek) {
         return days.indexOf(a.dayOfWeek) - days.indexOf(b.dayOfWeek);
     }
+    // Sort by actual time (handling 24+ virtual hours correctly)
     return a.startTime.localeCompare(b.startTime);
   }), warnings };
+}
+
+// Utility for the UI to get the same "Official" end time without the full schedule context
+export function calculateOfficialEndTime(
+    units: number, 
+    daysCount: number, 
+    startTime: string, 
+    weeks: number,
+    isLab: boolean = false
+): string {
+    if (!units || !daysCount || !weeks) return '';
+    
+    const rate = isLab ? 54 : 18;
+    const contactHoursForTerm = units * rate;
+    
+    // Simple meeting day calculation for the summary label
+    const actualMeetingDays = weeks * daysCount;
+    const idealContactHoursPerDay = contactHoursForTerm / actualMeetingDays;
+    const finalDailyContactHours = Math.round(idealContactHoursPerDay * 10) / 10;
+    
+    const { totalClockMinutes } = calculateTimeMetrics(finalDailyContactHours);
+    
+    const [h, m] = startTime.split(':').map(Number);
+    const endTotal = h * 60 + m + totalClockMinutes;
+    const endH = Math.floor(endTotal / 60); // Allow 24+
+    const endM = Math.round(endTotal % 60);
+    return `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
 }
