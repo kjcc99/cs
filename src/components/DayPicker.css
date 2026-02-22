@@ -1,0 +1,35 @@
+/* src/components/DayPicker.css */
+
+.day-picker-container {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.day-picker-item {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-inset);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  color: var(--text-main);
+}
+
+.day-picker-item:hover {
+  background-color: var(--bg-canvas);
+  border-color: var(--primary);
+}
+
+.day-picker-item.selected {
+  background-color: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}

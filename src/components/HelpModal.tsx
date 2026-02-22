@@ -1,5 +1,7 @@
-// src/components/HelpModal.tsx
 import React, { useState } from 'react';
+import { X } from 'lucide-react';
+
+import './HelpModal.css';
 
 interface FAQItem {
   question: string;
@@ -8,24 +10,28 @@ interface FAQItem {
 
 const faqs: FAQItem[] = [
   {
-    question: "How do I save a section?",
-    answer: "Once you have entered your lecture/lab units and selected your days, click the 'Save Current Section' button in the action bar. It will appear in the sidebar on the left."
+    question: "How do I start scheduling?",
+    answer: "Click the 'Course Configuration' summary at the top to expand the inputs. Use the Course Catalog to pick a course, or enter units manually. The calendar will update automatically as you make changes."
   },
   {
-    question: "What is 'Session Context'?",
-    answer: "This area defines the global parameters for your current section, such as which academic term you are scheduling for and the time you'd like the classes to start."
+    question: "How do I save my work?",
+    answer: "Once you’re happy with a schedule, click the '💾 Save Current Section' button in the top toolbar. It will appear in the sidebar on the left with an intelligent name based on the subject and course number."
   },
   {
-    question: "How can I schedule a separate time for the Lab?",
-    answer: "In the 'Session Context' card, click the lock icon (🔒) to unlink the Lab time. This will allow you to set a different start time specifically for the lab portion of the course."
+    question: "Can I see multiple sections at once?",
+    answer: "Yes! Use the checkboxes on the left side of your saved sections in the sidebar. Selected sections will appear as semi-transparent 'ghost' blocks on the calendar, allowing you to visually detect overlaps and conflicts."
   },
   {
-    question: "Can I export my entire list of saved sections?",
-    answer: "Yes! Use the 'Export All' button in the action bar. This will copy a formatted text summary of every section in your sidebar to your clipboard, perfect for pasting into an email or document."
+    question: "What does the dot next to a section name mean?",
+    answer: "A small dot indicates unsaved changes. It means you have loaded a section and tweaked its configuration, but haven't clicked 'Save' to update the version stored in the sidebar yet."
   },
   {
-    question: "What's the difference between Simple and Advanced days?",
-    answer: "Simple mode automatically selects the first few days of the week based on the number you choose. Advanced mode (enabled in Settings ⚙️) allows you to pick specific days like Tuesday/Thursday or weekends."
+    question: "How do I reorder or rename my sections?",
+    answer: "Hover over a section in the sidebar to see the '✎' icon for renaming. To reorder, use the '⠿' drag handle on the left of the section pill and slide it to a new position."
+  },
+  {
+    question: "How do I export my data?",
+    answer: "To export a single section, use the '📋 Copy' split-button in the toolbar. To export every section in your sidebar at once, click the '📤' icon at the very top of the sidebar header."
   }
 ];
 
@@ -39,16 +45,19 @@ const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content help-modal" onClick={e => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0 }}>Help & FAQ ❓❓</h2>
-          <button onClick={onClose} className="delete-item-btn" style={{ fontSize: '1.5rem' }}>×</button>
+        <div className="modal-header">
+          <h2>Help & FAQ</h2>
+          <button onClick={onClose} className="settings-close-btn" aria-label="Close">
+            <X size={20} />
+          </button>
         </div>
-        
+
+
         <div className="faq-container">
           {faqs.map((faq, index) => (
             <div key={index} className="faq-item">
-              <button 
-                className="faq-question" 
+              <button
+                className="faq-question"
                 onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
               >
                 <span>{faq.question}</span>
@@ -63,8 +72,8 @@ const HelpModal: React.FC<HelpModalProps> = ({ onClose }) => {
           ))}
         </div>
 
-        <div style={{ marginTop: '20px', fontSize: '0.85rem', opacity: 0.7, textAlign: 'center' }}>
-          Need more help? Contact your department scheduler for specific policy questions.
+        <div className="modal-footer">
+          Need more help? Contact the Academic Affairs office.
         </div>
       </div>
     </div>

@@ -1,25 +1,13 @@
 // src/components/Settings.tsx
 import React from 'react';
-import { Lock, Unlock } from 'lucide-react';
-import { AcademicTerm } from '../App';
+import { Sun, Moon, Clock, X } from 'lucide-react';
+import { AcademicTerm } from '../types';
+import { useSettings } from '../hooks/useSettings';
+import './Settings.css';
 
 interface SettingsProps {
   calendar: AcademicTerm[];
-  selectedTerm: AcademicTerm;
-  selectedTermId: string;
-  setSelectedTermId: (id: string) => void;
-  selectedSessionId: string;
-  setSelectedSessionId: (id: string) => void;
-  startTime: string;
-  setStartTime: (time: string) => void;
-  labStartTime: string | null;
-  setLabStartTime: (time: string | null) => void;
-  theme: 'light' | 'dark';
-  setTheme: (theme: 'light' | 'dark') => void;
-  daySelectionMode: 'simple' | 'advanced';
-  setDaySelectionMode: (mode: 'simple' | 'advanced') => void;
-  timeFormat: '12h' | '24h';
-  setTimeFormat: (format: '12h' | '24h') => void;
+  settingsAPI: ReturnType<typeof useSettings>;
   onClose?: () => void;
 }
 
@@ -31,9 +19,9 @@ export const formatHour12 = (hour: number) => {
 };
 
 interface TimeSelectorProps {
-    time: string;
-    onTimeChange: (newTime: string) => void;
-    timeFormat: '12h' | '24h';
+  time: string;
+  onTimeChange: (newTime: string) => void;
+  timeFormat: '12h' | '24h';
 }
 
 export const TimeSelector: React.FC<TimeSelectorProps> = ({ time, onTimeChange, timeFormat }) => {
@@ -48,115 +36,77 @@ export const TimeSelector: React.FC<TimeSelectorProps> = ({ time, onTimeChange, 
   };
 
   return (
-      <div style={{ display: 'flex', gap: '5px' }}>
-          <select value={hour} onChange={handleHourChange} style={{ flex: 1 }}>
-              {Array.from({ length: 15 }, (_, i) => i + 6).map(h => ( // 6 AM to 8 PM
-                  <option key={h} value={h}>
-                      {timeFormat === '12h' ? formatHour12(h) : String(h).padStart(2, '0')}
-                  </option>
-              ))}
-          </select>
-          <span style={{ alignSelf: 'center' }}>:</span>
-          <select value={minute} onChange={handleMinuteChange} style={{ flex: 1 }}>
-              {minuteOptions.map(m => (
-                  <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
-              ))}
-          </select>
-      </div>
+    <div className="time-selector-container">
+      <select value={hour} onChange={handleHourChange}>
+        {Array.from({ length: 15 }, (_, i) => i + 6).map(h => ( // 6 AM to 8 PM
+          <option key={h} value={h}>
+            {timeFormat === '12h' ? formatHour12(h) : String(h).padStart(2, '0')}
+          </option>
+        ))}
+      </select>
+      <span className="time-separator">:</span>
+      <select value={minute} onChange={handleMinuteChange}>
+        {minuteOptions.map(m => (
+          <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
+        ))}
+      </select>
+    </div>
   );
 };
 
-const Settings: React.FC<SettingsProps> = ({ 
-    calendar, selectedTerm, selectedTermId, setSelectedTermId,
-    selectedSessionId, setSelectedSessionId,
-    startTime, setStartTime, 
-    labStartTime, setLabStartTime,
-    theme, setTheme, 
-    daySelectionMode, setDaySelectionMode,
-    timeFormat, setTimeFormat,
-    onClose
-}) => {
-  
-  const handleLockToggle = () => {
-    setLabStartTime(labStartTime === null ? '13:00' : null);
-  };
+const Settings: React.FC<SettingsProps> = ({ settingsAPI, onClose }) => {
+  const {
+    theme, setTheme, timeFormat, setTimeFormat,
+  } = settingsAPI;
 
-    return (
+  return (
+    <div className="settings-panel">
+      <div className="settings-header">
+        <h2>App Settings</h2>
+        <button onClick={onClose} className="settings-close-btn" aria-label="Close">
+          <X size={20} />
+        </button>
+      </div>
 
-      <div className="settings-panel">
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-
-          <h2 style={{ margin: 0 }}>Settings</h2>
-
-          <button onClick={onClose} className="delete-item-btn" style={{ fontSize: '1.5rem' }}>×</button>
-
+      <div className="settings-content">
+        <div className="setting-group">
+          <label className="setting-label">Appearance</label>
+          <div className="segmented-control">
+            <button
+              className={theme === 'light' ? 'active' : ''}
+              onClick={() => setTheme('light')}
+            >
+              <Sun size={14} /> Light
+            </button>
+            <button
+              className={theme === 'dark' ? 'active' : ''}
+              onClick={() => setTheme('dark')}
+            >
+              <Moon size={14} /> Dark
+            </button>
+          </div>
         </div>
 
-  
-
-        <div className="setting-item-row" style={{ flexDirection: 'column', gap: '20px', alignItems: 'flex-start' }}>
-
-            <div className="setting-item" style={{ width: '100%', display: 'flex', justifyContent: 'space-between' }}>
-
-              <label>Advanced Day Picker</label>
-
-                            <label className="switch">
-
-                                <input type="checkbox" checked={daySelectionMode === 'advanced'} onChange={(e) => setDaySelectionMode(e.target.checked ? 'advanced' : 'simple')} />
-
-                                <span className="slider"></span>
-
-                            </label>
-
-              
-
-            </div>
-
-            <div className="setting-item" style={{ width: '100%', display: 'flex', justifyContent: 'space-between' }}>
-
-              <label>Dark Mode</label>
-
-                            <label className="switch">
-
-                                <input type="checkbox" checked={theme === 'dark'} onChange={() => setTheme(theme === 'light' ? 'dark' : 'light')} />
-
-                                <span className="slider"></span>
-
-                            </label>
-
-              
-
-            </div>
-
-            <div className="setting-item" style={{ width: '100%', display: 'flex', justifyContent: 'space-between' }}>
-
-              <label>Use 24-Hour Time</label>
-
-                            <label className="switch">
-
-                                <input type="checkbox" checked={timeFormat === '24h'} onChange={(e) => setTimeFormat(e.target.checked ? '24h' : '12h')} />
-
-                                <span className="slider"></span>
-
-                            </label>
-
-              
-
-            </div>
-
-                </div>
-
-        
-
-              </div>
-
-            );
-
-          }
-
-        
-
-  ;
+        <div className="setting-group">
+          <label className="setting-label">Time Display</label>
+          <div className="segmented-control">
+            <button
+              className={timeFormat === '12h' ? 'active' : ''}
+              onClick={() => setTimeFormat('12h')}
+            >
+              <Clock size={14} /> 12-Hour
+            </button>
+            <button
+              className={timeFormat === '24h' ? 'active' : ''}
+              onClick={() => setTimeFormat('24h')}
+            >
+              <Clock size={14} /> 24-Hour
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default Settings;

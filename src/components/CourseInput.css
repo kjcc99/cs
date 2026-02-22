@@ -1,0 +1,43 @@
+/* src/components/CourseInput.css */
+
+.course-input-panel {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+}
+
+.lecture-panel, .lab-panel {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 4px 12px;
+  border-radius: var(--radius-lg);
+  transition: background-color 0.2s;
+  flex: 0 1 auto; /* Don't force them to fill the whole space */
+}
+
+.lecture-panel { background-color: rgba(30, 58, 138, 0.06); }
+.lab-panel { background-color: rgba(6, 78, 59, 0.06); }
+
+.lecture-panel h4, .lab-panel h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-main);
+  min-width: 35px;
+}
+
+/* Custom Unit Selector inside panels */
+.lecture-panel .unit-selector-container,
+.lab-panel .unit-selector-container {
+  margin-bottom: 0; /* Override any global margin */
+}
+
+/* Day patterns/picker container */
+.lecture-panel > div, .lab-panel > div {
+  display: flex;
+  align-items: center;
+}

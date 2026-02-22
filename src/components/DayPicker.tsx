@@ -1,5 +1,6 @@
 // src/components/DayPicker.tsx
 import React from 'react';
+import './DayPicker.css';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 

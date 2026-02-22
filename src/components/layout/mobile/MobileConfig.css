@@ -1,0 +1,165 @@
+.mobile-config {
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 6px var(--shadow-color);
+}
+
+.mc-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+    background-color: var(--bg-well);
+}
+
+.mc-summary-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    flex: 1;
+}
+
+.mc-edit-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--primary-bg);
+    color: var(--primary-color);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.mc-edit {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 12px;
+}
+
+.mc-header h3 {
+    margin: 0;
+    color: var(--text-main);
+    font-size: 1.1rem;
+}
+
+.mc-done-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    color: var(--primary-color);
+    border: none;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.mc-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mc-section label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.mc-row {
+    display: flex;
+    gap: 12px;
+}
+
+.mc-row select {
+    flex: 1;
+    padding: 12px;
+    height: 48px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-well);
+    color: var(--text-main);
+}
+
+.mc-col {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.mc-micro {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
+.mc-lock-btn {
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+
+
+.mc-units-section {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    background: var(--bg-well);
+}
+
+/* Override the normal desktop layout for the CourseInput panel so it flows well on mobile */
+.mc-units-section .course-input-panel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+}
+
+.mc-units-section .config-divider {
+    display: none;
+    /* Hide the vertical divider since they are stacked vertically now */
+}
+
+/* Allow the contents of each panel (Units vs Days) to wrap onto a new line if they get too wide */
+.mc-units-section .lecture-panel,
+.mc-units-section .lab-panel {
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+/* Ensure the titles (Lec / Lab) stick with the inputs nicely */
+.mc-units-section .lecture-panel h4,
+.mc-units-section .lab-panel h4 {
+    margin-top: 6px;
+}
+
+/* Force the Days selector sub-group onto its own row underneath the Units selector */
+.mc-units-section .lecture-panel .time-sub-group:last-child,
+.mc-units-section .lab-panel .time-sub-group:last-child {
+    flex-basis: 100%;
+}
+
+/* Fix time selector height and cutoff issues in mobile */
+.mc-section .time-selector-container select {
+    height: 48px;
+    padding: 0 10px;
+    font-size: 1rem;
+    line-height: normal;
+}

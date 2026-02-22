@@ -1,30 +1,40 @@
 // src/components/SidebarItem.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Reorder, useDragControls } from 'framer-motion';
-import { Edit2, Trash2 } from 'lucide-react';
-import { SavedSection } from '../hooks/useSections';
+import { Edit2, Trash2, Circle, Check } from 'lucide-react';
+import { useToast } from './Toast';
+import { SavedSection } from '../types';
+import './Sidebar.css';
 
 interface SidebarItemProps {
   section: SavedSection;
   isActive: boolean;
+  isModified: boolean;
+  isOverlaid: boolean;
+  onToggleOverlay: () => void;
   isCollapsed: boolean;
-  onLoad: (section: SavedSection) => void;
-  onDelete: (id: string) => void;
-  onRename: (id: string, newName: string) => void;
-  lecStart: string;
-  lecEnd: string;
-  labStart: string;
-  labEnd: string;
+  onLoad: () => void;
+  onDelete: () => void;
+  onRename: (newName: string) => void;
+  formattedLecTime: string | null;
+  formattedLabTime: string | null;
 }
 
-const SidebarItem: React.FC<SidebarItemProps> = ({ 
-  section, isActive, isCollapsed, onLoad, onDelete, onRename, 
-  lecStart, lecEnd, labStart, labEnd 
+const SidebarItem: React.FC<SidebarItemProps> = ({
+  section, isActive, isModified, isOverlaid, onToggleOverlay,
+  isCollapsed, onLoad, onDelete, onRename,
+  formattedLecTime, formattedLabTime
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const [editValue, setEditValue] = useState(section.name);
+  const { showToast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const dragControls = useDragControls();
+
+  const handleMouseLeave = () => {
+    setIsConfirmingDelete(false);
+  };
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -35,7 +45,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
 
   const handleSave = () => {
     if (editValue.trim() && editValue !== section.name) {
-      onRename(section.id, editValue.trim());
+      onRename(editValue.trim());
+      showToast("Section renamed");
     }
     setIsEditing(false);
   };
@@ -48,27 +59,53 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
     }
   };
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isConfirmingDelete) {
+      onDelete();
+    } else {
+      setIsConfirmingDelete(true);
+    }
+  };
+
+  const tooltipContent = `${section.name}
+${formattedLecTime ? `Lec: ${section.lectureDays.join('')} ${formattedLecTime}` : ''}
+${formattedLabTime ? `Lab: ${section.labDays.join('')} ${formattedLabTime}` : ''}`;
+
   return (
     <Reorder.Item
       value={section}
       id={section.id}
       dragListener={isCollapsed}
       dragControls={dragControls}
-      className={`sidebar-item ${isActive ? 'active' : ''}`}
-      onClick={() => !isEditing && onLoad(section)}
-      layout="position" // Only animate position changes, ignore internal content changes
+      className={`sidebar-item ${isActive ? 'active' : ''} ${isModified ? 'modified' : ''}`}
+      onClick={() => !isEditing && onLoad()}
+      onMouseLeave={handleMouseLeave}
+      layout="position"
       whileDrag={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0,0,0,0.2)" }}
       transition={{ duration: 0.2 }}
+      title={isCollapsed ? tooltipContent : ''}
     >
-      {/* Drag Handle - Only visible in expanded mode */}
-      {!isEditing && !isCollapsed && (
-        <div 
-          className="drag-handle" 
-          onPointerDown={(e) => dragControls.start(e)}
-        >
-          ⠿
-        </div>
-      )}
+      <div className="sidebar-item-controls">
+        {!isEditing && (
+          <div
+            className={`sidebar-checkbox ${isOverlaid ? 'checked' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onToggleOverlay(); }}
+            title="Include in multi-view"
+          >
+            {isOverlaid && <Check size={10} strokeWidth={4} />}
+          </div>
+        )}
+
+        {!isEditing && !isCollapsed && (
+          <div
+            className="drag-handle"
+            onPointerDown={(e) => dragControls.start(e)}
+          >
+            ⠿
+          </div>
+        )}
+      </div>
 
       <div className="sidebar-item-info">
         <div className="sidebar-item-top">
@@ -86,10 +123,11 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
             <div className="name-wrapper">
               <span className="section-name">
                 {isCollapsed ? section.name.replace('Section', 'Sec') : section.name}
+                {isModified && <Circle size={6} fill="currentColor" style={{ marginLeft: '6px', opacity: 0.8 }} />}
               </span>
               {!isCollapsed && (
-                <button 
-                  className="rename-btn" 
+                <button
+                  className="rename-btn"
                   onClick={(e) => { e.stopPropagation(); setIsEditing(true); }}
                   title="Rename"
                 >
@@ -98,7 +136,7 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
               )}
             </div>
           )}
-          
+
           {!isCollapsed && !isEditing && (
             <span className="section-units">
               {(section.lectureUnits + section.labUnits).toFixed(1)}u
@@ -110,12 +148,12 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
           <div className="section-meta">
             {section.lectureUnits > 0 && (
               <div className="meta-row">
-                <strong>Lec:</strong> {section.lectureDays.join('')} {lecStart}-{lecEnd}
+                <strong>Lec:</strong> {section.lectureDays.join('')} {formattedLecTime}
               </div>
             )}
             {section.labUnits > 0 && (
               <div className="meta-row">
-                <strong>Lab:</strong> {section.labDays.join('')} {labStart}-{labEnd}
+                <strong>Lab:</strong> {section.labDays.join('')} {formattedLabTime}
               </div>
             )}
           </div>
@@ -123,11 +161,12 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
       </div>
 
       {!isEditing && (
-        <button 
-          className="delete-item-btn" 
-          onClick={(e) => { e.stopPropagation(); onDelete(section.id); }}
+        <button
+          className={`delete-item-btn ${isConfirmingDelete ? 'confirming' : ''}`}
+          onClick={handleDeleteClick}
+          title={isConfirmingDelete ? "Confirm Delete" : "Delete Section"}
         >
-          <Trash2 size={16} />
+          {isConfirmingDelete ? <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--danger-color)' }}>CONFIRM?</span> : <Trash2 size={16} />}
         </button>
       )}
     </Reorder.Item>

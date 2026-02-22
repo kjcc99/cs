@@ -1,5 +1,6 @@
 // src/components/UnitSelector.tsx
 import React, { useState, useEffect } from 'react';
+import './UnitSelector.css';
 
 interface UnitSelectorProps {
   label: string;
@@ -8,9 +9,12 @@ interface UnitSelectorProps {
   min?: number;
   max?: number;
   onChange: (newValue: number) => void;
+  disabled?: boolean;
 }
 
-const UnitSelector: React.FC<UnitSelectorProps> = ({ label, value, step, min = 0, max = 10, onChange }) => {
+const UnitSelector: React.FC<UnitSelectorProps> = ({ 
+  label, value, step, min = 0, max = 10, onChange, disabled = false 
+}) => {
   const [inputValue, setInputValue] = useState(String(value));
 
   // This effect handles debouncing the text input
@@ -46,11 +50,13 @@ const UnitSelector: React.FC<UnitSelectorProps> = ({ label, value, step, min = 0
   }, [value]);
 
   const handleDecrement = () => {
+    if (disabled) return;
     const newValue = Math.max(min, value - step);
     onChange(newValue);
   };
 
   const handleIncrement = () => {
+    if (disabled) return;
     const newValue = Math.min(max, value + step);
     onChange(newValue);
   };
@@ -79,22 +85,37 @@ const UnitSelector: React.FC<UnitSelectorProps> = ({ label, value, step, min = 0
   };
 
   return (
-    <div className="setting-item">
-      <label htmlFor={label}>{label}:</label>
-      <div className="unit-selector-container">
-        <button type="button" onClick={handleDecrement} className="unit-selector-btn" aria-label={`Decrease ${label}`}>-</button>
-        <input
-          id={label}
-          type="text"
-          inputMode="decimal"
-          value={inputValue}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          className="unit-selector-input"
-        />
-        <button type="button" onClick={handleIncrement} className="unit-selector-btn" aria-label={`Increase ${label}`}>+</button>
-      </div>
+    <div className={`unit-selector-container ${disabled ? 'disabled' : ''}`}>
+      <button 
+        type="button" 
+        onClick={handleDecrement} 
+        className="unit-selector-btn" 
+        aria-label={`Decrease ${label}`}
+        disabled={disabled}
+      >
+        -
+      </button>
+      <input
+        id={label}
+        type="text"
+        inputMode="decimal"
+        value={inputValue}
+        onChange={handleInputChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        className="unit-selector-input"
+        disabled={disabled}
+        readOnly={disabled}
+      />
+      <button 
+        type="button" 
+        onClick={handleIncrement} 
+        className="unit-selector-btn" 
+        aria-label={`Increase ${label}`}
+        disabled={disabled}
+      >
+        +
+      </button>
     </div>
   );
 };

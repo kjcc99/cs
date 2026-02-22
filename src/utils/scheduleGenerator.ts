@@ -1,62 +1,12 @@
 // src/utils/scheduleGenerator.ts
 import { ScheduleRequest } from '../components/CourseInput';
-import { AcademicTerm, TermSession } from '../App';
-import { ContactHourCalculationRules, AttendanceAccountingRules } from './ruleParser';
+import { AcademicTerm, TermSession, ContactHourCalculationRules, AttendanceAccountingRules } from '../types';
 
-// --- Date Helpers ---
-const addDays = (date: Date, days: number): Date => {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-};
 
-const addWeeks = (date: Date, weeks: number): Date => {
-  // To span exactly X weeks, we add (X * 7) - 1 days.
-  // e.g. Start Monday, add 6 days = Sunday (1 week span)
-  return addDays(date, (weeks * 7) - 1);
-};
+import { addDays, addWeeks, getDateString } from './dateUtils';
 
-// Timezone-safe YYYY-MM-DD string from local Date object
-const getDateString = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-};
+import { ScheduleBlock, ScheduleInfo, GeneratedSchedule, RuleAndTermContext } from '../types';
 
-// --- Interfaces ---
-export interface ScheduleBlock {
-  dayOfWeek: string;
-  type: 'lecture' | 'lab';
-  startTime: string;
-  endTime: string;
-  durationMinutes: number;
-  instructionalMinutes: number;
-  breakMinutes: number;
-}
-
-export interface ScheduleInfo {
-    contactHoursForTerm: number;
-    weeklyContactHours: number;
-    totalScheduledContactHours: number;
-    contactHoursPerDay: number;
-    totalBreakMinutesPerDay: number;
-    actualMeetingDays: number;
-}
-
-export interface GeneratedSchedule {
-  lectureInfo: ScheduleInfo;
-  labInfo: ScheduleInfo;
-  scheduleBlocks: ScheduleBlock[];
-  warnings: string[];
-}
-
-export interface RuleAndTermContext {
-    contactHourRules: ContactHourCalculationRules;
-    attendanceRules: AttendanceAccountingRules;
-    term: AcademicTerm;
-    session: TermSession;
-}
 
 
 // --- Main Calculation Logic (Exported for UI consistency) ---
@@ -72,8 +22,8 @@ export function calculateTimeMetrics(dailyCH: number): { totalClockMinutes: numb
 }
 
 function calculateDailySchedule(
-    units: number, 
-    daysOfWeek: string[], 
+    units: number,
+    daysOfWeek: string[],
     type: 'lecture' | 'lab',
     context: RuleAndTermContext,
     warnings: string[]
@@ -98,7 +48,7 @@ function calculateDailySchedule(
     } else if (session.method === 'LATE_START') {
         sessionStartDate = addDays(addWeeks(termEndDate, -weeks), 1);
     }
-    
+
     // 2. Count the actual number of meeting days
     let actualMeetingDays = 0;
     const dayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -112,7 +62,7 @@ function calculateDailySchedule(
                 actualMeetingDays++;
             }
         }
-    } else { 
+    } else {
         actualMeetingDays = weeks * daysOfWeek.length;
     }
 
@@ -121,9 +71,9 @@ function calculateDailySchedule(
     const contactHoursForTerm = units * rate;
 
     if (contactHoursForTerm === 0) {
-        return { dailyBlocks: [], info: { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 }};
+        return { dailyBlocks: [], info: { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 } };
     }
-    
+
     if (actualMeetingDays === 0 && units > 0) {
         warnings.push(`The selected days for the ${type} do not occur in the chosen session.`);
         return null;
@@ -137,7 +87,7 @@ function calculateDailySchedule(
     }
 
     const finalDailyContactHours = Math.round(idealContactHoursPerDay * 10) / 10;
-    
+
     if (Math.abs(finalDailyContactHours - idealContactHoursPerDay) > 0.01) {
         warnings.push(`Ideal daily time of ${idealContactHoursPerDay.toFixed(2)} CH for the ${type} was rounded to ${finalDailyContactHours.toFixed(1)} CH/day.`);
     }
@@ -170,123 +120,125 @@ function calculateDailySchedule(
         dailyBlocks[dailyBlocks.length - 1].breakMinutes += manualBreak;
         dailyBlocks[dailyBlocks.length - 1].durationMinutes += manualBreak;
     }
-    
-    const info: ScheduleInfo = { 
-        contactHoursForTerm, 
+
+    const info: ScheduleInfo = {
+        contactHoursForTerm,
         weeklyContactHours: contactHoursForTerm / weeks,
         totalScheduledContactHours,
-        contactHoursPerDay: finalDailyContactHours, 
+        contactHoursPerDay: finalDailyContactHours,
         totalBreakMinutesPerDay,
         actualMeetingDays
     };
-    
+
     return { dailyBlocks, info };
 }
 
 
 // --- MAIN GENERATOR ---
 export function generateSchedule(
-  request: ScheduleRequest,
-  context: RuleAndTermContext,
-  startTime: string,
-  labStartTime: string | null
+    request: ScheduleRequest,
+    context: RuleAndTermContext,
+    startTime: string,
+    labStartTime: string | null
 ): GeneratedSchedule {
-  const warnings: string[] = [];
-  const emptyInfo: ScheduleInfo = { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 };
-  const emptySchedule: GeneratedSchedule = { lectureInfo: emptyInfo, labInfo: emptyInfo, scheduleBlocks: [], warnings };
+    const warnings: string[] = [];
+    const emptyInfo: ScheduleInfo = { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 };
+    const emptySchedule: GeneratedSchedule = { lectureInfo: emptyInfo, labInfo: emptyInfo, scheduleBlocks: [], warnings };
 
-  if (request.lectureUnits === 0 && request.labUnits === 0) return emptySchedule;
+    if (request.lectureUnits === 0 && request.labUnits === 0) return emptySchedule;
 
-  const lectureResult = calculateDailySchedule(request.lectureUnits, request.lectureDays, 'lecture', context, warnings);
-  const labResult = calculateDailySchedule(request.labUnits, request.labDays, 'lab', context, warnings);
+    const lectureResult = calculateDailySchedule(request.lectureUnits, request.lectureDays, 'lecture', context, warnings);
+    const labResult = calculateDailySchedule(request.labUnits, request.labDays, 'lab', context, warnings);
 
-  if (!lectureResult || !labResult) {
-      return { ...emptySchedule, lectureInfo: lectureResult?.info || emptyInfo, labInfo: labResult?.info || emptyInfo, warnings };
-  }
-  
-  const { dailyBlocks: lectureDaily, info: lectureInfo } = lectureResult;
-  const { dailyBlocks: labDaily, info: labInfo } = labResult;
-  
-  const finalBlocks: ScheduleBlock[] = [];
-  const lecStartHour = parseInt(startTime.split(':')[0]);
-  const lecStartMinute = parseInt(startTime.split(':')[1]);
-  const initialLecTime = lecStartHour * 60 + lecStartMinute;
-  
-  const dailyEndTimes: { [key: string]: number } = {};
+    if (!lectureResult || !labResult) {
+        return { ...emptySchedule, lectureInfo: lectureResult?.info || emptyInfo, labInfo: labResult?.info || emptyInfo, warnings };
+    }
 
-  // Process lecture days
-  for (const day of request.lectureDays) {
-    let currentTime = initialLecTime;
-    lectureDaily.forEach(block => {
-        const endTime = currentTime + block.durationMinutes;
-        finalBlocks.push({
-            ...block,
-            dayOfWeek: day,
-            startTime: `${Math.floor(currentTime / 60).toString().padStart(2, '0')}:${(currentTime % 60).toString().padStart(2, '0')}`,
-            endTime: `${Math.floor(endTime / 60).toString().padStart(2, '0')}:${(endTime % 60).toString().padStart(2, '0')}`,
+    const { dailyBlocks: lectureDaily, info: lectureInfo } = lectureResult;
+    const { dailyBlocks: labDaily, info: labInfo } = labResult;
+
+    const finalBlocks: ScheduleBlock[] = [];
+    const lecStartHour = parseInt(startTime.split(':')[0]);
+    const lecStartMinute = parseInt(startTime.split(':')[1]);
+    const initialLecTime = lecStartHour * 60 + lecStartMinute;
+
+    const dailyEndTimes: { [key: string]: number } = {};
+
+    // Process lecture days
+    for (const day of request.lectureDays) {
+        let currentTime = initialLecTime;
+        lectureDaily.forEach(block => {
+            const endTime = currentTime + block.durationMinutes;
+            finalBlocks.push({
+                ...block,
+                dayOfWeek: day,
+                startTime: `${Math.floor(currentTime / 60).toString().padStart(2, '0')}:${(currentTime % 60).toString().padStart(2, '0')}`,
+                endTime: `${Math.floor(endTime / 60).toString().padStart(2, '0')}:${(endTime % 60).toString().padStart(2, '0')}`,
+            });
+            currentTime = endTime;
         });
-        currentTime = endTime;
-    });
-    dailyEndTimes[day] = currentTime;
-  }
-
-  // Process lab days
-  for (const day of request.labDays) {
-    let initialLabTime = initialLecTime;
-    if (labStartTime) {
-        const labStartHour = parseInt(labStartTime.split(':')[0]);
-        const labStartMinute = parseInt(labStartTime.split(':')[1]);
-        initialLabTime = labStartHour * 60 + labStartMinute;
+        dailyEndTimes[day] = currentTime;
     }
-    
-    let currentTime = dailyEndTimes[day] ? dailyEndTimes[day] : initialLabTime;
 
-    if (dailyEndTimes[day] && request.lectureUnits > 0) {
-        currentTime += 10; // 10 min passing time
-    }
-    
-    labDaily.forEach(block => {
-        const endTime = currentTime + block.durationMinutes;
-        finalBlocks.push({
-            ...block,
-            dayOfWeek: day,
-            startTime: `${Math.floor(currentTime / 60).toString().padStart(2, '0')}:${(currentTime % 60).toString().padStart(2, '0')}`,
-            endTime: `${Math.floor(endTime / 60).toString().padStart(2, '0')}:${(endTime % 60).toString().padStart(2, '0')}`,
+    // Process lab days
+    for (const day of request.labDays) {
+        let initialLabTime = initialLecTime;
+        if (labStartTime) {
+            const labStartHour = parseInt(labStartTime.split(':')[0]);
+            const labStartMinute = parseInt(labStartTime.split(':')[1]);
+            initialLabTime = labStartHour * 60 + labStartMinute;
+        }
+
+        let currentTime = dailyEndTimes[day] ? dailyEndTimes[day] : initialLabTime;
+
+        if (dailyEndTimes[day] && request.lectureUnits > 0) {
+            currentTime += 10; // 10 min passing time
+        }
+
+        labDaily.forEach(block => {
+            const endTime = currentTime + block.durationMinutes;
+            finalBlocks.push({
+                ...block,
+                dayOfWeek: day,
+                startTime: `${Math.floor(currentTime / 60).toString().padStart(2, '0')}:${(currentTime % 60).toString().padStart(2, '0')}`,
+                endTime: `${Math.floor(endTime / 60).toString().padStart(2, '0')}:${(endTime % 60).toString().padStart(2, '0')}`,
+            });
+            currentTime = endTime;
         });
-        currentTime = endTime;
-    });
-  }
-
-  return { lectureInfo, labInfo, scheduleBlocks: finalBlocks.sort((a, b) => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    if (a.dayOfWeek !== b.dayOfWeek) {
-        return days.indexOf(a.dayOfWeek) - days.indexOf(b.dayOfWeek);
     }
-    // Sort by actual time (handling 24+ virtual hours correctly)
-    return a.startTime.localeCompare(b.startTime);
-  }), warnings };
+
+    return {
+        lectureInfo, labInfo, scheduleBlocks: finalBlocks.sort((a, b) => {
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            if (a.dayOfWeek !== b.dayOfWeek) {
+                return days.indexOf(a.dayOfWeek) - days.indexOf(b.dayOfWeek);
+            }
+            // Sort by actual time (handling 24+ virtual hours correctly)
+            return a.startTime.localeCompare(b.startTime);
+        }), warnings
+    };
 }
 
 // Utility for the UI to get the same "Official" end time without the full schedule context
 export function calculateOfficialEndTime(
-    units: number, 
-    daysCount: number, 
-    startTime: string, 
+    units: number,
+    daysCount: number,
+    startTime: string,
     weeks: number,
     isLab: boolean = false
 ): string {
     if (!units || !daysCount || !weeks) return '';
-    
+
     const rate = isLab ? 54 : 18;
     const contactHoursForTerm = units * rate;
-    
+
     // Simple meeting day calculation for the summary label
     const actualMeetingDays = weeks * daysCount;
     const idealContactHoursPerDay = contactHoursForTerm / actualMeetingDays;
     const finalDailyContactHours = Math.round(idealContactHoursPerDay * 10) / 10;
-    
+
     const { totalClockMinutes } = calculateTimeMetrics(finalDailyContactHours);
-    
+
     const [h, m] = startTime.split(':').map(Number);
     const endTotal = h * 60 + m + totalClockMinutes;
     const endH = Math.floor(endTotal / 60); // Allow 24+

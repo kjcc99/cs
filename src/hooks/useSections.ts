@@ -1,21 +1,10 @@
 // src/hooks/useSections.ts
 import { useState, useEffect, useCallback } from 'react';
+import { SavedSection } from '../types';
 
 const SAVED_SECTIONS_KEY = 'cs-app-saved-sections';
 
-export interface SavedSection {
-  id: string;
-  name: string;
-  lectureUnits: number;
-  lectureDays: string[];
-  labUnits: number;
-  labDays: string[];
-  startTime: string;
-  labStartTime: string | null;
-  selectedTermId: string;
-  selectedSessionId: string;
-  timestamp: number;
-}
+
 
 export function useSections() {
   const [savedSections, setSavedSections] = useState<SavedSection[]>(() => {
@@ -29,13 +18,13 @@ export function useSections() {
     localStorage.setItem(SAVED_SECTIONS_KEY, JSON.stringify(savedSections));
   }, [savedSections]);
 
-  const saveSection = useCallback((data: Omit<SavedSection, 'id' | 'name' | 'timestamp'>) => {
+  const saveSection = useCallback((data: Omit<SavedSection, 'id' | 'name' | 'timestamp'> & { name?: string }) => {
     const newSection: SavedSection = {
       ...data,
       id: currentSectionId || Date.now().toString(),
-      name: currentSectionId 
+      name: data.name || (currentSectionId
         ? (savedSections.find(s => s.id === currentSectionId)?.name || 'New Section')
-        : `Section ${savedSections.length + 1}`,
+        : `Section ${savedSections.length + 1}`),
       timestamp: Date.now()
     };
 

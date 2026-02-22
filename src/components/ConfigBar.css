@@ -1,0 +1,136 @@
+/* src/components/ConfigBar.css */
+
+.config-bar {
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 30;
+  box-shadow: var(--shadow-sm);
+}
+
+.config-summary-row {
+  padding: 8px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.config-summary-row:hover {
+  background-color: var(--bg-inset);
+}
+
+.summary-sentence {
+  font-size: 0.9rem;
+  color: var(--text-main);
+  opacity: 0.9;
+}
+
+.edit-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--bg-inset);
+  padding: 4px 12px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Container for the 2-row layout */
+.config-edit-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.config-edit-row {
+  padding: 12px 32px 8px 32px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end; /* Align all inputs to baseline */
+  gap: 24px;
+}
+
+.config-edit-row.secondary-row {
+  padding-top: 4px;
+  padding-bottom: 12px;
+}
+
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.config-controls {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.config-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.config-divider {
+  width: 1px;
+  height: 24px;
+  background-color: var(--border-color);
+  align-self: flex-end;
+}
+
+.time-sub-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.micro-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+/* Color coding for micro-labels */
+.config-controls .time-sub-group:nth-child(1) .micro-label { color: var(--primary); }
+.config-controls .time-sub-group:nth-child(2) .micro-label { color: var(--lab-color); }
+
+/* Common heights for all inputs in the bar */
+.config-bar select, 
+.picker-trigger {
+  height: 32px;
+  box-sizing: border-box;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+}
+
+.done-btn {
+  margin-left: auto; /* Push to far right */
+  align-self: flex-end;
+}
+
+.icon-btn-xs {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.icon-btn-xs:hover {
+  color: var(--primary);
+}

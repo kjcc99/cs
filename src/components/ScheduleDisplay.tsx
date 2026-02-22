@@ -1,17 +1,30 @@
 // src/components/ScheduleDisplay.tsx
-import React, { useState } from 'react';
-import { GeneratedSchedule, ScheduleBlock } from '../utils/scheduleGenerator';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GeneratedSchedule, ScheduleBlock } from '../types';
 import { ScheduleRequest } from './CourseInput';
-import { formatTime } from '../utils/timeUtils';
 
-interface ScheduleDisplayProps {
-  schedule: GeneratedSchedule | null;
-  request: ScheduleRequest | null;
-  timeFormat: '12h' | '24h';
-  resultsHeadingRef: React.RefObject<HTMLHeadingElement | null>;
+import { formatTime } from '../utils/timeUtils';
+import './ScheduleDisplay.css';
+
+export interface OverlaidSchedule {
+    id: string;
+    name: string;
+    schedule: GeneratedSchedule;
+}
+
+export interface ScheduleDisplayProps {
+    schedule: GeneratedSchedule | null;
+    request: ScheduleRequest | null;
+    overlaidSchedules?: OverlaidSchedule[];
+    timeFormat: '12h' | '24h';
+    resultsHeadingRef: React.RefObject<HTMLHeadingElement | null>;
 }
 
 const FULL_DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const PIXELS_PER_MINUTE = 1.2;
+const START_HOUR = 6;
+const END_HOUR = 24;
 
 const formatMinutes = (totalMinutes: number) => {
     if (!totalMinutes || totalMinutes === 0) return '0m';
@@ -23,11 +36,11 @@ const formatMinutes = (totalMinutes: number) => {
     return result.trim();
 };
 
-const InfoCard: React.FC<{title: string, info: any, units: number | undefined, color: string}> = ({ title, info, units, color }) => (
+const InfoCard: React.FC<{ title: string, info: any, units: number | undefined, color: string }> = ({ title, info, units, color }) => (
     <div className="summary-details-card">
         <h4>
-            <span className="summary-dot" style={{backgroundColor: color}}></span>
-            <span style={{ verticalAlign: 'middle' }}>{title}</span>
+            <span className="summary-dot" style={{ backgroundColor: color }}></span>
+            <span className="summary-title">{title}</span>
         </h4>
         <div className="summary-details">
             {units !== undefined && units > 0 && <p><strong>Selected Units:</strong> {units}</p>}
@@ -42,120 +55,252 @@ const InfoCard: React.FC<{title: string, info: any, units: number | undefined, c
 
 const MinimalSummary: React.FC<{ blocks: ScheduleBlock[], type: 'lecture' | 'lab', timeFormat: '12h' | '24h' }> = ({ blocks, type, timeFormat }) => {
     if (blocks.length === 0) return null;
-    const days = Array.from(new Set(blocks.map(b => b.dayOfWeek))).sort((a,b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b)).join('/');
+    const days = Array.from(new Set(blocks.map(b => b.dayOfWeek))).sort((a, b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b)).join('/');
     const startTimes = blocks.map(b => b.startTime);
     const endTimes = blocks.map(b => b.endTime);
     const startTime = startTimes.reduce((min, t) => t < min ? t : min, startTimes[0]);
     const endTime = endTimes.reduce((max, t) => t > max ? t : max, endTimes[0]);
     return (
         <p className="minimal-summary-item">
-            <span className="summary-dot" style={{backgroundColor: `var(--${type}-color)`}}></span>
+            <span className="summary-dot" style={{ backgroundColor: `var(--${type}-color)` }}></span>
             <strong>{type.charAt(0).toUpperCase() + type.slice(1)}:</strong> {days} ({formatTime(startTime, timeFormat)} - {formatTime(endTime, timeFormat)})
         </p>
     )
 };
 
-const ScheduleDisplaySkeleton: React.FC = () => (
-  <div className="schedule-display-container skeleton">
-    <div className="minimal-summary-container" style={{ opacity: 0.5 }}>
-      <div className="skeleton-line" style={{ width: '60%', height: '24px' }}></div>
-    </div>
-    <div className="weekly-grid">
-      {FULL_DAYS_OF_WEEK.map(day => (
-        <div key={day} className="day-column skeleton">
-          <h4 className="weekly-view-header" style={{ opacity: 0.3 }}>{day}</h4>
-          <div className="day-column-content">
-            <div className="skeleton-block"></div>
-          </div>
+const ScheduleDisplayEmpty: React.FC = () => (
+    <div className="empty-hero-card">
+        <div className="hero-icon-well">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="hero-svg"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
         </div>
-      ))}
+        <h2>Ready to schedule?</h2>
+        <p>Configure your units and days above, then click <strong>Schedule Section</strong> to generate your visual timetable.</p>
+        <div className="hero-hint">
+            <span>Pro Tip: You can save multiple versions to the sidebar for easy comparison.</span>
+        </div>
     </div>
-  </div>
 );
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, timeFormat, resultsHeadingRef }) => {
-  const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, overlaidSchedules = [], timeFormat, resultsHeadingRef }) => {
+    const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
+    const [hoveredInfo, setHoveredInfo] = useState<{ id: string, type: string, name: string, fullSpan: string, days: string, totalInstr: number, totalBreak: number } | null>(null);
+    const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+    const [showNudge, setShowNudge] = useState(false);
 
-  if (!schedule) {
-    return <ScheduleDisplaySkeleton />;
-  }
+    // Trigger nudge only once when a schedule is first displayed
+    useEffect(() => {
+        if (schedule && !showNudge) {
+            const timer = setTimeout(() => setShowNudge(true), 1000);
+            const clearTimer = setTimeout(() => setShowNudge(false), 2500);
+            return () => {
+                clearTimeout(timer);
+                clearTimeout(clearTimer);
+            };
+        }
+    }, [schedule]);
 
-  const hasLecture = schedule.lectureInfo.contactHoursForTerm > 0;
-  const hasLab = schedule.labInfo.contactHoursForTerm > 0;
-  
-  const lectureBlocks = schedule.scheduleBlocks.filter(b => b.type === 'lecture');
-  const labBlocks = schedule.scheduleBlocks.filter(b => b.type === 'lab');
+    if (!schedule && overlaidSchedules.length === 0) {
+        return <ScheduleDisplayEmpty />;
+    }
 
-  return (
-    <div className="schedule-display-container">
-      <div className="minimal-summary-container" aria-live="polite">
-          <div style={{ flex: 1 }}>
-            {hasLecture && <MinimalSummary blocks={lectureBlocks} type="lecture" timeFormat={timeFormat} />}
-            {hasLab && <MinimalSummary blocks={labBlocks} type="lab" timeFormat={timeFormat} />}
-          </div>
-          <button onClick={() => setIsDetailsExpanded(!isDetailsExpanded)} className="details-toggle-btn" style={{ alignSelf: 'center' }}>
-                {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
-          </button>
-      </div>
-      
-      <div className={`details-container ${isDetailsExpanded ? 'expanded' : ''}`}>
-          {hasLecture && hasLab && (
-              <div className="summary-card combined-summary-card">
-                <h4>Full Schedule Summary</h4>
-                <div className="summary-details combined-summary-details">
-                  <p><strong>Total Contact Hours for Course:</strong> {(schedule.lectureInfo.contactHoursForTerm + schedule.labInfo.contactHoursForTerm).toFixed(2)}</p>
-                  <p><strong>Total Scheduled Hours:</strong> {(schedule.lectureInfo.totalScheduledContactHours + schedule.labInfo.totalScheduledContactHours).toFixed(2)}</p>
-                  <p style={{marginTop: '10px'}}><strong>Lecture Time Block Per Day:</strong> {formatMinutes(schedule.lectureInfo.totalBreakMinutesPerDay + (schedule.lectureInfo.contactHoursPerDay * 50))}</p>
-                  <p><strong>Lab Time Block Per Day:</strong> {formatMinutes(schedule.labInfo.totalBreakMinutesPerDay + (schedule.labInfo.contactHoursPerDay * 50))}</p>
+    const timeToMinutes = (timeStr: string) => {
+        const [h, m] = timeStr.split(':').map(Number);
+        return h * 60 + m;
+    };
+
+    const getBlockStyle = (startTime: string, endTime: string, colIndex: number = 0, totalCols: number = 1) => {
+        const startMins = timeToMinutes(startTime);
+        const endMins = timeToMinutes(endTime);
+        const duration = endMins - startMins;
+        const top = (startMins - START_HOUR * 60) * PIXELS_PER_MINUTE;
+        const height = duration * PIXELS_PER_MINUTE;
+
+        return {
+            top: `${top}px`,
+            height: `${height}px`,
+            left: `${(colIndex / totalCols) * 100}%`,
+            width: `${(1 / totalCols) * 100}%`,
+            position: 'absolute' as const
+        };
+    };
+
+    const handleMouseEnter = (block: any, scheduleId: string, scheduleName: string, allBlocks: any[]) => {
+        // Find all related blocks (same section and same type) to calculate the full span
+        const relatedBlocks = allBlocks.filter(b => b.type === block.type && (b.id === scheduleId || b.sectionName === scheduleName));
+        const sameDayBlocks = relatedBlocks.filter(b => b.dayOfWeek === block.dayOfWeek);
+
+        // Sort same-day blocks to find the total span for that specific component
+        const sorted = [...sameDayBlocks].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+        const startTime = sorted[0].startTime;
+        const endTime = sorted[sorted.length - 1].endTime;
+
+        // Get unique days
+        const days = Array.from(new Set(relatedBlocks.map(b => b.dayOfWeek)))
+            .sort((a, b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b))
+            .join('/');
+
+        // Total instruction and break minutes per day
+        const totalInstr = sorted.reduce((sum, b) => sum + b.instructionalMinutes, 0);
+        const totalBreak = sorted.reduce((sum, b) => sum + b.breakMinutes, 0);
+
+        setHoveredInfo({
+            id: scheduleId,
+            type: block.type,
+            name: scheduleName,
+            fullSpan: `${formatTime(startTime, timeFormat)} – ${formatTime(endTime, timeFormat)}`,
+            days,
+            totalInstr,
+            totalBreak
+        });
+    };
+
+    const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+
+    return (
+        <div className="schedule-display-container">
+            {schedule && (
+                <div className="minimal-summary-container" aria-live="polite">
+                    <div className="summary-left">
+                        <MinimalSummary blocks={schedule.scheduleBlocks.filter(b => b.type === 'lecture')} type="lecture" timeFormat={timeFormat} />
+                        <MinimalSummary blocks={schedule.scheduleBlocks.filter(b => b.type === 'lab')} type="lab" timeFormat={timeFormat} />
+                    </div>
+                    <button onClick={() => setIsDetailsExpanded(!isDetailsExpanded)} className="details-toggle-btn">
+                        {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
+                    </button>
                 </div>
-              </div>
-          )}
-          <div className="summary-card">
-            {hasLecture && <InfoCard title="Lecture Summary" info={schedule.lectureInfo} units={request?.lectureUnits} color="var(--lecture-color)" />}
-            {hasLab && <InfoCard title="Lab Summary" info={schedule.labInfo} units={request?.labUnits} color="var(--lab-color)" />}
-          </div>
-      </div>
+            )}
 
-      {schedule.warnings.length > 0 && (
-        <div className="warning-card">
-          <h3>Warnings</h3>
-          <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            {schedule.warnings.map((warning, index) => (
-              <li key={index}>{warning}</li>
-            ))}
-          </ul>
+            <div className={`details-container ${isDetailsExpanded ? 'expanded' : ''}`}>
+                {schedule && (
+                    <div className="summary-card">
+                        {schedule.lectureInfo.contactHoursForTerm > 0 && <InfoCard title="Lecture Summary" info={schedule.lectureInfo} units={request?.lectureUnits} color="var(--lecture-color)" />}
+                        {schedule.labInfo.contactHoursForTerm > 0 && <InfoCard title="Lab Summary" info={schedule.labInfo} units={request?.labUnits} color="var(--lab-color)" />}
+                    </div>
+                )}
+            </div>
+
+            <div
+                className={`timeline-wrapper ${hoveredInfo ? 'has-hover' : ''} ${showNudge ? 'nudge-hint' : ''}`}
+                onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+            >
+                <div className="time-ruler">
+                    {hours.map(h => (
+                        <div key={h} className="time-label" style={{ height: `${60 * PIXELS_PER_MINUTE}px` }}>
+                            {formatTime(`${h}:00`, timeFormat)}
+                        </div>
+                    ))}
+                </div>
+
+                <div className="weekly-grid timeline">
+                    {FULL_DAYS_OF_WEEK.map(day => {
+                        const currentBlocks = (schedule?.scheduleBlocks.filter(b => b.dayOfWeek === day) || []).map(b => ({ ...b, id: 'current', sectionName: 'Current', isMain: true }));
+                        const overlayDayBlocks = overlaidSchedules.flatMap(os =>
+                            os.schedule.scheduleBlocks
+                                .filter(b => b.dayOfWeek === day)
+                                .map(b => ({ ...b, id: os.id, sectionName: os.name, isMain: false }))
+                        );
+                        const allDayBlocks = [...currentBlocks, ...overlayDayBlocks].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+
+                        const columns: any[][] = [];
+                        allDayBlocks.forEach(block => {
+                            let placed = false;
+                            for (let i = 0; i < columns.length; i++) {
+                                const lastInCol = columns[i][columns[i].length - 1];
+                                if (timeToMinutes(block.startTime) >= timeToMinutes(lastInCol.endTime)) {
+                                    columns[i].push(block);
+                                    placed = true;
+                                    break;
+                                }
+                            }
+                            if (!placed) columns.push([block]);
+                        });
+
+                        return (
+                            <div key={day} className="day-column timeline">
+                                <h4 className="weekly-view-header">{day}</h4>
+                                <div className="day-column-content timeline" style={{ height: `${(END_HOUR - START_HOUR) * 60 * PIXELS_PER_MINUTE}px` }}>
+                                    {hours.map(h => (
+                                        <div key={h} className="hour-grid-line" style={{ top: `${(h - START_HOUR) * 60 * PIXELS_PER_MINUTE}px` }}></div>
+                                    ))}
+
+                                    <AnimatePresence>
+                                        {columns.map((col, colIndex) =>
+                                            col.map((block, i) => {
+                                                const isRelated = hoveredInfo && hoveredInfo.id === block.id && hoveredInfo.type === block.type;
+                                                const isDimmed = hoveredInfo && !isRelated;
+
+                                                return (
+                                                    <motion.div
+                                                        key={`${block.id}-${block.startTime}-${block.type}`}
+                                                        layout
+                                                        initial={{ opacity: 0, scale: 0.95 }}
+                                                        animate={{
+                                                            opacity: isDimmed ? 0.25 : (block.isMain ? 1 : 0.6),
+                                                            scale: isRelated ? 1.02 : 1,
+                                                            zIndex: isRelated ? 30 : 5
+                                                        }}
+                                                        exit={{ opacity: 0, scale: 0.95 }}
+                                                        className={`schedule-block ${block.type} ${!block.isMain ? 'overlay' : ''} timeline-block ${isRelated ? 'related-highlight' : ''}`}
+                                                        style={getBlockStyle(block.startTime, block.endTime, colIndex, columns.length)}
+                                                        onMouseEnter={() => handleMouseEnter(block, block.id, block.sectionName, [...(schedule?.scheduleBlocks || []).map(b => ({ ...b, id: 'current', sectionName: 'Current' })), ...overlaidSchedules.flatMap(os => os.schedule.scheduleBlocks.map(b => ({ ...b, id: os.id, sectionName: os.name })))])}
+                                                        onMouseLeave={() => setHoveredInfo(null)}
+                                                    >
+                                                        <div className="block-content">
+                                                            <span className="block-time">
+                                                                {columns.length === 1
+                                                                    ? `${formatTime(block.startTime, timeFormat)} - ${formatTime(block.endTime, timeFormat)}`
+                                                                    : formatTime(block.startTime, timeFormat)
+                                                                }
+                                                            </span>
+                                                            {columns.length === 1 && !isDetailsExpanded && !isDimmed && (
+
+                                                                <span className="block-desc">{block.isMain ? '' : block.sectionName}</span>
+                                                            )}
+                                                        </div>
+                                                    </motion.div>
+                                                );
+                                            })
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <AnimatePresence>
+                    {hoveredInfo && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="timeline-popover"
+                            style={{
+                                position: 'fixed',
+                                top: `${mousePos.y + 20}px`,
+                                left: `${mousePos.x + 20}px`,
+                                pointerEvents: 'none',
+                                zIndex: 1000
+                            }}
+                        >
+                            <div className="popover-inner">
+                                <span className={`summary-dot ${hoveredInfo.type}`} style={{ backgroundColor: `var(--${hoveredInfo.type}-color)` }}></span>
+                                <div className="popover-content">
+                                    <div className="popover-title">{hoveredInfo.name}</div>
+                                    <div className="popover-time">
+                                        {hoveredInfo.fullSpan} ({hoveredInfo.days})
+                                    </div>
+                                    <div className="popover-meta">
+                                        {hoveredInfo.type.toUpperCase()} • {hoveredInfo.totalInstr}m instr • {hoveredInfo.totalBreak}m break
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
-      )}
-
-      {schedule.scheduleBlocks.length > 0 && (
-         <div className="weekly-grid">
-         {FULL_DAYS_OF_WEEK.map(day => {
-           const blocksForDay = schedule.scheduleBlocks.filter(b => b.dayOfWeek === day);
-           return (
-             <div key={day} className="day-column">
-               <h4 id="results-header" className="weekly-view-header">{day}</h4>
-               <div className="day-column-content">
-                 {blocksForDay.length > 0 ? (
-                   blocksForDay.map((block: ScheduleBlock, index: number) => (
-                     <div key={index} className={`schedule-block ${block.type}`}>
-                       <p><strong>{formatTime(block.startTime, timeFormat)} - {formatTime(block.endTime, timeFormat)}</strong></p>
-                       <p className="schedule-block-description">
-                           {block.instructionalMinutes > 0 && `${block.instructionalMinutes} min instruction`}
-                           {block.breakMinutes > 0 && <span style={{color: 'var(--danger-color)'}}>{`, ${block.breakMinutes} min break`}</span>}
-                       </p>
-                     </div>
-                   ))
-                 ) : (
-                   <p className="no-classes-text">No classes</p>
-                 )}
-               </div>
-             </div>
-           );
-         })}
-       </div>
-      )}
-    </div>
-  );
+    );
 };
 
 export default React.memo(ScheduleDisplay);
