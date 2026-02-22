@@ -16,6 +16,7 @@ interface DashboardHeaderProps {
     sectionsAPI: ReturnType<typeof useSections>;
     handleScheduleNew: () => void;
     handleSaveSection: () => void;
+    handleSaveAsNew: () => void;
     handleCopy: (type: 'simple' | 'detailed' | 'spreadsheet') => void;
     isCopyDropdownOpen: boolean;
     setIsCopyDropdownOpen: (open: boolean) => void;
@@ -32,12 +33,14 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     statusPopoverRef,
     handleScheduleNew,
     handleSaveSection,
+    handleSaveAsNew,
     handleCopy,
     isCopyDropdownOpen,
     setIsCopyDropdownOpen,
     copyDropdownRef
 }) => {
     const { generatedSchedule } = workspaceAPI;
+    const { currentSectionId } = sectionsAPI;
 
     return (
         <header className="dashboard-header">
@@ -83,8 +86,18 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     onClick={handleSaveSection}
                     whileTap={{ scale: 0.95 }}
                 >
-                    <Save size={16} /> Save Current Section
+                    <Save size={16} /> {currentSectionId ? 'Update Section' : 'Save Section'}
                 </motion.button>
+                {currentSectionId && (
+                    <motion.button
+                        className="secondary-button compact"
+                        onClick={handleSaveAsNew}
+                        whileTap={{ scale: 0.95 }}
+                        title="Duplicate this section into a new save"
+                    >
+                        <Copy size={16} /> Save as New
+                    </motion.button>
+                )}
                 {generatedSchedule && (
                     <div className="split-button-container" ref={copyDropdownRef}>
                         <motion.button

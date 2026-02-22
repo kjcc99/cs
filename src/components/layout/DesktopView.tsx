@@ -105,6 +105,28 @@ export const DesktopView: React.FC<AppViewProps> = ({
         showToast(currentSectionId ? "Section updated" : "Section saved");
     }, [saveSection, lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId, selectedCourseInfo, savedSections, currentSectionId, showToast]);
 
+    const handleSaveAsNew = useCallback(() => {
+        if (lectureUnits === 0 && labUnits === 0) {
+            showToast("Please enter units before saving.", "error");
+            return;
+        }
+
+        let sectionName = `Section ${savedSections.length + 1}`;
+        if (selectedCourseInfo) {
+            const { sub, no } = selectedCourseInfo;
+            const existingCount = savedSections.filter(s => s.name.startsWith(`${sub} ${no}`)).length;
+            const sectionNum = String(existingCount + 1).padStart(2, '0');
+            sectionName = `${sub} ${no} ${sectionNum}`;
+        }
+
+        saveSection({
+            lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId,
+            name: sectionName
+        }, true);
+        showToast("Saved as new copy");
+    }, [saveSection, lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId, selectedCourseInfo, savedSections, showToast]);
+
+
     const handleLoadSection = useCallback((section: SavedSection) => {
         setCurrentSectionId(section.id);
         setLectureUnits(section.lectureUnits);
@@ -307,7 +329,9 @@ export const DesktopView: React.FC<AppViewProps> = ({
                         statusPopoverRef={statusPopoverRef}
                         handleScheduleNew={handleScheduleNew}
                         handleSaveSection={handleSaveSection}
+                        handleSaveAsNew={handleSaveAsNew}
                         handleCopy={handleCopy}
+
                         isCopyDropdownOpen={isCopyDropdownOpen}
                         setIsCopyDropdownOpen={setIsCopyDropdownOpen}
                         copyDropdownRef={copyDropdownRef}

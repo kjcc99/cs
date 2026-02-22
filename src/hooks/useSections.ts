@@ -18,17 +18,19 @@ export function useSections() {
     localStorage.setItem(SAVED_SECTIONS_KEY, JSON.stringify(savedSections));
   }, [savedSections]);
 
-  const saveSection = useCallback((data: Omit<SavedSection, 'id' | 'name' | 'timestamp'> & { name?: string }) => {
+  const saveSection = useCallback((data: Omit<SavedSection, 'id' | 'name' | 'timestamp'> & { name?: string }, asNew: boolean = false) => {
+    const isUpdating = !asNew && currentSectionId;
+
     const newSection: SavedSection = {
       ...data,
-      id: currentSectionId || Date.now().toString(),
-      name: data.name || (currentSectionId
+      id: isUpdating ? currentSectionId! : Date.now().toString(),
+      name: data.name || (isUpdating
         ? (savedSections.find(s => s.id === currentSectionId)?.name || 'New Section')
         : `Section ${savedSections.length + 1}`),
       timestamp: Date.now()
     };
 
-    if (currentSectionId) {
+    if (isUpdating) {
       setSavedSections(prev => prev.map(s => s.id === currentSectionId ? newSection : s));
     } else {
       setSavedSections(prev => [newSection, ...prev]);
