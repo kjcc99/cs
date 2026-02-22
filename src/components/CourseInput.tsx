@@ -73,26 +73,28 @@ const CourseInput: React.FC<CourseInputProps> = ({
     <div className="course-input-panel">
       {/* Lecture Column */}
       <div
-        className={`lecture-panel ${activePanel === 'lecture' ? 'active' : ''}`}
+        className={`ci-panel lecture-panel ${activePanel === 'lecture' ? 'active' : ''}`}
         onFocus={() => setActivePanel('lecture')}
         onBlur={() => setActivePanel(null)}
       >
-        <h4 style={{ margin: 0 }}>Lec</h4>
-        <div className="time-sub-group">
-          <span className="micro-label">Units</span>
-          <UnitSelector
-            label="Units"
-            value={lectureUnits}
-            onChange={setLectureUnits}
-            step={0.25}
-            disabled={isLecFixed}
-            min={lecRange.min}
-            max={lecRange.max}
-          />
-        </div>
-        <div className="time-sub-group">
-          <span className="micro-label">Days</span>
-          <DayPicker selectedDays={lectureDays} onDayToggle={handleLectureDayToggle} />
+        <label className="ci-panel-label lec-label">Lecture Component</label>
+        <div className="ci-controls">
+          <div className="time-sub-group">
+            <span className="micro-label">Units</span>
+            <UnitSelector
+              label="Units"
+              value={lectureUnits}
+              onChange={setLectureUnits}
+              step={0.25}
+              disabled={isLecFixed}
+              min={lecRange.min}
+              max={lecRange.max}
+            />
+          </div>
+          <div className="time-sub-group">
+            <span className="micro-label">Meeting Days</span>
+            <DayPicker selectedDays={lectureDays} onDayToggle={handleLectureDayToggle} />
+          </div>
         </div>
       </div>
 
@@ -100,26 +102,28 @@ const CourseInput: React.FC<CourseInputProps> = ({
 
       {/* Lab Column */}
       <div
-        className={`lab-panel ${activePanel === 'lab' ? 'active' : ''}`}
+        className={`ci-panel lab-panel ${activePanel === 'lab' ? 'active' : ''}`}
         onFocus={() => setActivePanel('lab')}
         onBlur={() => setActivePanel(null)}
       >
-        <h4 style={{ margin: 0 }}>Lab</h4>
-        <div className="time-sub-group">
-          <span className="micro-label">Units</span>
-          <UnitSelector
-            label="Units"
-            value={labUnits}
-            onChange={setLabUnits}
-            step={0.25}
-            disabled={isLabFixed}
-            min={labRange.min}
-            max={labRange.max}
-          />
-        </div>
-        <div className="time-sub-group">
-          <span className="micro-label">Days</span>
-          <DayPicker selectedDays={labDays} onDayToggle={handleLabDayToggle} />
+        <label className="ci-panel-label lab-label">Lab Component</label>
+        <div className="ci-controls">
+          <div className="time-sub-group">
+            <span className="micro-label">Units</span>
+            <UnitSelector
+              label="Units"
+              value={labUnits}
+              onChange={setLabUnits}
+              step={0.25}
+              disabled={isLabFixed}
+              min={labRange.min}
+              max={labRange.max}
+            />
+          </div>
+          <div className="time-sub-group">
+            <span className="micro-label">Meeting Days</span>
+            <DayPicker selectedDays={labDays} onDayToggle={handleLabDayToggle} />
+          </div>
         </div>
       </div>
     </div>

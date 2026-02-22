@@ -30,6 +30,7 @@ interface ConfigBarProps {
     divisions: Record<string, string>;
     departments: Record<string, string>;
     handleCourseSelect: (sub: string, course: Course) => void;
+    onClearCourse: () => void;
     selectedCourseInfo: { sub: string, no: string, title?: string } | null;
     lectureUnits: number;
     setLectureUnits: (v: number) => void;
@@ -56,7 +57,7 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
     handleLabLockToggle,
     timeFormat,
     catalog, divisions, departments,
-    handleCourseSelect,
+    handleCourseSelect, onClearCourse,
     selectedCourseInfo,
     lectureUnits, setLectureUnits,
     lectureDays, setLectureDays,
@@ -118,9 +119,9 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
                             <div className="config-divider" />
 
                             <div className="config-section">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <label className="config-label">Start Times</label>
-                                    <button onClick={handleLabLockToggle} className="icon-btn-xs" title="Toggle separate lab time">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: '10px' }}>
+                                    <label className="config-label" style={{ lineHeight: 1 }}>Start Times</label>
+                                    <button onClick={handleLabLockToggle} className="icon-btn-xs" style={{ padding: 0 }} title="Toggle separate lab time">
                                         {labStartTime === null ? <Lock size={10} /> : <Unlock size={10} />}
                                     </button>
                                 </div>
@@ -149,8 +150,9 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
                                             catalog={catalog}
                                             divisions={divisions}
                                             departments={departments}
-                                            onSelect={handleCourseSelect}
                                             selectedCourse={selectedCourseInfo}
+                                            onSelect={handleCourseSelect}
+                                            onClear={onClearCourse}
                                         />
                                     </div>
                                 </div>

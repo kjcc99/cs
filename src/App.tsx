@@ -14,6 +14,7 @@ import { academicCalendar } from './types/calendar';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import { DesktopView } from './components/layout/DesktopView';
 import { MobileView } from './components/layout/MobileView';
+import { AppLoader } from './components/AppLoader';
 import { ToastProvider } from './components/Toast';
 
 function App() {
@@ -71,6 +72,10 @@ function App() {
   };
 
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  if (!contactHourRules || !attendanceRules) {
+    return <AppLoader />;
+  }
 
   return (
     <ToastProvider>

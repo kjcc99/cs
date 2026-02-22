@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import SidebarItem from './SidebarItem';
 import Settings from './Settings';
+import ConfirmModal from './ConfirmModal';
 import { useSections } from '../hooks/useSections';
 import { useSettings } from '../hooks/useSettings';
 import { useWorkspace } from '../hooks/useWorkspace';
@@ -51,6 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const { timeFormat, theme, setTheme, setTimeFormat, selectedTermId, setSelectedTermId, selectedSessionId, setSelectedSessionId, startTime, setStartTime, labStartTime, setLabStartTime } = settingsAPI;
 
     const { showToast } = useToast();
+    const [isConfirmClearOpen, setIsConfirmClearOpen] = React.useState(false);
 
     return (
         <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
@@ -138,12 +140,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
                 {!isSidebarCollapsed && savedSections.length > 0 && (
                     <div className="sidebar-footer">
-                        <button className="clear-all-sidebar-btn" onClick={() => {
-                            if (window.confirm("Delete all saved sections?")) {
-                                clearAllSections();
-                                showToast("All sections deleted", "info");
-                            }
-                        }}>
+                        <button className="clear-all-sidebar-btn" onClick={() => setIsConfirmClearOpen(true)}>
                             Clear All Sections
                         </button>
                         <div className="sidebar-disclaimer">
@@ -153,6 +150,23 @@ const Sidebar: React.FC<SidebarProps> = ({
                 )}
 
             </div>
+
+            <AnimatePresence>
+                {isConfirmClearOpen && (
+                    <ConfirmModal
+                        title="Clear All Sections?"
+                        message="Are you sure you want to delete all saved sections? This action cannot be undone."
+                        confirmText="Delete All"
+                        cancelText="Cancel"
+                        onConfirm={() => {
+                            clearAllSections();
+                            showToast("All sections deleted", "info");
+                            setIsConfirmClearOpen(false);
+                        }}
+                        onCancel={() => setIsConfirmClearOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
         </aside>
     );
 };

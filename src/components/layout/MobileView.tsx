@@ -51,7 +51,7 @@ export const MobileView: React.FC<AppViewProps> = ({
         generatedSchedule, setGeneratedSchedule,
         lastRequest, setLastRequest,
         selectedCourseInfo, handleCourseSelect,
-        getWorkspaceAsSection
+        getWorkspaceAsSection, isCalculating, clearCourseSelection
     } = workspaceAPI;
 
     // UI States
@@ -195,14 +195,16 @@ export const MobileView: React.FC<AppViewProps> = ({
 
     const clearWorkspace = () => {
         setCurrentSectionId(null);
-        setLectureUnits(0);
+        if (!selectedCourseInfo) {
+            setLectureUnits(0);
+            setLabUnits(0);
+        }
         setLectureDays([]);
-        setLabUnits(0);
         setLabDays([]);
         setGeneratedSchedule(null);
         setLastRequest(null);
         setIsConfirmNewOpen(false);
-        showToast("Cleared", "info");
+        showToast("Ready for new section", "info");
     };
 
     const handleNewRequest = () => {
@@ -259,6 +261,7 @@ export const MobileView: React.FC<AppViewProps> = ({
                     divisions={divisions}
                     departments={departments}
                     handleCourseSelect={handleCourseSelect}
+                    onClearCourse={clearCourseSelection}
                     selectedCourseInfo={selectedCourseInfo}
                     lectureUnits={lectureUnits}
                     setLectureUnits={setLectureUnits}
@@ -279,6 +282,7 @@ export const MobileView: React.FC<AppViewProps> = ({
                     request={lastRequest}
                     timeFormat={timeFormat}
                     resultsHeadingRef={{ current: null }}
+                    isCalculating={isCalculating}
                     overlaidSchedules={savedSections.filter(s => overlaySectionIds.includes(s.id)).map(s => {
                         // This is a bit expensive but necessary if we want overlays on mobile
                         // In the real app we'd probably cache generated schedules for overlays

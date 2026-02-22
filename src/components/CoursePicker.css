@@ -4,11 +4,15 @@
   position: relative;
 }
 
+.picker-trigger-wrapper {
+  display: flex;
+  position: relative;
+  align-items: center;
+  width: 100%;
+}
+
 .picker-trigger {
   width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 8px;
   padding: 0 12px;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -18,11 +22,41 @@
   font-weight: 600;
   cursor: pointer;
   height: 32px;
+  transition: all 0.2s;
+}
+
+.picker-trigger-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  height: 100%;
 }
 
 .picker-trigger:hover {
   background-color: var(--bg-well);
   border-color: var(--primary);
+}
+
+.picker-clear-btn {
+  position: absolute;
+  right: 6px;
+  height: 20px;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+}
+
+.picker-clear-btn:hover {
+  background: var(--bg-inset);
+  color: var(--danger-color, #ef4444);
 }
 
 .picker-popover {
@@ -104,7 +138,7 @@
   padding: 10px 16px;
   cursor: pointer;
   transition: background 0.2s;
-  border-bottom: 1px solid rgba(0,0,0,0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.03);
   font-size: 0.9rem;
 }
 

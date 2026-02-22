@@ -112,17 +112,20 @@
 .time-selector-container {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: var(--bg-inset);
-  padding: 4px;
-  border-radius: var(--radius-md);
+  gap: 2px;
+  background-color: var(--bg-card);
   border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 4px;
 }
 
 .time-selector-container select {
   background: transparent;
   border: none;
-  padding: 4px 8px;
+  padding: 0 4px;
+  height: 100%;
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 600;
@@ -130,6 +133,13 @@
   cursor: pointer;
   border-radius: var(--radius-sm);
   outline: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.time-selector-container select:hover {
+  background: var(--bg-inset);
 }
 
 .time-selector-container select:hover {

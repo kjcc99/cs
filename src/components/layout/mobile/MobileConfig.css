@@ -83,7 +83,7 @@
     gap: 12px;
 }
 
-.mc-row select {
+.mc-row>select {
     flex: 1;
     padding: 12px;
     height: 48px;
@@ -136,30 +136,32 @@
     /* Hide the vertical divider since they are stacked vertically now */
 }
 
-/* Allow the contents of each panel (Units vs Days) to wrap onto a new line if they get too wide */
-.mc-units-section .lecture-panel,
-.mc-units-section .lab-panel {
+/* Ensure the control container wraps on mobile */
+.mc-units-section .ci-controls {
     flex-wrap: wrap;
     gap: 12px;
-    align-items: flex-start;
-}
-
-/* Ensure the titles (Lec / Lab) stick with the inputs nicely */
-.mc-units-section .lecture-panel h4,
-.mc-units-section .lab-panel h4 {
-    margin-top: 6px;
 }
 
 /* Force the Days selector sub-group onto its own row underneath the Units selector */
-.mc-units-section .lecture-panel .time-sub-group:last-child,
-.mc-units-section .lab-panel .time-sub-group:last-child {
+.mc-units-section .ci-controls .time-sub-group:last-child {
     flex-basis: 100%;
 }
 
+.mc-units-section .ci-panel-label {
+    margin-bottom: 2px;
+}
+
+
 /* Fix time selector height and cutoff issues in mobile */
-.mc-section .time-selector-container select {
+.mc-section .time-selector-container {
     height: 48px;
-    padding: 0 10px;
+    border-radius: 8px;
+    background: var(--bg-well);
+    padding: 0 8px;
+}
+
+.mc-section .time-selector-container select {
+    padding: 0 8px;
     font-size: 1rem;
     line-height: normal;
 }

@@ -10,19 +10,20 @@ interface CoursePickerProps {
   divisions: Record<string, string>;
   departments: Record<string, string>;
   onSelect: (subject: string, course: Course) => void;
+  onClear?: () => void;
   selectedCourse?: { sub: string, no: string, title?: string } | null;
 }
 
 type ViewState = 'divisions' | 'departments' | 'subjects' | 'courses';
 
-const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departments, onSelect, selectedCourse }) => {
+const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departments, onSelect, onClear, selectedCourse }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [view, setViewState] = useState<ViewState>('divisions');
   const [selectedDiv, setSelectedDiv] = useState<string | null>(null);
   const [selectedDpt, setSelectedDpt] = useState<string | null>(null);
   const [selectedSub, setSelectedSub] = useState<string | null>(null);
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
@@ -36,19 +37,31 @@ const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departm
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Auto-scroll to top on mobile when opened
+  useEffect(() => {
+    if (isOpen && window.innerWidth <= 768) {
+      setTimeout(() => {
+        containerRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 50);
+    }
+  }, [isOpen]);
+
   // Search Logic (Global search across all levels)
   const searchResults = useMemo(() => {
     if (search.length < 2) return [];
     const results: { sub: string, course: Course }[] = [];
     const searchLower = search.toLowerCase();
-    
+
     Object.entries(catalog).forEach(([div, dpts]) => {
       Object.entries(dpts).forEach(([dpt, subs]) => {
         Object.entries(subs).forEach(([sub, courses]) => {
           courses.forEach(c => {
             // Combined string for smart matching (e.g. "ENGL 101 Freshman Comp")
             const fullString = `${sub} ${c.no} ${c.title || ''}`.toLowerCase();
-            
+
             if (fullString.includes(searchLower)) {
               results.push({ sub, course: c });
             }
@@ -82,14 +95,27 @@ const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departm
 
   return (
     <div className="course-picker-container" ref={containerRef}>
-      <button className="picker-trigger" onClick={() => setIsOpen(!isOpen)}>
-        <BookOpen size={14} />
-        <span>{triggerLabel}</span>
-      </button>
+      <div className="picker-trigger-wrapper">
+        <button className="picker-trigger" onClick={() => setIsOpen(!isOpen)}>
+          <div className="picker-trigger-content">
+            <BookOpen size={14} />
+            <span>{triggerLabel}</span>
+          </div>
+        </button>
+        {selectedCourse && onClear && (
+          <button
+            className="picker-clear-btn"
+            onClick={(e) => { e.stopPropagation(); onClear(); setIsOpen(false); }}
+            title="Clear saved course"
+          >
+            <X size={14} />
+          </button>
+        )}
+      </div>
 
       <AnimatePresence>
         {isOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
@@ -97,8 +123,8 @@ const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departm
           >
             <div className="picker-search-box">
               <Search size={16} />
-              <input 
-                placeholder="Search subject or course number..." 
+              <input
+                placeholder="Search subject or course number..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
@@ -144,7 +170,7 @@ const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departm
                           <span>{divisions[div] || div}</span>
                           <ChevronRight size={14} />
                         </div>
-                    ))}
+                      ))}
 
                     {view === 'departments' && selectedDiv && Object.keys(catalog[selectedDiv] || {})
                       .sort((a, b) => (departments[a] || a).localeCompare(departments[b] || b))
@@ -153,7 +179,7 @@ const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departm
                           <span>{departments[dpt] || dpt}</span>
                           <ChevronRight size={14} />
                         </div>
-                    ))}
+                      ))}
 
                     {view === 'subjects' && selectedDiv && selectedDpt && Object.keys(catalog[selectedDiv][selectedDpt] || {})
                       .sort((a, b) => a.localeCompare(b))
@@ -162,7 +188,7 @@ const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departm
                           <span>{sub}</span>
                           <ChevronRight size={14} />
                         </div>
-                    ))}
+                      ))}
 
                     {view === 'courses' && selectedDiv && selectedDpt && selectedSub && (catalog[selectedDiv][selectedDpt][selectedSub] || [])
                       .sort((a, b) => a.no.localeCompare(b.no, undefined, { numeric: true, sensitivity: 'base' }))
@@ -174,7 +200,7 @@ const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departm
                           </div>
                           <ChevronRight size={14} />
                         </div>
-                    ))}
+                      ))}
                   </div>
                 </>
               )}

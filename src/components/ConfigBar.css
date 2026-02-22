@@ -50,7 +50,8 @@
   padding: 12px 32px 8px 32px;
   display: flex;
   flex-wrap: nowrap;
-  align-items: flex-end; /* Align all inputs to baseline */
+  align-items: flex-end;
+  /* Align all inputs to baseline */
   gap: 24px;
 }
 
@@ -102,11 +103,16 @@
 }
 
 /* Color coding for micro-labels */
-.config-controls .time-sub-group:nth-child(1) .micro-label { color: var(--primary); }
-.config-controls .time-sub-group:nth-child(2) .micro-label { color: var(--lab-color); }
+.config-controls .time-sub-group:nth-child(1) .micro-label {
+  color: var(--primary);
+}
+
+.config-controls .time-sub-group:nth-child(2) .micro-label {
+  color: var(--lab-color);
+}
 
 /* Common heights for all inputs in the bar */
-.config-bar select, 
+.time-sub-group>select,
 .picker-trigger {
   height: 32px;
   box-sizing: border-box;
@@ -117,7 +123,8 @@
 }
 
 .done-btn {
-  margin-left: auto; /* Push to far right */
+  margin-left: auto;
+  /* Push to far right */
   align-self: flex-end;
 }
 

@@ -29,6 +29,7 @@ interface MobileConfigProps {
     divisions: Record<string, string>;
     departments: Record<string, string>;
     handleCourseSelect: (sub: string, course: Course) => void;
+    onClearCourse: () => void;
     selectedCourseInfo: { sub: string, no: string, title?: string } | null;
     lectureUnits: number;
     setLectureUnits: (v: number) => void;
@@ -49,7 +50,7 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
     selectedTermId, setSelectedTermId, selectedSessionId, setSelectedSessionId,
     calendar, startTime, setStartTime, labStartTime, setLabStartTime,
     handleLabLockToggle, timeFormat, catalog, divisions, departments,
-    handleCourseSelect, selectedCourseInfo,
+    handleCourseSelect, onClearCourse, selectedCourseInfo,
     lectureUnits, setLectureUnits, lectureDays, setLectureDays,
     labUnits, setLabUnits, labDays, setLabDays,
     isLecFixed, isLabFixed, lecRange, labRange
@@ -127,7 +128,7 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
                             <label>Course Catalog</label>
                             <CoursePicker
                                 catalog={catalog} divisions={divisions} departments={departments}
-                                onSelect={handleCourseSelect} selectedCourse={selectedCourseInfo}
+                                onSelect={handleCourseSelect} onClear={onClearCourse} selectedCourse={selectedCourseInfo}
                             />
                         </div>
 

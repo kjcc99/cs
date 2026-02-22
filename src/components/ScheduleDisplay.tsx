@@ -19,6 +19,7 @@ export interface ScheduleDisplayProps {
     overlaidSchedules?: OverlaidSchedule[];
     timeFormat: '12h' | '24h';
     resultsHeadingRef: React.RefObject<HTMLHeadingElement | null>;
+    isCalculating?: boolean;
 }
 
 const FULL_DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -81,7 +82,113 @@ const ScheduleDisplayEmpty: React.FC = () => (
     </div>
 );
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, overlaidSchedules = [], timeFormat, resultsHeadingRef }) => {
+const timeToMinutes = (timeStr: string) => {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+};
+
+const getBlockStyle = (startTime: string, endTime: string, colIndex: number = 0, totalCols: number = 1) => {
+    const startMins = timeToMinutes(startTime);
+    const endMins = timeToMinutes(endTime);
+    const duration = endMins - startMins;
+    const top = (startMins - START_HOUR * 60) * PIXELS_PER_MINUTE;
+    const height = duration * PIXELS_PER_MINUTE;
+
+    return {
+        top: `${top}px`,
+        height: `${height}px`,
+        left: `${(colIndex / totalCols) * 100}%`,
+        width: `${(1 / totalCols) * 100}%`,
+        position: 'absolute' as const
+    };
+};
+
+const DayColumn = React.memo(({
+    day,
+    hours,
+    schedule,
+    overlaidSchedules,
+    hoveredInfo,
+    timeFormat,
+    isDetailsExpanded,
+    handleMouseEnter,
+    handleMouseLeave
+}: any) => {
+    const currentBlocks = (schedule?.scheduleBlocks.filter((b: any) => b.dayOfWeek === day) || []).map((b: any) => ({ ...b, id: 'current', sectionName: 'Current', isMain: true }));
+    const overlayDayBlocks = overlaidSchedules.flatMap((os: any) =>
+        os.schedule.scheduleBlocks
+            .filter((b: any) => b.dayOfWeek === day)
+            .map((b: any) => ({ ...b, id: os.id, sectionName: os.name, isMain: false }))
+    );
+    const allDayBlocks = [...currentBlocks, ...overlayDayBlocks].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+
+    const columns: any[][] = [];
+    allDayBlocks.forEach(block => {
+        let placed = false;
+        for (let i = 0; i < columns.length; i++) {
+            const lastInCol = columns[i][columns[i].length - 1];
+            if (timeToMinutes(block.startTime) >= timeToMinutes(lastInCol.endTime)) {
+                columns[i].push(block);
+                placed = true;
+                break;
+            }
+        }
+        if (!placed) columns.push([block]);
+    });
+
+    return (
+        <div className="day-column timeline">
+            <h4 className="weekly-view-header">{day}</h4>
+            <div className="day-column-content timeline" style={{ height: `${(END_HOUR - START_HOUR) * 60 * PIXELS_PER_MINUTE}px` }}>
+                {hours.map((h: number) => (
+                    <div key={h} className="hour-grid-line" style={{ top: `${(h - START_HOUR) * 60 * PIXELS_PER_MINUTE}px` }}></div>
+                ))}
+
+                <AnimatePresence>
+                    {columns.map((col, colIndex) =>
+                        col.map((block, i) => {
+                            const isRelated = hoveredInfo && hoveredInfo.id === block.id && hoveredInfo.type === block.type;
+                            const isDimmed = hoveredInfo && !isRelated;
+
+                            return (
+                                <motion.div
+                                    key={`${block.id}-${block.startTime}-${block.type}`}
+                                    layout
+                                    initial={{ opacity: 0, scale: 0.95 }}
+                                    animate={{
+                                        opacity: isDimmed ? 0.25 : (block.isMain ? 1 : 0.6),
+                                        scale: isRelated ? 1.02 : 1,
+                                        zIndex: isRelated ? 30 : 5
+                                    }}
+                                    exit={{ opacity: 0, scale: 0.95 }}
+                                    className={`schedule-block ${block.type} ${!block.isMain ? 'overlay' : ''} timeline-block ${isRelated ? 'related-highlight' : ''}`}
+                                    style={getBlockStyle(block.startTime, block.endTime, colIndex, columns.length)}
+                                    onMouseEnter={() => handleMouseEnter(block, block.id, block.sectionName)}
+                                    onMouseLeave={handleMouseLeave}
+                                >
+                                    <div className="block-content">
+                                        <span className="block-time">
+                                            {columns.length === 1
+                                                ? `${formatTime(block.startTime, timeFormat)} - ${formatTime(block.endTime, timeFormat)}`
+                                                : formatTime(block.startTime, timeFormat)
+                                            }
+                                        </span>
+                                        {columns.length === 1 && !isDetailsExpanded && !isDimmed && (
+                                            <span className="block-desc">{block.isMain ? '' : block.sectionName}</span>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            );
+                        })
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+});
+
+
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, overlaidSchedules = [], timeFormat, resultsHeadingRef, isCalculating }) => {
     const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
     const [hoveredInfo, setHoveredInfo] = useState<{ id: string, type: string, name: string, fullSpan: string, days: string, totalInstr: number, totalBreak: number } | null>(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -99,49 +206,27 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
         }
     }, [schedule]);
 
-    if (!schedule && overlaidSchedules.length === 0) {
-        return <ScheduleDisplayEmpty />;
-    }
+    const allBlocks = React.useMemo(() => {
+        return [
+            ...(schedule?.scheduleBlocks || []).map((b: any) => ({ ...b, id: 'current', sectionName: 'Current' })),
+            ...overlaidSchedules.flatMap(os => os.schedule.scheduleBlocks.map((b: any) => ({ ...b, id: os.id, sectionName: os.name })))
+        ];
+    }, [schedule, overlaidSchedules]);
 
-    const timeToMinutes = (timeStr: string) => {
-        const [h, m] = timeStr.split(':').map(Number);
-        return h * 60 + m;
-    };
+    const handleMouseEnterWrapper = React.useCallback((block: any, scheduleId: string, scheduleName: string) => {
+        const relatedBlocks = allBlocks.filter((b: any) => b.type === block.type && (b.id === scheduleId || b.sectionName === scheduleName));
+        const sameDayBlocks = relatedBlocks.filter((b: any) => b.dayOfWeek === block.dayOfWeek);
 
-    const getBlockStyle = (startTime: string, endTime: string, colIndex: number = 0, totalCols: number = 1) => {
-        const startMins = timeToMinutes(startTime);
-        const endMins = timeToMinutes(endTime);
-        const duration = endMins - startMins;
-        const top = (startMins - START_HOUR * 60) * PIXELS_PER_MINUTE;
-        const height = duration * PIXELS_PER_MINUTE;
-
-        return {
-            top: `${top}px`,
-            height: `${height}px`,
-            left: `${(colIndex / totalCols) * 100}%`,
-            width: `${(1 / totalCols) * 100}%`,
-            position: 'absolute' as const
-        };
-    };
-
-    const handleMouseEnter = (block: any, scheduleId: string, scheduleName: string, allBlocks: any[]) => {
-        // Find all related blocks (same section and same type) to calculate the full span
-        const relatedBlocks = allBlocks.filter(b => b.type === block.type && (b.id === scheduleId || b.sectionName === scheduleName));
-        const sameDayBlocks = relatedBlocks.filter(b => b.dayOfWeek === block.dayOfWeek);
-
-        // Sort same-day blocks to find the total span for that specific component
         const sorted = [...sameDayBlocks].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
         const startTime = sorted[0].startTime;
         const endTime = sorted[sorted.length - 1].endTime;
 
-        // Get unique days
-        const days = Array.from(new Set(relatedBlocks.map(b => b.dayOfWeek)))
-            .sort((a, b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b))
+        const days = Array.from(new Set(relatedBlocks.map((b: any) => b.dayOfWeek)))
+            .sort((a: any, b: any) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b))
             .join('/');
 
-        // Total instruction and break minutes per day
-        const totalInstr = sorted.reduce((sum, b) => sum + b.instructionalMinutes, 0);
-        const totalBreak = sorted.reduce((sum, b) => sum + b.breakMinutes, 0);
+        const totalInstr = sorted.reduce((sum: number, b: any) => sum + b.instructionalMinutes, 0);
+        const totalBreak = sorted.reduce((sum: number, b: any) => sum + b.breakMinutes, 0);
 
         setHoveredInfo({
             id: scheduleId,
@@ -152,12 +237,25 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
             totalInstr,
             totalBreak
         });
-    };
+    }, [allBlocks, timeFormat]);
+
+    const handleMouseLeaveWrapper = React.useCallback(() => {
+        setHoveredInfo(null);
+    }, []);
+
+    if (!schedule && overlaidSchedules.length === 0) {
+        return (
+            <div className={`schedule-display-container ${isCalculating ? 'is-calculating' : ''}`}>
+                <ScheduleDisplayEmpty />
+            </div>
+        );
+    }
+
 
     const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 
     return (
-        <div className="schedule-display-container">
+        <div className={`schedule-display-container ${isCalculating ? 'is-calculating' : ''}`}>
             {schedule && (
                 <div className="minimal-summary-container" aria-live="polite">
                     <div className="summary-left">
@@ -192,80 +290,20 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
                 </div>
 
                 <div className="weekly-grid timeline">
-                    {FULL_DAYS_OF_WEEK.map(day => {
-                        const currentBlocks = (schedule?.scheduleBlocks.filter(b => b.dayOfWeek === day) || []).map(b => ({ ...b, id: 'current', sectionName: 'Current', isMain: true }));
-                        const overlayDayBlocks = overlaidSchedules.flatMap(os =>
-                            os.schedule.scheduleBlocks
-                                .filter(b => b.dayOfWeek === day)
-                                .map(b => ({ ...b, id: os.id, sectionName: os.name, isMain: false }))
-                        );
-                        const allDayBlocks = [...currentBlocks, ...overlayDayBlocks].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
-
-                        const columns: any[][] = [];
-                        allDayBlocks.forEach(block => {
-                            let placed = false;
-                            for (let i = 0; i < columns.length; i++) {
-                                const lastInCol = columns[i][columns[i].length - 1];
-                                if (timeToMinutes(block.startTime) >= timeToMinutes(lastInCol.endTime)) {
-                                    columns[i].push(block);
-                                    placed = true;
-                                    break;
-                                }
-                            }
-                            if (!placed) columns.push([block]);
-                        });
-
-                        return (
-                            <div key={day} className="day-column timeline">
-                                <h4 className="weekly-view-header">{day}</h4>
-                                <div className="day-column-content timeline" style={{ height: `${(END_HOUR - START_HOUR) * 60 * PIXELS_PER_MINUTE}px` }}>
-                                    {hours.map(h => (
-                                        <div key={h} className="hour-grid-line" style={{ top: `${(h - START_HOUR) * 60 * PIXELS_PER_MINUTE}px` }}></div>
-                                    ))}
-
-                                    <AnimatePresence>
-                                        {columns.map((col, colIndex) =>
-                                            col.map((block, i) => {
-                                                const isRelated = hoveredInfo && hoveredInfo.id === block.id && hoveredInfo.type === block.type;
-                                                const isDimmed = hoveredInfo && !isRelated;
-
-                                                return (
-                                                    <motion.div
-                                                        key={`${block.id}-${block.startTime}-${block.type}`}
-                                                        layout
-                                                        initial={{ opacity: 0, scale: 0.95 }}
-                                                        animate={{
-                                                            opacity: isDimmed ? 0.25 : (block.isMain ? 1 : 0.6),
-                                                            scale: isRelated ? 1.02 : 1,
-                                                            zIndex: isRelated ? 30 : 5
-                                                        }}
-                                                        exit={{ opacity: 0, scale: 0.95 }}
-                                                        className={`schedule-block ${block.type} ${!block.isMain ? 'overlay' : ''} timeline-block ${isRelated ? 'related-highlight' : ''}`}
-                                                        style={getBlockStyle(block.startTime, block.endTime, colIndex, columns.length)}
-                                                        onMouseEnter={() => handleMouseEnter(block, block.id, block.sectionName, [...(schedule?.scheduleBlocks || []).map(b => ({ ...b, id: 'current', sectionName: 'Current' })), ...overlaidSchedules.flatMap(os => os.schedule.scheduleBlocks.map(b => ({ ...b, id: os.id, sectionName: os.name })))])}
-                                                        onMouseLeave={() => setHoveredInfo(null)}
-                                                    >
-                                                        <div className="block-content">
-                                                            <span className="block-time">
-                                                                {columns.length === 1
-                                                                    ? `${formatTime(block.startTime, timeFormat)} - ${formatTime(block.endTime, timeFormat)}`
-                                                                    : formatTime(block.startTime, timeFormat)
-                                                                }
-                                                            </span>
-                                                            {columns.length === 1 && !isDetailsExpanded && !isDimmed && (
-
-                                                                <span className="block-desc">{block.isMain ? '' : block.sectionName}</span>
-                                                            )}
-                                                        </div>
-                                                    </motion.div>
-                                                );
-                                            })
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            </div>
-                        );
-                    })}
+                    {FULL_DAYS_OF_WEEK.map(day => (
+                        <DayColumn
+                            key={day}
+                            day={day}
+                            hours={hours}
+                            schedule={schedule}
+                            overlaidSchedules={overlaidSchedules}
+                            hoveredInfo={hoveredInfo}
+                            timeFormat={timeFormat}
+                            isDetailsExpanded={isDetailsExpanded}
+                            handleMouseEnter={handleMouseEnterWrapper}
+                            handleMouseLeave={handleMouseLeaveWrapper}
+                        />
+                    ))}
                 </div>
 
                 <AnimatePresence>

@@ -53,7 +53,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
         labDays, setLabDays, isLecFixed, setIsLecFixed, isLabFixed, setIsLabFixed,
         lecRange, setLecRange, labRange, setLabRange, generatedSchedule, setGeneratedSchedule,
         lastRequest, setLastRequest, isCalculating, setIsCalculating,
-        selectedCourseInfo, setSelectedCourseInfo, handleCourseSelect,
+        selectedCourseInfo, setSelectedCourseInfo, handleCourseSelect, clearCourseSelection,
         getWorkspaceAsSection
     } = workspaceAPI;
 
@@ -184,14 +184,16 @@ export const DesktopView: React.FC<AppViewProps> = ({
 
     const clearWorkspace = () => {
         setCurrentSectionId(null);
-        setLectureUnits(0);
+        if (!selectedCourseInfo) {
+            setLectureUnits(0);
+            setLabUnits(0);
+        }
         setLectureDays([]);
-        setLabUnits(0);
         setLabDays([]);
         setGeneratedSchedule(null);
         setLastRequest(null);
         setIsConfirmNewOpen(false);
-        showToast("Workspace cleared", "info");
+        showToast("Ready for new section", "info");
     };
 
     const selectedTerm = calendar.find(t => t.id === selectedTermId) || calendar[0];
@@ -357,6 +359,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
                         divisions={divisions}
                         departments={departments}
                         handleCourseSelect={handleCourseSelect}
+                        onClearCourse={clearCourseSelection}
                         selectedCourseInfo={selectedCourseInfo}
                         lectureUnits={lectureUnits}
                         setLectureUnits={setLectureUnits}
@@ -380,6 +383,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
                                 overlaidSchedules={overlaidSchedules as OverlaidSchedule[]}
                                 timeFormat={timeFormat}
                                 resultsHeadingRef={resultsHeadingRef}
+                                isCalculating={isCalculating}
                             />
                         </div>
                     </div>

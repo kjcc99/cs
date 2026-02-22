@@ -44,6 +44,16 @@ export function useWorkspace() {
         setLabUnits(newLabUnits);
     }, []);
 
+    const clearCourseSelection = useCallback(() => {
+        setSelectedCourseInfo(null);
+        setIsLecFixed(false);
+        setIsLabFixed(false);
+        setLecRange({ min: 0, max: 10 });
+        setLabRange({ min: 0, max: 10 });
+        setLectureUnits(0);
+        setLabUnits(0);
+    }, []);
+
     const getWorkspaceAsSection = useCallback((id: string, name: string, settings: any) => {
         return {
             id,
@@ -71,7 +81,7 @@ export function useWorkspace() {
         lastRequest, setLastRequest,
         isCalculating, setIsCalculating,
         selectedCourseInfo, setSelectedCourseInfo,
-        handleCourseSelect,
+        handleCourseSelect, clearCourseSelection,
         getWorkspaceAsSection
     };
 }

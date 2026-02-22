@@ -6,6 +6,7 @@ import { X, ExternalLink, HelpCircle, Settings as SettingsIcon, Table } from 'lu
 import { Reorder } from 'framer-motion';
 import SidebarItem from '../../SidebarItem';
 import Settings from '../../Settings';
+import ConfirmModal from '../../ConfirmModal';
 import { useSections } from '../../../hooks/useSections';
 import { useSettings } from '../../../hooks/useSettings';
 import { useWorkspace } from '../../../hooks/useWorkspace';
@@ -42,6 +43,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
     const { timeFormat, theme, setTheme, setTimeFormat, selectedTermId, setSelectedTermId, selectedSessionId, setSelectedSessionId, startTime, setStartTime, labStartTime, setLabStartTime } = settingsAPI;
 
     const { showToast } = useToast();
+    const [isConfirmClearOpen, setIsConfirmClearOpen] = React.useState(false);
 
     return (
         <AnimatePresence>
@@ -135,18 +137,34 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                         </div>
 
                         <div className="ms-footer">
-                            <button className="ms-clear-btn" onClick={() => {
-                                if (window.confirm("Are you sure you want to clear ALL saved sections?")) {
-                                    clearAllSections();
-                                    showToast("All sections cleared", "info");
-                                }
-                            }}>
-                                Clear All
+                            <button className="ms-clear-btn" onClick={() => setIsConfirmClearOpen(true)}>
+                                Clear All Sections
                             </button>
+                            <div className="ms-disclaimer">
+                                Schedules are saved locally to your device.
+                            </div>
                         </div>
                     </motion.div>
                 </>
             )}
+
+            <AnimatePresence>
+                {isConfirmClearOpen && (
+                    <ConfirmModal
+                        title="Clear All Sections?"
+                        message="Are you sure you want to delete all saved sections? This action cannot be undone."
+                        confirmText="Delete All"
+                        cancelText="Cancel"
+                        onConfirm={() => {
+                            clearAllSections();
+                            showToast("All sections deleted", "info");
+                            setIsConfirmClearOpen(false);
+                            onClose();
+                        }}
+                        onCancel={() => setIsConfirmClearOpen(false)}
+                    />
+                )}
+            </AnimatePresence>
         </AnimatePresence>
     );
 };

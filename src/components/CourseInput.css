@@ -7,37 +7,71 @@
   flex: 1;
 }
 
-.lecture-panel, .lab-panel {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 4px 12px;
+.lecture-panel,
+.lab-panel {
+  padding: 6px 12px;
   border-radius: var(--radius-lg);
-  transition: background-color 0.2s;
-  flex: 0 1 auto; /* Don't force them to fill the whole space */
+  transition: all 0.2s;
+  flex: 0 1 auto;
 }
 
-.lecture-panel { background-color: rgba(30, 58, 138, 0.06); }
-.lab-panel { background-color: rgba(6, 78, 59, 0.06); }
+.ci-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
-.lecture-panel h4, .lab-panel h4 {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 700;
+.ci-panel-label {
+  font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-main);
-  min-width: 35px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.ci-controls {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.micro-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.lecture-panel {
+  background-color: rgba(30, 58, 138, 0.05);
+}
+
+.lab-panel {
+  background-color: rgba(6, 78, 59, 0.05);
+}
+
+.lecture-panel.active {
+  background-color: rgba(30, 58, 138, 0.08);
+}
+
+.lab-panel.active {
+  background-color: rgba(6, 78, 59, 0.08);
+}
+
+.lec-label {
+  color: var(--primary) !important;
+  opacity: 1 !important;
+}
+
+.lab-label {
+  color: var(--lab-color) !important;
+  opacity: 1 !important;
 }
 
 /* Custom Unit Selector inside panels */
-.lecture-panel .unit-selector-container,
-.lab-panel .unit-selector-container {
-  margin-bottom: 0; /* Override any global margin */
-}
-
-/* Day patterns/picker container */
-.lecture-panel > div, .lab-panel > div {
-  display: flex;
-  align-items: center;
+.unit-selector-container {
+  margin-bottom: 0;
 }
