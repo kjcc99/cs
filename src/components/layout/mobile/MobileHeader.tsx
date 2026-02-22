@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Menu, Save, MoreVertical, Plus, FileText, CheckCircle2, AlertTriangle, Copy, Table } from 'lucide-react';
 import { GeneratedSchedule } from '../../../types';
 import { useWorkspace } from '../../../hooks/useWorkspace';
+import { useSections } from '../../../hooks/useSections';
 import { useOutsideClick } from '../../../hooks/useOutsideClick';
 import './MobileHeader.css';
 
@@ -12,14 +13,17 @@ interface MobileHeaderProps {
     onCopySimple: () => void;
     onCopyDetailed: () => void;
     onCopySpreadsheet: () => void;
+    onSaveAsNew: () => void;
     workspaceAPI: ReturnType<typeof useWorkspace>;
+    sectionsAPI: ReturnType<typeof useSections>;
 }
 
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
-    onOpenSidebar, onSave, onNew, onCopySimple, onCopyDetailed, onCopySpreadsheet, workspaceAPI
+    onOpenSidebar, onSave, onNew, onCopySimple, onCopyDetailed, onCopySpreadsheet, onSaveAsNew, workspaceAPI, sectionsAPI
 }) => {
     const { generatedSchedule: schedule, isCalculating } = workspaceAPI;
+    const { currentSectionId } = sectionsAPI;
 
     const [menuOpen, setMenuOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
@@ -52,7 +56,12 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             </div>
 
             <div className="mh-right">
-                <button className="mh-btn primary" onClick={onSave} aria-label="Save">
+                {currentSectionId && (
+                    <button className="mh-btn" onClick={onSaveAsNew} aria-label="Save as New">
+                        <Copy size={20} />
+                    </button>
+                )}
+                <button className="mh-btn primary" onClick={onSave} aria-label={currentSectionId ? "Update" : "Save"}>
                     <Save size={20} />
                 </button>
                 <div className="mh-more" ref={menuRef}>

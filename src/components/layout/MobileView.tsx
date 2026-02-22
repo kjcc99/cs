@@ -83,6 +83,28 @@ export const MobileView: React.FC<AppViewProps> = ({
         showToast(currentSectionId ? "Updated" : "Saved");
     }, [saveSection, lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId, selectedCourseInfo, savedSections, currentSectionId, showToast]);
 
+    const handleSaveAsNew = useCallback(() => {
+        if (lectureUnits === 0 && labUnits === 0) {
+            showToast("Enter units first", "error");
+            return;
+        }
+
+        let sectionName = `Section ${savedSections.length + 1}`;
+        if (selectedCourseInfo) {
+            const { sub, no } = selectedCourseInfo;
+            const existingCount = savedSections.filter(s => s.name.startsWith(`${sub} ${no}`)).length;
+            const sectionNum = String(existingCount + 1).padStart(2, '0');
+            sectionName = `${sub} ${no} ${sectionNum}`;
+        }
+
+        saveSection({
+            lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId,
+            name: sectionName
+        }, true);
+        showToast("Saved as new copy");
+    }, [saveSection, lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId, selectedCourseInfo, savedSections, showToast]);
+
+
     const handleLoadSection = useCallback((section: SavedSection) => {
         setCurrentSectionId(section.id);
         setLectureUnits(section.lectureUnits);
@@ -207,11 +229,13 @@ export const MobileView: React.FC<AppViewProps> = ({
             <MobileHeader
                 onOpenSidebar={() => setIsSidebarOpen(true)}
                 onSave={handleSaveSection}
+                onSaveAsNew={handleSaveAsNew}
                 onNew={handleNewRequest}
                 onCopySimple={() => handleCopy('simple')}
                 onCopyDetailed={() => handleCopy('detailed')}
                 onCopySpreadsheet={() => handleCopy('spreadsheet')}
                 workspaceAPI={workspaceAPI}
+                sectionsAPI={sectionsAPI}
             />
 
             <main className="mv-content">
