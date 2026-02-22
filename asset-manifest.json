@@ -1,17 +1,17 @@
 {
   "files": {
     "main.css": "/cs/static/css/main.101bedc4.css",
-    "main.js": "/cs/static/js/main.01b3e666.js",
+    "main.js": "/cs/static/js/main.83650e4d.js",
     "static/js/453.6ed6e179.chunk.js": "/cs/static/js/453.6ed6e179.chunk.js",
     "static/media/contact_hours_rules.md": "/cs/static/media/contact_hours_rules.4e8a7daf776a76adfed1.md",
     "static/media/attendance-method.md": "/cs/static/media/attendance-method.24c7a7bf01f7efe538ac.md",
     "index.html": "/cs/index.html",
     "main.101bedc4.css.map": "/cs/static/css/main.101bedc4.css.map",
-    "main.01b3e666.js.map": "/cs/static/js/main.01b3e666.js.map",
+    "main.83650e4d.js.map": "/cs/static/js/main.83650e4d.js.map",
     "453.6ed6e179.chunk.js.map": "/cs/static/js/453.6ed6e179.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.101bedc4.css",
-    "static/js/main.01b3e666.js"
+    "static/js/main.83650e4d.js"
   ]
 }
