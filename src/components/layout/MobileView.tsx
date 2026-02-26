@@ -57,7 +57,7 @@ export const MobileView: React.FC<AppViewProps> = ({
     // UI States
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isConfirmNewOpen, setIsConfirmNewOpen] = useState(false);
-    const [isConfigExpanded, setIsConfigExpanded] = useState(false);
+    const [isConfigExpanded, setIsConfigExpanded] = useState(true);
     const [isHelpOpen, setIsHelpOpen] = useState(false);
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const [overlaySectionIds, setOverlaySectionIds] = useState<string[]>([]);

@@ -64,7 +64,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
     const [isConfirmNewOpen, setIsConfirmNewOpen] = useState(false);
     const [isCopyDropdownOpen, setIsCopyDropdownOpen] = useState(false);
     const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
-    const [isConfigExpanded, setIsConfigExpanded] = useState(false);
+    const [isConfigExpanded, setIsConfigExpanded] = useState(true);
     const [overlaySectionIds, setOverlaySectionIds] = useState<string[]>([]);
 
     const copyDropdownRef = useRef<HTMLDivElement>(null);
