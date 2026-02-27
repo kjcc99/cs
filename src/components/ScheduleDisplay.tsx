@@ -262,9 +262,12 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
                         <MinimalSummary blocks={schedule.scheduleBlocks.filter(b => b.type === 'lecture')} type="lecture" timeFormat={timeFormat} />
                         <MinimalSummary blocks={schedule.scheduleBlocks.filter(b => b.type === 'lab')} type="lab" timeFormat={timeFormat} />
                     </div>
-                    <button onClick={() => setIsDetailsExpanded(!isDetailsExpanded)} className="details-toggle-btn">
-                        {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
-                    </button>
+                    <div className="summary-right">
+                        <span className="schedule-disclaimer">* Generated schedules are estimates</span>
+                        <button onClick={() => setIsDetailsExpanded(!isDetailsExpanded)} className="details-toggle-btn">
+                            {isDetailsExpanded ? 'Hide Details' : 'Show Details'}
+                        </button>
+                    </div>
                 </div>
             )}
 

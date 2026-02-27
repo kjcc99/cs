@@ -66,6 +66,19 @@
   vertical-align: middle;
 }
 
+.summary-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.schedule-disclaimer {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: nowrap;
+}
+
 .details-toggle-btn {
   background: transparent;
   border: 1px solid var(--border-color);
@@ -224,9 +237,20 @@
     align-items: stretch;
   }
 
+  .summary-right {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .schedule-disclaimer {
+    text-align: center;
+    white-space: normal;
+  }
+
   .details-toggle-btn {
     width: 100%;
-    margin-top: 8px;
+    margin-top: 0;
   }
 
   .timeline-wrapper {

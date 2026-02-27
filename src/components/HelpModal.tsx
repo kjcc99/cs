@@ -1,37 +1,49 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Save, Edit2, Copy, ExternalLink, Table } from 'lucide-react';
 
 import './HelpModal.css';
 
 interface FAQItem {
   question: string;
-  answer: string;
+  answer: React.ReactNode;
 }
 
 const faqs: FAQItem[] = [
   {
     question: "How do I start scheduling?",
-    answer: "Click the 'Course Configuration' summary at the top to expand the inputs. Use the Course Catalog to pick a course, or enter units manually. The calendar will update automatically as you make changes."
+    answer: "Use the Course Catalog to pick a course, or enter units manually in the Configuration panel above. The calendar will update instantly as you make changes to units, days, or times."
   },
   {
     question: "How do I save my work?",
-    answer: "Once you’re happy with a schedule, click the '💾 Save Current Section' button in the top toolbar. It will appear in the sidebar on the left with an intelligent name based on the subject and course number."
+    answer: (
+      <>
+        Once you’re happy with a schedule, click the <strong><Save size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /> Save Section</strong> button in the top toolbar to stash it in the sidebar. It will automatically be assigned an intelligent name based on the subject and course number.
+      </>
+    )
   },
   {
     question: "Can I see multiple sections at once?",
-    answer: "Yes! Use the checkboxes on the left side of your saved sections in the sidebar. Selected sections will appear as semi-transparent 'ghost' blocks on the calendar, allowing you to visually detect overlaps and conflicts."
+    answer: "Yes! Use the check circles on the left side of your saved sections in the sidebar. Selected sections will appear as semi-transparent 'ghost' blocks on the calendar, allowing you to visually detect overlaps and conflicts."
   },
   {
     question: "What does the dot next to a section name mean?",
-    answer: "A small dot indicates unsaved changes. It means you have loaded a section and tweaked its configuration, but haven't clicked 'Save' to update the version stored in the sidebar yet."
+    answer: "A small dot next to the section name indicates unsaved changes. It means you’ve loaded a section and tweaked its configuration, but haven't clicked 'Update Section' to push your changes to the saved copy."
   },
   {
     question: "How do I reorder or rename my sections?",
-    answer: "Hover over a section in the sidebar to see the '✎' icon for renaming. To reorder, use the '⠿' drag handle on the left of the section pill and slide it to a new position."
+    answer: (
+      <>
+        Hover over a section in the sidebar to see the <strong><Edit2 size={12} style={{ display: 'inline', verticalAlign: '-1px', margin: '0 2px' }} /></strong> icon for renaming. To reorder, use the <strong>⠿</strong> drag handle on the left of the section pill and slide it to a new position.
+      </>
+    )
   },
   {
     question: "How do I export my data?",
-    answer: "To export a single section, use the '📋 Copy' split-button in the toolbar. To export every section in your sidebar at once, click the '📤' icon at the very top of the sidebar header."
+    answer: (
+      <>
+        To export a single section, use the <strong><Copy size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /> Copy</strong> split-button in the toolbar. To export every section in your sidebar at once, click the <strong><ExternalLink size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /></strong> (Details) or <strong><Table size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /></strong> (Spreadsheet) icons at the very top of the sidebar header.
+      </>
+    )
   }
 ];
 
