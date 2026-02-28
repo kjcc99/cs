@@ -40,7 +40,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
     handleExportAll, handleExportSpreadsheet
 }) => {
     const { savedSections, currentSectionId, deleteSection, renameSection, reorderSections, clearAllSections } = sectionsAPI;
-    const { timeFormat, theme, setTheme, setTimeFormat, selectedTermId, setSelectedTermId, selectedSessionId, setSelectedSessionId, startTime, setStartTime, labStartTime, setLabStartTime } = settingsAPI;
+    const { timeFormat } = settingsAPI;
 
     const { showToast } = useToast();
     const [isConfirmClearOpen, setIsConfirmClearOpen] = React.useState(false);

@@ -204,6 +204,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
                 clearTimeout(clearTimer);
             };
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [schedule]);
 
     const allBlocks = React.useMemo(() => {

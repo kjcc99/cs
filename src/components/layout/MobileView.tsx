@@ -10,8 +10,6 @@ import HelpModal from '../HelpModal';
 import ConfirmModal from '../ConfirmModal';
 import {
     SavedSection,
-    AcademicTerm,
-    GeneratedSchedule,
     ExportType
 } from '../../types';
 import { generateSchedule } from '../../utils/scheduleGenerator';
@@ -30,24 +28,23 @@ export const MobileView: React.FC<AppViewProps> = ({
 }) => {
     const { showToast } = useToast();
     const {
-        savedSections, currentSectionId, setCurrentSectionId, saveSection,
-        deleteSection, renameSection, clearAllSections
+        savedSections, currentSectionId, setCurrentSectionId, saveSection
     } = sectionsAPI;
 
     const { contactHourRules, attendanceRules } = rulesAPI;
 
     const {
         selectedTermId, setSelectedTermId, selectedSessionId, setSelectedSessionId,
-        startTime, setStartTime, labStartTime, setLabStartTime, theme, setTheme,
-        timeFormat, setTimeFormat
+        startTime, setStartTime, labStartTime, setLabStartTime, theme,
+        timeFormat
     } = settingsAPI;
 
     const { catalog, divisions, departments } = catalogAPI;
 
     const {
         lectureUnits, setLectureUnits, lectureDays, setLectureDays, labUnits, setLabUnits,
-        labDays, setLabDays, isLecFixed, setIsLecFixed, isLabFixed, setIsLabFixed,
-        lecRange, setLecRange, labRange, setLabRange,
+        labDays, setLabDays, isLecFixed, isLabFixed,
+        lecRange, labRange,
         generatedSchedule, setGeneratedSchedule,
         lastRequest, setLastRequest,
         selectedCourseInfo, handleCourseSelect,

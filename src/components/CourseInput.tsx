@@ -1,5 +1,5 @@
 // src/components/CourseInput.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import DayPicker from './DayPicker';
 import UnitSelector from './UnitSelector';
 import './CourseInput.css';
@@ -53,21 +53,6 @@ const CourseInput: React.FC<CourseInputProps> = ({
     setLabDays(newDays);
   };
 
-  const handleClearAll = () => {
-    setLectureUnits(0);
-    setLabUnits(0);
-    setLectureDays([]);
-    setLabDays([]);
-  };
-
-  const dayPatterns = [
-    { label: 'M/W', days: ['Mon', 'Wed'] },
-    { label: 'T/Th', days: ['Tue', 'Thu'] },
-    { label: 'M/W/F', days: ['Mon', 'Wed', 'Fri'] },
-    { label: 'T/Th/F', days: ['Tue', 'Thu', 'Fri'] },
-    { label: 'F/Sa', days: ['Fri', 'Sat'] },
-    { label: 'M-F', days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
-  ];
 
   return (
     <div className="course-input-panel">

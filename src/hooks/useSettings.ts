@@ -55,6 +55,7 @@ export function useSettings() {
         startTime, setStartTime,
         labStartTime, setLabStartTime,
         theme, setTheme,
+        daySelectionMode, setDaySelectionMode,
         timeFormat, setTimeFormat
     };
 }

@@ -1,0 +1,87 @@
+[eslint]
+src\components\CourseInput.tsx
+  Line 2:27:  'useEffect' is defined but never used                @typescript-eslint/no-unused-vars
+  Line 56:9:  'handleClearAll' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  Line 63:9:  'dayPatterns' is assigned a value but never used     @typescript-eslint/no-unused-vars
+
+src\components\DashboardHeader.tsx
+  Line 5:10:  'GeneratedSchedule' is defined but never used  @typescript-eslint/no-unused-vars
+  Line 5:29:  'SavedSection' is defined but never used       @typescript-eslint/no-unused-vars
+
+src\components\ScheduleDisplay.tsx
+  Line 207:8:  React Hook useEffect has a missing dependency: 'showNudge'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+src\components\Sidebar.tsx
+  Line 52:25:   'theme' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  Line 52:32:   'setTheme' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  Line 52:42:   'setTimeFormat' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  Line 52:57:   'selectedTermId' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  Line 52:73:   'setSelectedTermId' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  Line 52:92:   'selectedSessionId' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  Line 52:111:  'setSelectedSessionId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  Line 52:133:  'startTime' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  Line 52:144:  'setStartTime' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  Line 52:158:  'labStartTime' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  Line 52:172:  'setLabStartTime' is assigned a value but never used       @typescript-eslint/no-unused-vars
+
+src\components\layout\DesktopView.tsx
+  Line 5:10:   'ScheduleRequest' is defined but never used                 @typescript-eslint/no-unused-vars
+  Line 15:5:   'AcademicTerm' is defined but never used                    @typescript-eslint/no-unused-vars
+  Line 16:5:   'GeneratedSchedule' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 17:5:   'ScheduleBlock' is defined but never used                   @typescript-eslint/no-unused-vars
+  Line 38:9:   'deleteSection' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  Line 38:24:  'renameSection' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  Line 38:39:  'reorderSections' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  Line 38:56:  'clearAllSections' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  Line 45:65:  'theme' is assigned a value but never used                  @typescript-eslint/no-unused-vars
+  Line 45:72:  'setTheme' is assigned a value but never used               @typescript-eslint/no-unused-vars
+  Line 46:21:  'setTimeFormat' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  Line 53:42:  'setIsLecFixed' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  Line 53:69:  'setIsLabFixed' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  Line 54:19:  'setLecRange' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  Line 54:42:  'setLabRange' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  Line 55:53:  'setIsCalculating' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  Line 56:29:  'setSelectedCourseInfo' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+src\components\layout\MobileView.tsx
+  Line 13:5:   'AcademicTerm' is defined but never used               @typescript-eslint/no-unused-vars
+  Line 14:5:   'GeneratedSchedule' is defined but never used          @typescript-eslint/no-unused-vars
+  Line 34:9:   'deleteSection' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  Line 34:24:  'renameSection' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  Line 34:39:  'clearAllSections' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  Line 41:65:  'theme' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  Line 41:72:  'setTheme' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  Line 42:21:  'setTimeFormat' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  Line 49:42:  'setIsLecFixed' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  Line 49:69:  'setIsLabFixed' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  Line 50:19:  'setLecRange' is assigned a value but never used       @typescript-eslint/no-unused-vars
+  Line 50:42:  'setLabRange' is assigned a value but never used       @typescript-eslint/no-unused-vars
+
+src\components\layout\mobile\MobileHeader.tsx
+  Line 3:10:  'GeneratedSchedule' is defined but never used  @typescript-eslint/no-unused-vars
+
+src\components\layout\mobile\MobileSidebar.tsx
+  Line 43:25:   'theme' is assigned a value but never used                 @typescript-eslint/no-unused-vars
+  Line 43:32:   'setTheme' is assigned a value but never used              @typescript-eslint/no-unused-vars
+  Line 43:42:   'setTimeFormat' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  Line 43:57:   'selectedTermId' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  Line 43:73:   'setSelectedTermId' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  Line 43:92:   'selectedSessionId' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  Line 43:111:  'setSelectedSessionId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  Line 43:133:  'startTime' is assigned a value but never used             @typescript-eslint/no-unused-vars
+  Line 43:144:  'setStartTime' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  Line 43:158:  'labStartTime' is assigned a value but never used          @typescript-eslint/no-unused-vars
+  Line 43:172:  'setLabStartTime' is assigned a value but never used       @typescript-eslint/no-unused-vars
+
+src\hooks\useCatalog.ts
+  Line 2:10:  'useState' is defined but never used   @typescript-eslint/no-unused-vars
+  Line 2:20:  'useEffect' is defined but never used  @typescript-eslint/no-unused-vars
+
+src\hooks\useSettings.ts
+  Line 26:30:  'setDaySelectionMode' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+src\utils\scheduleGenerator.ts
+  Line 3:10:  'AcademicTerm' is defined but never used                 @typescript-eslint/no-unused-vars
+  Line 3:24:  'TermSession' is defined but never used                  @typescript-eslint/no-unused-vars
+  Line 3:37:  'ContactHourCalculationRules' is defined but never used  @typescript-eslint/no-unused-vars
+  Line 3:66:  'AttendanceAccountingRules' is defined but never used    @typescript-eslint/no-unused-vars

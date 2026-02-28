@@ -1,5 +1,5 @@
 // src/hooks/useCatalog.ts
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 
 // Import local data
 import courses2526 from '../data/courses_2526.json';
@@ -26,12 +26,12 @@ export function useCatalog(selectedTermId: string) {
     if (selectedTermId === 'su2026') {
       return courses2526 as CatalogHierarchy;
     }
-    
+
     // 2025 terms use 2526
     if (selectedTermId.includes('2025')) {
       return courses2526 as CatalogHierarchy;
     }
-    
+
     // Default to 2627 for other 2026+ terms
     return courses2627 as CatalogHierarchy;
   }, [selectedTermId]);

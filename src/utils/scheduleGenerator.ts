@@ -1,6 +1,5 @@
 // src/utils/scheduleGenerator.ts
 import { ScheduleRequest } from '../components/CourseInput';
-import { AcademicTerm, TermSession, ContactHourCalculationRules, AttendanceAccountingRules } from '../types';
 
 
 import { addDays, addWeeks, getDateString } from './dateUtils';

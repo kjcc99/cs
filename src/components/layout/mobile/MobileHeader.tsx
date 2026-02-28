@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import { Menu, Save, MoreVertical, Plus, FileText, CheckCircle2, AlertTriangle, Copy, Table } from 'lucide-react';
-import { GeneratedSchedule } from '../../../types';
 import { useWorkspace } from '../../../hooks/useWorkspace';
 import { useSections } from '../../../hooks/useSections';
 import { useOutsideClick } from '../../../hooks/useOutsideClick';

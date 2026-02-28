@@ -2,7 +2,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useToast } from '../Toast';
 import { AppViewProps } from './AppViewProps';
-import { ScheduleRequest } from '../CourseInput';
 import ScheduleDisplay, { OverlaidSchedule } from '../ScheduleDisplay';
 import HelpModal from '../HelpModal';
 import ConfirmModal from '../ConfirmModal';
@@ -12,9 +11,6 @@ import Sidebar from '../Sidebar';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 import {
     SavedSection,
-    AcademicTerm,
-    GeneratedSchedule,
-    ScheduleBlock,
     ExportType
 } from '../../types';
 import { generateSchedule } from '../../utils/scheduleGenerator';
@@ -34,26 +30,25 @@ export const DesktopView: React.FC<AppViewProps> = ({
 }) => {
     const { showToast } = useToast();
     const {
-        savedSections, currentSectionId, setCurrentSectionId, saveSection,
-        deleteSection, renameSection, reorderSections, clearAllSections
+        savedSections, currentSectionId, setCurrentSectionId, saveSection
     } = sectionsAPI;
 
     const { contactHourRules, attendanceRules } = rulesAPI;
 
     const {
         selectedTermId, setSelectedTermId, selectedSessionId, setSelectedSessionId,
-        startTime, setStartTime, labStartTime, setLabStartTime, theme, setTheme,
-        timeFormat, setTimeFormat
+        startTime, setStartTime, labStartTime, setLabStartTime, theme,
+        timeFormat
     } = settingsAPI;
 
     const { catalog, divisions, departments } = catalogAPI;
 
     const {
         lectureUnits, setLectureUnits, lectureDays, setLectureDays, labUnits, setLabUnits,
-        labDays, setLabDays, isLecFixed, setIsLecFixed, isLabFixed, setIsLabFixed,
-        lecRange, setLecRange, labRange, setLabRange, generatedSchedule, setGeneratedSchedule,
-        lastRequest, setLastRequest, isCalculating, setIsCalculating,
-        selectedCourseInfo, setSelectedCourseInfo, handleCourseSelect, clearCourseSelection,
+        labDays, setLabDays, isLecFixed, isLabFixed,
+        lecRange, labRange, generatedSchedule, setGeneratedSchedule,
+        lastRequest, setLastRequest, isCalculating,
+        selectedCourseInfo, handleCourseSelect, clearCourseSelection,
         getWorkspaceAsSection
     } = workspaceAPI;
 

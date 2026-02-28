@@ -2,7 +2,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Save, Copy, ChevronDown } from 'lucide-react';
-import { GeneratedSchedule, SavedSection } from '../types';
 import { useWorkspace } from '../hooks/useWorkspace';
 import { useSections } from '../hooks/useSections';
 import './DashboardHeader.css';
