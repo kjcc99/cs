@@ -96,7 +96,12 @@ const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departm
   return (
     <div className="course-picker-container" ref={containerRef}>
       <div className="picker-trigger-wrapper">
-        <button className="picker-trigger" onClick={() => setIsOpen(!isOpen)}>
+        <button
+          className="picker-trigger"
+          onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
+          aria-haspopup="dialog"
+        >
           <div className="picker-trigger-content">
             <BookOpen size={14} />
             <span>{triggerLabel}</span>
@@ -129,20 +134,29 @@ const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departm
                 onChange={(e) => setSearch(e.target.value)}
                 autoFocus
               />
-              {search && <X size={16} className="clear-search" onClick={() => setSearch('')} />}
+              {search && (
+                <button
+                  className="clear-search"
+                  onClick={() => setSearch('')}
+                  aria-label="Clear search"
+                  style={{ background: 'transparent', border: 'none', padding: 0, display: 'flex' }}
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
 
             <div className="picker-content">
               {search.length >= 2 ? (
                 <div className="picker-list">
                   {searchResults.map((res, i) => (
-                    <div key={i} className="picker-item course" onClick={() => handleSelect(res.sub, res.course)}>
+                    <button key={i} className="picker-item course" onClick={() => handleSelect(res.sub, res.course)}>
                       <div className="course-identity">
                         <strong>{res.sub} {res.course.no}</strong>
                         {res.course.title && <span>{res.course.title}</span>}
                       </div>
                       <ChevronRight size={14} />
-                    </div>
+                    </button>
                   ))}
                   {searchResults.length === 0 && <div className="no-results">No courses found</div>}
                 </div>
@@ -166,40 +180,40 @@ const CoursePicker: React.FC<CoursePickerProps> = ({ catalog, divisions, departm
                     {view === 'divisions' && Object.keys(catalog)
                       .sort((a, b) => (divisions[a] || a).localeCompare(divisions[b] || b))
                       .map(div => (
-                        <div key={div} className="picker-item" onClick={() => { setSelectedDiv(div); setViewState('departments'); }}>
+                        <button key={div} className="picker-item" onClick={() => { setSelectedDiv(div); setViewState('departments'); }}>
                           <span>{divisions[div] || div}</span>
                           <ChevronRight size={14} />
-                        </div>
+                        </button>
                       ))}
 
                     {view === 'departments' && selectedDiv && Object.keys(catalog[selectedDiv] || {})
                       .sort((a, b) => (departments[a] || a).localeCompare(departments[b] || b))
                       .map(dpt => (
-                        <div key={dpt} className="picker-item" onClick={() => { setSelectedDpt(dpt); setViewState('subjects'); }}>
+                        <button key={dpt} className="picker-item" onClick={() => { setSelectedDpt(dpt); setViewState('subjects'); }}>
                           <span>{departments[dpt] || dpt}</span>
                           <ChevronRight size={14} />
-                        </div>
+                        </button>
                       ))}
 
                     {view === 'subjects' && selectedDiv && selectedDpt && Object.keys(catalog[selectedDiv][selectedDpt] || {})
                       .sort((a, b) => a.localeCompare(b))
                       .map(sub => (
-                        <div key={sub} className="picker-item" onClick={() => { setSelectedSub(sub); setViewState('courses'); }}>
+                        <button key={sub} className="picker-item" onClick={() => { setSelectedSub(sub); setViewState('courses'); }}>
                           <span>{sub}</span>
                           <ChevronRight size={14} />
-                        </div>
+                        </button>
                       ))}
 
                     {view === 'courses' && selectedDiv && selectedDpt && selectedSub && (catalog[selectedDiv][selectedDpt][selectedSub] || [])
                       .sort((a, b) => a.no.localeCompare(b.no, undefined, { numeric: true, sensitivity: 'base' }))
                       .map(course => (
-                        <div key={course.no} className="picker-item course" onClick={() => handleSelect(selectedSub, course)}>
+                        <button key={course.no} className="picker-item course" onClick={() => handleSelect(selectedSub, course)}>
                           <div className="course-identity">
                             <strong>{selectedSub} {course.no}</strong>
                             {course.title && <span>{course.title}</span>}
                           </div>
                           <ChevronRight size={14} />
-                        </div>
+                        </button>
                       ))}
                   </div>
                 </>

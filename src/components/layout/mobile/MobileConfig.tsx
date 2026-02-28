@@ -66,6 +66,15 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
                         exit={{ opacity: 0, height: 0 }}
                         className="mc-summary"
                         onClick={() => setIsConfigExpanded(true)}
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isConfigExpanded}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setIsConfigExpanded(true);
+                            }
+                        }}
                     >
                         <div className="mc-summary-text">
                             Scheduling <strong>{selectedTerm.name}</strong> ({selectedSession.name}) at <strong>{formatTime(startTime, timeFormat)}</strong>

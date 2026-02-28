@@ -80,6 +80,14 @@ ${formattedLabTime ? `Lab: ${section.labDays.join('')} ${formattedLabTime}` : ''
       dragControls={dragControls}
       className={`sidebar-item ${isActive ? 'active' : ''} ${isModified ? 'modified' : ''}`}
       onClick={() => !isEditing && onLoad()}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (!isEditing && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onLoad();
+        }
+      }}
       onMouseLeave={handleMouseLeave}
       layout="position"
       whileDrag={{ scale: 1.05, boxShadow: "0 8px 20px rgba(0,0,0,0.2)" }}
@@ -88,19 +96,22 @@ ${formattedLabTime ? `Lab: ${section.labDays.join('')} ${formattedLabTime}` : ''
     >
       <div className="sidebar-item-controls">
         {!isEditing && (
-          <div
+          <button
             className={`sidebar-checkbox ${isOverlaid ? 'checked' : ''}`}
             onClick={(e) => { e.stopPropagation(); onToggleOverlay(); }}
             title="Include in multi-view"
+            aria-checked={isOverlaid}
+            role="checkbox"
           >
             {isOverlaid && <Check size={10} strokeWidth={4} />}
-          </div>
+          </button>
         )}
 
         {!isEditing && !isCollapsed && (
           <div
             className="drag-handle"
             onPointerDown={(e) => dragControls.start(e)}
+            aria-hidden="true"
           >
             ⠿
           </div>

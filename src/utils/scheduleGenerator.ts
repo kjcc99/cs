@@ -189,10 +189,17 @@ export function generateSchedule(
             initialLabTime = labStartHour * 60 + labStartMinute;
         }
 
-        let currentTime = dailyEndTimes[day] ? dailyEndTimes[day] : initialLabTime;
+        let currentTime: number;
 
-        if (dailyEndTimes[day] && request.lectureUnits > 0) {
-            currentTime += 10; // 10 min passing time
+        if (labStartTime) {
+            // User explicitly set a lab time, use it regardless of lecture presence
+            currentTime = initialLabTime;
+        } else if (dailyEndTimes[day] && request.lectureUnits > 0) {
+            // No custom lab time, and there's a lecture today: start 10m after lecture
+            currentTime = dailyEndTimes[day] + 10;
+        } else {
+            // No custom lab time, no lecture today: start at default time (initialLecTime)
+            currentTime = initialLabTime;
         }
 
         labDaily.forEach(block => {

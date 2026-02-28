@@ -135,9 +135,11 @@
   border: 2px solid transparent;
 }
 
-.sidebar-item:hover {
+.sidebar-item:hover,
+.sidebar-item:focus-visible {
   background-color: var(--bg-canvas);
   border-color: var(--border-color);
+  outline: none;
   transform: translateY(-2px);
 }
 
@@ -154,7 +156,8 @@
 
 .sidebar-item-info {
   flex: 1;
-  min-width: 0; /* Allow text truncate if needed */
+  min-width: 0;
+  /* Allow text truncate if needed */
   padding: 0 8px;
 }
 
@@ -259,6 +262,12 @@
   background: var(--bg-card);
   transition: all 0.2s;
   flex-shrink: 0;
+  padding: 0;
+}
+
+.sidebar-checkbox:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .sidebar-checkbox.checked {

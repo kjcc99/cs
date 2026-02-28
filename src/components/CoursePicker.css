@@ -38,6 +38,12 @@
   border-color: var(--primary);
 }
 
+.picker-trigger:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--primary);
+}
+
 .picker-clear-btn {
   position: absolute;
   right: 6px;
@@ -52,6 +58,11 @@
   color: var(--text-muted);
   cursor: pointer;
   padding: 0;
+}
+
+.picker-clear-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .picker-clear-btn:hover {
@@ -137,13 +148,21 @@
   align-items: center;
   padding: 10px 16px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
   border-bottom: 1px solid rgba(0, 0, 0, 0.03);
   font-size: 0.9rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
 }
 
-.picker-item:hover {
+.picker-item:hover,
+.picker-item:focus-visible {
   background-color: var(--bg-well);
+  outline: none;
 }
 
 .picker-item.course {

@@ -142,10 +142,6 @@
   background: var(--bg-inset);
 }
 
-.time-selector-container select:hover {
-  background: var(--bg-card);
-}
-
 .time-separator {
   font-weight: bold;
   opacity: 0.5;

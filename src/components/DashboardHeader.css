@@ -5,7 +5,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 20px;
-  height: 44px; /* Even tighter height */
+  height: 44px;
+  /* Even tighter height */
   min-height: 44px;
   background-color: var(--bg-card);
   border-bottom: 1px solid var(--border-color);
@@ -30,6 +31,7 @@
   font-weight: 700;
   background: linear-gradient(to right, var(--primary), var(--lecture-color));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -68,6 +70,11 @@
 .status-badge.clickable:hover {
   filter: brightness(0.9);
   transform: translateY(-1px);
+}
+
+.status-badge.clickable:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .status-badge.valid {
@@ -118,7 +125,7 @@
 }
 
 /* Compact Buttons for Header */
-.secondary-button.compact, 
+.secondary-button.compact,
 .primary-button.compact,
 .split-left.compact {
   padding: 6px 12px;

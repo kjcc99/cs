@@ -49,8 +49,17 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <h1>Course Scheduler</h1>
                 <div className="status-container" ref={statusPopoverRef}>
                     <span
-                        className={`status-badge ${status.class} clickable`}
+                        className={`status-badge ${status.class} ${generatedSchedule ? 'clickable' : ''}`}
                         onClick={() => generatedSchedule && setIsStatusPopoverOpen(!isStatusPopoverOpen)}
+                        tabIndex={generatedSchedule ? 0 : undefined}
+                        role={generatedSchedule ? 'button' : undefined}
+                        aria-expanded={generatedSchedule ? isStatusPopoverOpen : undefined}
+                        onKeyDown={(e) => {
+                            if (generatedSchedule && (e.key === 'Enter' || e.key === ' ')) {
+                                e.preventDefault();
+                                setIsStatusPopoverOpen(!isStatusPopoverOpen);
+                            }
+                        }}
                     >
                         {status.label}
                     </span>

@@ -77,6 +77,15 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
                         exit={{ opacity: 0, y: -10 }}
                         className="config-summary-row"
                         onClick={() => setIsConfigExpanded(true)}
+                        role="button"
+                        tabIndex={0}
+                        aria-expanded={isConfigExpanded}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setIsConfigExpanded(true);
+                            }
+                        }}
                     >
                         <div className="summary-sentence">
                             Scheduling <strong>{selectedTerm.name}</strong> ({selectedSession.name})
