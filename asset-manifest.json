@@ -1,17 +1,17 @@
 {
   "files": {
-    "main.css": "/cs/static/css/main.c2eadc63.css",
-    "main.js": "/cs/static/js/main.de2ff8df.js",
+    "main.css": "/cs/static/css/main.38a4f551.css",
+    "main.js": "/cs/static/js/main.b8bf606d.js",
     "static/js/453.6ed6e179.chunk.js": "/cs/static/js/453.6ed6e179.chunk.js",
     "static/media/contact_hours_rules.md": "/cs/static/media/contact_hours_rules.4e8a7daf776a76adfed1.md",
     "static/media/attendance-method.md": "/cs/static/media/attendance-method.24c7a7bf01f7efe538ac.md",
     "index.html": "/cs/index.html",
-    "main.c2eadc63.css.map": "/cs/static/css/main.c2eadc63.css.map",
-    "main.de2ff8df.js.map": "/cs/static/js/main.de2ff8df.js.map",
+    "main.38a4f551.css.map": "/cs/static/css/main.38a4f551.css.map",
+    "main.b8bf606d.js.map": "/cs/static/js/main.b8bf606d.js.map",
     "453.6ed6e179.chunk.js.map": "/cs/static/js/453.6ed6e179.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.c2eadc63.css",
-    "static/js/main.de2ff8df.js"
+    "static/css/main.38a4f551.css",
+    "static/js/main.b8bf606d.js"
   ]
 }
