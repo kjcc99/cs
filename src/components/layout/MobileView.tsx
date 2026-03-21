@@ -43,6 +43,7 @@ export const MobileView: React.FC<AppViewProps> = ({
 
     const {
         lectureUnits, setLectureUnits, lectureDays, setLectureDays, labUnits, setLabUnits,
+        lecTbaHours, setLecTbaHours, labTbaHours, setLabTbaHours,
         labDays, setLabDays, isLecFixed, isLabFixed,
         lecRange, labRange,
         generatedSchedule, setGeneratedSchedule,
@@ -74,11 +75,11 @@ export const MobileView: React.FC<AppViewProps> = ({
         }
 
         saveSection({
-            lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId,
+            lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId,
             ...(currentSectionId ? {} : { name: sectionName })
         });
         showToast(currentSectionId ? "Updated" : "Saved");
-    }, [saveSection, lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId, selectedCourseInfo, savedSections, currentSectionId, showToast]);
+    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, selectedCourseInfo, savedSections, currentSectionId, showToast]);
 
     const handleSaveAsNew = useCallback(() => {
         if (lectureUnits === 0 && labUnits === 0) {
@@ -95,19 +96,21 @@ export const MobileView: React.FC<AppViewProps> = ({
         }
 
         saveSection({
-            lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId,
+            lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId,
             name: sectionName
         }, true);
         showToast("Saved as new copy");
-    }, [saveSection, lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId, selectedCourseInfo, savedSections, showToast]);
+    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, selectedCourseInfo, savedSections, showToast]);
 
 
     const handleLoadSection = useCallback((section: SavedSection) => {
         setCurrentSectionId(section.id);
         setLectureUnits(section.lectureUnits);
         setLectureDays(section.lectureDays);
+        setLecTbaHours(section.lecTbaHours || 0);
         setLabUnits(section.labUnits);
         setLabDays(section.labDays);
+        setLabTbaHours(section.labTbaHours || 0);
         setStartTime(section.startTime);
         setLabStartTime(section.labStartTime);
         setSelectedTermId(section.selectedTermId);
@@ -118,15 +121,15 @@ export const MobileView: React.FC<AppViewProps> = ({
             const session = term.sessions.find(s => s.id === section.selectedSessionId) || term.sessions[0];
             const context = { contactHourRules, attendanceRules, term, session };
             const request = {
-                lectureUnits: section.lectureUnits, lectureDays: section.lectureDays,
-                labUnits: section.labUnits, labDays: section.labDays
+                lectureUnits: section.lectureUnits, lectureDays: section.lectureDays, lecTbaHours: section.lecTbaHours || 0,
+                labUnits: section.labUnits, labDays: section.labDays, labTbaHours: section.labTbaHours || 0
             };
             setGeneratedSchedule(generateSchedule(request, context, section.startTime, section.labStartTime));
             setLastRequest(request);
         }
         setIsSidebarOpen(false);
         setIsConfigExpanded(false);
-    }, [contactHourRules, attendanceRules, calendar, setCurrentSectionId, setLectureUnits, setLectureDays, setLabUnits, setLabDays, setStartTime, setLabStartTime, setSelectedTermId, setSelectedSessionId, setGeneratedSchedule, setLastRequest]);
+    }, [contactHourRules, attendanceRules, calendar, setCurrentSectionId, setLectureUnits, setLectureDays, setLecTbaHours, setLabUnits, setLabDays, setLabTbaHours, setStartTime, setLabStartTime, setSelectedTermId, setSelectedSessionId, setGeneratedSchedule, setLastRequest]);
 
     const toggleOverlay = (id: string) => {
         setOverlaySectionIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -194,7 +197,9 @@ export const MobileView: React.FC<AppViewProps> = ({
         setCurrentSectionId(null);
         if (!selectedCourseInfo) {
             setLectureUnits(0);
+            setLecTbaHours(0);
             setLabUnits(0);
+            setLabTbaHours(0);
         }
         setLectureDays([]);
         setLabDays([]);
@@ -264,10 +269,14 @@ export const MobileView: React.FC<AppViewProps> = ({
                     setLectureUnits={setLectureUnits}
                     lectureDays={lectureDays}
                     setLectureDays={setLectureDays}
+                    lecTbaHours={lecTbaHours}
+                    setLecTbaHours={setLecTbaHours}
                     labUnits={labUnits}
                     setLabUnits={setLabUnits}
                     labDays={labDays}
                     setLabDays={setLabDays}
+                    labTbaHours={labTbaHours}
+                    setLabTbaHours={setLabTbaHours}
                     isLecFixed={isLecFixed}
                     isLabFixed={isLabFixed}
                     lecRange={lecRange}

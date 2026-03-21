@@ -38,6 +38,10 @@ const faqs: FAQItem[] = [
     )
   },
   {
+    question: "What are TBA Hours?",
+    answer: "TBA (To Be Announced) hours represent contact time that hasn't been assigned to a specific meeting pattern yet. When you add TBA hours to a lecture or lab component, they are subtracted from that component's total required contact hours — the remaining hours are what get applied to your scheduled days and times on the calendar. Lecture and lab TBA hours are tracked independently of each other."
+  },
+  {
     question: "How do I export my data?",
     answer: (
       <>

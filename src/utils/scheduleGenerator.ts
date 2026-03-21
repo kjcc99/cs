@@ -24,6 +24,7 @@ function calculateDailySchedule(
     units: number,
     daysOfWeek: string[],
     type: 'lecture' | 'lab',
+    tbaHours: number = 0,
     context: RuleAndTermContext,
     warnings: string[]
 ): { dailyBlocks: Omit<ScheduleBlock, 'dayOfWeek' | 'startTime' | 'endTime'>[], info: ScheduleInfo } | null {
@@ -68,17 +69,23 @@ function calculateDailySchedule(
     // 3. Calculate Contact Hours
     const rate = type === 'lecture' ? 18 : 54;
     const contactHoursForTerm = units * rate;
+    const effectiveContactHoursForTerm = Math.max(0, contactHoursForTerm - tbaHours);
 
-    if (contactHoursForTerm === 0) {
-        return { dailyBlocks: [], info: { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 } };
+    if (tbaHours > contactHoursForTerm) {
+        warnings.push(`ERROR: TBA hours (${tbaHours}) cannot exceed total required contact hours (${contactHoursForTerm}) for this ${type}.`);
+        return null;
     }
 
-    if (actualMeetingDays === 0 && units > 0) {
+    if (effectiveContactHoursForTerm === 0) {
+        return { dailyBlocks: [], info: { contactHoursForTerm, weeklyContactHours: contactHoursForTerm / weeks, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 } };
+    }
+
+    if (actualMeetingDays === 0 && effectiveContactHoursForTerm > 0) {
         warnings.push(`The selected days for the ${type} do not occur in the chosen session.`);
         return null;
     }
 
-    const idealContactHoursPerDay = contactHoursForTerm / actualMeetingDays;
+    const idealContactHoursPerDay = effectiveContactHoursForTerm / actualMeetingDays;
 
     if (idealContactHoursPerDay < 1.0) {
         warnings.push(`ERROR: Minimum of 1.0 CH/day required. current: ${idealContactHoursPerDay.toFixed(2)}.`);
@@ -146,8 +153,8 @@ export function generateSchedule(
 
     if (request.lectureUnits === 0 && request.labUnits === 0) return emptySchedule;
 
-    const lectureResult = calculateDailySchedule(request.lectureUnits, request.lectureDays, 'lecture', context, warnings);
-    const labResult = calculateDailySchedule(request.labUnits, request.labDays, 'lab', context, warnings);
+    const lectureResult = calculateDailySchedule(request.lectureUnits, request.lectureDays, 'lecture', request.lecTbaHours || 0, context, warnings);
+    const labResult = calculateDailySchedule(request.labUnits, request.labDays, 'lab', request.labTbaHours || 0, context, warnings);
 
     if (!lectureResult || !labResult) {
         return { ...emptySchedule, lectureInfo: lectureResult?.info || emptyInfo, labInfo: labResult?.info || emptyInfo, warnings };
@@ -231,16 +238,19 @@ export function calculateOfficialEndTime(
     daysCount: number,
     startTime: string,
     weeks: number,
-    isLab: boolean = false
+    isLab: boolean = false,
+    tbaHours: number = 0
 ): string {
     if (!units || !daysCount || !weeks) return '';
 
     const rate = isLab ? 54 : 18;
     const contactHoursForTerm = units * rate;
+    const effectiveContactHoursForTerm = Math.max(0, contactHoursForTerm - tbaHours);
 
     // Simple meeting day calculation for the summary label
     const actualMeetingDays = weeks * daysCount;
-    const idealContactHoursPerDay = contactHoursForTerm / actualMeetingDays;
+    if (actualMeetingDays === 0 || effectiveContactHoursForTerm === 0) return '';
+    const idealContactHoursPerDay = effectiveContactHoursForTerm / actualMeetingDays;
     const finalDailyContactHours = Math.round(idealContactHoursPerDay * 10) / 10;
 
     const { totalClockMinutes } = calculateTimeMetrics(finalDailyContactHours);

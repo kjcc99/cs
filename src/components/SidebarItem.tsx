@@ -69,8 +69,8 @@ const SidebarItem: React.FC<SidebarItemProps> = ({
   };
 
   const tooltipContent = `${section.name}
-${formattedLecTime ? `Lec: ${section.lectureDays.join('')} ${formattedLecTime}` : ''}
-${formattedLabTime ? `Lab: ${section.labDays.join('')} ${formattedLabTime}` : ''}`;
+${section.lectureUnits > 0 ? `Lec: ${section.lectureDays.join('')} ${formattedLecTime}${section.lecTbaHours ? ` (+${section.lecTbaHours} TBA)` : ''}` : ''}
+${section.labUnits > 0 ? `Lab: ${section.labDays.join('')} ${formattedLabTime}${section.labTbaHours ? ` (+${section.labTbaHours} TBA)` : ''}` : ''}`;
 
   return (
     <Reorder.Item
@@ -160,11 +160,13 @@ ${formattedLabTime ? `Lab: ${section.labDays.join('')} ${formattedLabTime}` : ''
             {section.lectureUnits > 0 && (
               <div className="meta-row">
                 <strong>Lec:</strong> {section.lectureDays.join('')} {formattedLecTime}
+                {!!section.lecTbaHours && <span style={{ marginLeft: 4, fontWeight: 700, fontSize: '0.6rem', color: 'var(--primary)', opacity: 0.8 }}>(+{section.lecTbaHours} hrs TBA)</span>}
               </div>
             )}
             {section.labUnits > 0 && (
               <div className="meta-row">
                 <strong>Lab:</strong> {section.labDays.join('')} {formattedLabTime}
+                {!!section.labTbaHours && <span style={{ marginLeft: 4, fontWeight: 700, fontSize: '0.6rem', color: 'var(--lab-color)', opacity: 0.8 }}>(+{section.labTbaHours} hrs TBA)</span>}
               </div>
             )}
           </div>

@@ -45,12 +45,15 @@ export function exportForSpreadsheet(sections: SavedSection[], calendar: Academi
                 section.lectureDays.length,
                 section.startTime,
                 session.weeks,
-                false
+                false,
+                section.lecTbaHours || 0
             );
 
             const totalHours = section.lectureUnits * 18;
-            const hoursPerWeek = totalHours / session.weeks;
-            const hoursPerDay = hoursPerWeek / section.lectureDays.length;
+            const effectiveHours = Math.max(0, totalHours - (section.lecTbaHours || 0));
+            
+            const hoursPerWeek = session.weeks > 0 ? effectiveHours / session.weeks : 0;
+            const hoursPerDay = section.lectureDays.length > 0 ? hoursPerWeek / section.lectureDays.length : 0;
 
             const row = new Array(26).fill('');
             row[3] = sub;             // D: sub
@@ -61,10 +64,10 @@ export function exportForSpreadsheet(sections: SavedSection[], calendar: Academi
             row[8] = lecEnd;          // I: e time
             row[13] = startDate;      // N: s date
             row[14] = endDate;        // O: e date
-            row[15] = hoursPerDay.toFixed(1); // P: hrs/d
-            row[16] = hoursPerWeek.toFixed(1); // Q: hrs/wk
+            row[15] = hoursPerDay > 0 ? hoursPerDay.toFixed(1) : ''; // P: hrs/d
+            row[16] = hoursPerWeek > 0 ? hoursPerWeek.toFixed(1) : ''; // Q: hrs/wk
             row[17] = totalHours.toFixed(1); // R: hrs/ttl
-            row[23] = 'Lecture';      // X: Type (comments column)
+            row[23] = `Lecture${section.lecTbaHours ? ` (+${section.lecTbaHours} TBA hrs)` : ''}`;      // X: Type (comments column)
 
             rows.push(row);
         }
@@ -77,12 +80,15 @@ export function exportForSpreadsheet(sections: SavedSection[], calendar: Academi
                 section.labDays.length,
                 labStart,
                 session.weeks,
-                true
+                true,
+                section.labTbaHours || 0
             );
 
             const totalHours = section.labUnits * 54;
-            const hoursPerWeek = totalHours / session.weeks;
-            const hoursPerDay = hoursPerWeek / section.labDays.length;
+            const effectiveHours = Math.max(0, totalHours - (section.labTbaHours || 0));
+            
+            const hoursPerWeek = session.weeks > 0 ? effectiveHours / session.weeks : 0;
+            const hoursPerDay = section.labDays.length > 0 ? hoursPerWeek / section.labDays.length : 0;
 
             const row = new Array(26).fill('');
             row[3] = sub;             // D: sub
@@ -93,10 +99,10 @@ export function exportForSpreadsheet(sections: SavedSection[], calendar: Academi
             row[8] = labEnd;          // I: e time
             row[13] = startDate;      // N: s date
             row[14] = endDate;        // O: e date
-            row[15] = hoursPerDay.toFixed(1); // P: hrs/d
-            row[16] = hoursPerWeek.toFixed(1); // Q: hrs/wk
+            row[15] = hoursPerDay > 0 ? hoursPerDay.toFixed(1) : ''; // P: hrs/d
+            row[16] = hoursPerWeek > 0 ? hoursPerWeek.toFixed(1) : ''; // Q: hrs/wk
             row[17] = totalHours.toFixed(1); // R: hrs/ttl
-            row[23] = 'Lab';          // X: Type (comments column)
+            row[23] = `Lab${section.labTbaHours ? ` (+${section.labTbaHours} TBA hrs)` : ''}`;          // X: Type (comments column)
 
             rows.push(row);
         }

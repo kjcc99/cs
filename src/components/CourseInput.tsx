@@ -9,8 +9,10 @@ const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 export interface ScheduleRequest {
   lectureUnits: number;
   lectureDays: string[];
+  lecTbaHours?: number;
   labUnits: number;
   labDays: string[];
+  labTbaHours?: number;
 }
 
 interface CourseInputProps {
@@ -18,10 +20,14 @@ interface CourseInputProps {
   setLectureUnits: (v: number) => void;
   lectureDays: string[];
   setLectureDays: (v: string[]) => void;
+  lecTbaHours: number;
+  setLecTbaHours: (v: number) => void;
   labUnits: number;
   setLabUnits: (v: number) => void;
   labDays: string[];
   setLabDays: (v: string[]) => void;
+  labTbaHours: number;
+  setLabTbaHours: (v: number) => void;
   isLecFixed?: boolean;
   isLabFixed?: boolean;
   lecRange?: { min: number, max: number };
@@ -31,13 +37,20 @@ interface CourseInputProps {
 const CourseInput: React.FC<CourseInputProps> = ({
   lectureUnits, setLectureUnits,
   lectureDays, setLectureDays,
+  lecTbaHours, setLecTbaHours,
   labUnits, setLabUnits,
   labDays, setLabDays,
+  labTbaHours, setLabTbaHours,
   isLecFixed = false,
   isLabFixed = false,
   lecRange = { min: 0, max: 10 },
   labRange = { min: 0, max: 10 }
 }) => {
+  const maxLecContactHours = lectureUnits * 18;
+  const maxLabContactHours = labUnits * 54;
+
+  const [showLecTba, setShowLecTba] = useState(false);
+  const [showLabTba, setShowLabTba] = useState(false);
   // State to track which panel is focused for transitions
   const [activePanel, setActivePanel] = useState<'lecture' | 'lab' | null>(null);
 
@@ -81,6 +94,27 @@ const CourseInput: React.FC<CourseInputProps> = ({
             <DayPicker selectedDays={lectureDays} onDayToggle={handleLectureDayToggle} />
           </div>
         </div>
+        {showLecTba ? (
+          <div className="tba-input-container">
+            <input
+              type="number"
+              min={0}
+              step={0.1}
+              className={`tba-number-input ${lecTbaHours > maxLecContactHours ? 'error' : ''}`}
+              value={lecTbaHours}
+              onChange={(e) => setLecTbaHours(parseFloat(e.target.value) || 0)}
+              placeholder="Hrs"
+            />
+            <button className="tba-close-btn" onClick={() => { setShowLecTba(false); setLecTbaHours(0); }}>✕</button>
+          </div>
+        ) : (
+          <button className="add-tba-link" onClick={() => setShowLecTba(true)}>+ Add TBA Hours</button>
+        )}
+        {lecTbaHours > maxLecContactHours && (
+          <div className="tba-error-text">
+            ⚠️ Max allowed TBA hours for {lectureUnits} units is {maxLecContactHours}.
+          </div>
+        )}
       </div>
 
       <div className="config-divider" />
@@ -110,6 +144,27 @@ const CourseInput: React.FC<CourseInputProps> = ({
             <DayPicker selectedDays={labDays} onDayToggle={handleLabDayToggle} />
           </div>
         </div>
+        {showLabTba ? (
+          <div className="tba-input-container">
+            <input
+              type="number"
+              min={0}
+              step={0.1}
+              className={`tba-number-input ${labTbaHours > maxLabContactHours ? 'error' : ''}`}
+              value={labTbaHours}
+              onChange={(e) => setLabTbaHours(parseFloat(e.target.value) || 0)}
+              placeholder="Hrs"
+            />
+            <button className="tba-close-btn" onClick={() => { setShowLabTba(false); setLabTbaHours(0); }}>✕</button>
+          </div>
+        ) : (
+          <button className="add-tba-link" onClick={() => setShowLabTba(true)}>+ Add TBA Hours</button>
+        )}
+        {labTbaHours > maxLabContactHours && (
+          <div className="tba-error-text">
+            ⚠️ Max allowed TBA hours for {labUnits} units is {maxLabContactHours}.
+          </div>
+        )}
       </div>
     </div>
   );

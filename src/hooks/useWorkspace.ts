@@ -7,8 +7,11 @@ import { Course } from './useCatalog';
 export function useWorkspace() {
     const [lectureUnits, setLectureUnits] = useState(0);
     const [lectureDays, setLectureDays] = useState<string[]>([]);
+    const [lecTbaHours, setLecTbaHours] = useState(0);
+
     const [labUnits, setLabUnits] = useState(0);
     const [labDays, setLabDays] = useState<string[]>([]);
+    const [labTbaHours, setLabTbaHours] = useState(0);
 
     const [isLecFixed, setIsLecFixed] = useState(false);
     const [isLabFixed, setIsLabFixed] = useState(false);
@@ -52,21 +55,23 @@ export function useWorkspace() {
         setLabRange({ min: 0, max: 10 });
         setLectureUnits(0);
         setLabUnits(0);
+        setLecTbaHours(0);
+        setLabTbaHours(0);
     }, []);
 
     const getWorkspaceAsSection = useCallback((id: string, name: string, settings: any) => {
         return {
             id,
             name,
-            lectureUnits, lectureDays,
-            labUnits, labDays,
+            lectureUnits, lectureDays, lecTbaHours,
+            labUnits, labDays, labTbaHours,
             startTime: settings.startTime,
             labStartTime: settings.labStartTime,
             selectedTermId: settings.selectedTermId,
             selectedSessionId: settings.selectedSessionId,
             timestamp: Date.now()
         };
-    }, [lectureUnits, lectureDays, labUnits, labDays]);
+    }, [lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours]);
 
     return {
         lectureUnits, setLectureUnits,
@@ -77,6 +82,8 @@ export function useWorkspace() {
         isLabFixed, setIsLabFixed,
         lecRange, setLecRange,
         labRange, setLabRange,
+        lecTbaHours, setLecTbaHours,
+        labTbaHours, setLabTbaHours,
         generatedSchedule, setGeneratedSchedule,
         lastRequest, setLastRequest,
         isCalculating, setIsCalculating,

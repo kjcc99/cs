@@ -35,10 +35,14 @@ interface MobileConfigProps {
     setLectureUnits: (v: number) => void;
     lectureDays: string[];
     setLectureDays: (v: string[]) => void;
+    lecTbaHours: number;
+    setLecTbaHours: (v: number) => void;
     labUnits: number;
     setLabUnits: (v: number) => void;
     labDays: string[];
     setLabDays: (v: string[]) => void;
+    labTbaHours: number;
+    setLabTbaHours: (v: number) => void;
     isLecFixed: boolean;
     isLabFixed: boolean;
     lecRange: { min: number; max: number };
@@ -52,7 +56,9 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
     handleLabLockToggle, timeFormat, catalog, divisions, departments,
     handleCourseSelect, onClearCourse, selectedCourseInfo,
     lectureUnits, setLectureUnits, lectureDays, setLectureDays,
+    lecTbaHours, setLecTbaHours,
     labUnits, setLabUnits, labDays, setLabDays,
+    labTbaHours, setLabTbaHours,
     isLecFixed, isLabFixed, lecRange, labRange
 }) => {
     return (
@@ -145,8 +151,10 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
                             <CourseInput
                                 lectureUnits={lectureUnits} setLectureUnits={setLectureUnits}
                                 lectureDays={lectureDays} setLectureDays={setLectureDays}
+                                lecTbaHours={lecTbaHours} setLecTbaHours={setLecTbaHours}
                                 labUnits={labUnits} setLabUnits={setLabUnits}
                                 labDays={labDays} setLabDays={setLabDays}
+                                labTbaHours={labTbaHours} setLabTbaHours={setLabTbaHours}
                                 isLecFixed={isLecFixed} isLabFixed={isLabFixed}
                                 lecRange={lecRange} labRange={labRange}
                             />
