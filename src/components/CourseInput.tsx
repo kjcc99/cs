@@ -106,9 +106,13 @@ const CourseInput: React.FC<CourseInputProps> = ({
               placeholder="Hrs"
             />
             <button className="tba-close-btn" onClick={() => { setShowLecTba(false); setLecTbaHours(0); }}>✕</button>
+            <span className="tba-max-hint">(Max {maxLecContactHours} hrs per course)</span>
           </div>
         ) : (
-          <button className="add-tba-link" onClick={() => setShowLecTba(true)}>+ Add TBA Hours</button>
+          <div className="tba-input-container">
+            <button className="add-tba-link" onClick={() => setShowLecTba(true)}>+ Add TBA Hours</button>
+            <span className="tba-max-hint">(Max {maxLecContactHours} hrs per course)</span>
+          </div>
         )}
         {lecTbaHours > maxLecContactHours && (
           <div className="tba-error-text">
@@ -156,9 +160,13 @@ const CourseInput: React.FC<CourseInputProps> = ({
               placeholder="Hrs"
             />
             <button className="tba-close-btn" onClick={() => { setShowLabTba(false); setLabTbaHours(0); }}>✕</button>
+            <span className="tba-max-hint">(Max {maxLabContactHours} hrs per course)</span>
           </div>
         ) : (
-          <button className="add-tba-link" onClick={() => setShowLabTba(true)}>+ Add TBA Hours</button>
+          <div className="tba-input-container">
+            <button className="add-tba-link" onClick={() => setShowLabTba(true)}>+ Add TBA Hours</button>
+            <span className="tba-max-hint">(Max {maxLabContactHours} hrs per course)</span>
+          </div>
         )}
         {labTbaHours > maxLabContactHours && (
           <div className="tba-error-text">

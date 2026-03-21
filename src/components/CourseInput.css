@@ -136,3 +136,12 @@
   max-width: 120px;
   line-height: 1.2;
 }
+
+.tba-max-hint {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  opacity: 0.8;
+  margin-left: 4px;
+  margin-top: auto;
+  margin-bottom: auto;
+}

@@ -26,7 +26,7 @@ function App() {
   const [calendar] = useState<AcademicTerm[]>(academicCalendar);
 
   // Destructure for the useEffect dependencies
-  const { lectureUnits, lectureDays, labUnits, labDays, setGeneratedSchedule, setLastRequest, setIsCalculating } = workspaceAPI;
+  const { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours, setGeneratedSchedule, setLastRequest, setIsCalculating } = workspaceAPI;
   const { startTime, labStartTime, selectedTermId, selectedSessionId } = settingsAPI;
   const { contactHourRules, attendanceRules } = rulesAPI;
 
@@ -45,7 +45,7 @@ function App() {
     setIsCalculating(true);
     const handler = setTimeout(() => {
       if (contactHourRules && attendanceRules) {
-        const request: ScheduleRequest = { lectureUnits, lectureDays, labUnits, labDays };
+        const request: ScheduleRequest = { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours };
         const context: RuleAndTermContext = { contactHourRules, attendanceRules, term: selectedTerm, session: selectedSession };
         const schedule = generateSchedule(request, context, startTime, labStartTime);
         setGeneratedSchedule(schedule);
@@ -56,7 +56,7 @@ function App() {
 
     return () => clearTimeout(handler);
   }, [
-    lectureUnits, lectureDays, labUnits, labDays,
+    lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours,
     startTime, labStartTime, selectedTermId, selectedSessionId,
     contactHourRules, attendanceRules, selectedTerm, selectedSession,
     setGeneratedSchedule, setLastRequest, setIsCalculating
