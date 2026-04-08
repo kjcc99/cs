@@ -14,6 +14,7 @@ import {
 } from '../../types';
 import { generateSchedule } from '../../utils/scheduleGenerator';
 import { formatScheduleSimple, formatScheduleDetailed, formatBulkExport, copyToClipboard } from '../../utils/copyUtils';
+import { generateShareUrl } from '../../utils/shareUtils';
 
 import { exportForSpreadsheet } from '../../utils/spreadsheetExport';
 import './MobileView.css';
@@ -179,6 +180,19 @@ export const MobileView: React.FC<AppViewProps> = ({
         setIsSidebarOpen(false);
     };
 
+    const handleShareUrl = () => {
+        if (savedSections.length === 0) {
+            showToast("No sections to share", "error");
+            return;
+        }
+        const url = generateShareUrl(savedSections);
+        copyToClipboard(url).then(success => {
+            if (success) showToast("Share link copied!");
+            else showToast("Failed to copy link", "error");
+        });
+        setIsSidebarOpen(false);
+    };
+
     const handleExportSpreadsheet = () => {
         if (savedSections.length === 0) {
             showToast("No sections to export", "error");
@@ -322,6 +336,7 @@ export const MobileView: React.FC<AppViewProps> = ({
                     setIsSettingsOpen={setIsSettingsOpen}
                     handleExportAll={handleExportAll}
                     handleExportSpreadsheet={handleExportSpreadsheet}
+                    handleShareUrl={handleShareUrl}
                 />
             )}
 

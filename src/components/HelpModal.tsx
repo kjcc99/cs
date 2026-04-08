@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Edit2, Copy, ExternalLink, Table } from 'lucide-react';
+import { X, Save, Edit2, Copy, ExternalLink, Table, Share2 } from 'lucide-react';
 
 import './HelpModal.css';
 
@@ -45,7 +45,15 @@ const faqs: FAQItem[] = [
     question: "How do I export my data?",
     answer: (
       <>
-        To export a single section, use the <strong><Copy size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /> Copy</strong> split-button in the toolbar. To export every section in your sidebar at once, click the <strong><ExternalLink size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /></strong> (Details) or <strong><Table size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /></strong> (Spreadsheet) icons at the very top of the sidebar header.
+        To export a single section, use the <strong><Copy size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /> Copy</strong> split-button in the toolbar. To export every section in your sidebar at once, click the <strong><ExternalLink size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /></strong> (Details) or <strong><Table size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /></strong> (Spreadsheet) icons at the very top of the sidebar header. To share your entire schedule with someone or transfer it to another device, use the <strong><Share2 size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /></strong> Share Link button.
+      </>
+    )
+  },
+  {
+    question: "How do I transfer my sections to another device?",
+    answer: (
+      <>
+        Click the <strong><Share2 size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /></strong> Share Link button in the sidebar header. This copies a URL containing all your saved sections. Open that link on any device or browser to import them instantly — no account needed. You can also send the link to a colleague so they can view your schedule.
       </>
     )
   }

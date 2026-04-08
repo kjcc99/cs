@@ -15,6 +15,7 @@ import {
 } from '../../types';
 import { generateSchedule } from '../../utils/scheduleGenerator';
 import { formatScheduleSimple, formatScheduleDetailed, formatBulkExport, copyToClipboard } from '../../utils/copyUtils';
+import { generateShareUrl } from '../../utils/shareUtils';
 
 import { exportForSpreadsheet } from '../../utils/spreadsheetExport';
 import './DesktopView.css';
@@ -241,6 +242,18 @@ export const DesktopView: React.FC<AppViewProps> = ({
         });
     };
 
+    const handleShareUrl = () => {
+        if (savedSections.length === 0) {
+            showToast("No sections to share!", "error");
+            return;
+        }
+        const url = generateShareUrl(savedSections);
+        copyToClipboard(url).then(success => {
+            if (success) showToast("Share link copied to clipboard!");
+            else showToast("Failed to copy link", "error");
+        });
+    };
+
     const handleExportSpreadsheet = () => {
         if (savedSections.length === 0) {
             showToast("No sections to export!", "error");
@@ -321,6 +334,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
                     settingsDropdownRef={settingsDropdownRef}
                     handleExportAll={handleExportAll}
                     handleExportSpreadsheet={handleExportSpreadsheet}
+                    handleShareUrl={handleShareUrl}
                 />
 
                 <main className="main-content">

@@ -8,7 +8,8 @@ import {
     Settings as SettingsIcon,
     HelpCircle,
     ExternalLink,
-    Table
+    Table,
+    Share2
 } from 'lucide-react';
 import SidebarItem from './SidebarItem';
 import Settings from './Settings';
@@ -38,6 +39,7 @@ interface SidebarProps {
     settingsDropdownRef: React.RefObject<HTMLDivElement | null>;
     handleExportAll: () => void;
     handleExportSpreadsheet: () => void;
+    handleShareUrl: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -46,7 +48,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     calendar, checkIsModified, handleLoadSection,
     overlaySectionIds, toggleOverlay, setIsHelpOpen,
     isSettingsOpen, setIsSettingsOpen, settingsDropdownRef,
-    handleExportAll, handleExportSpreadsheet
+    handleExportAll, handleExportSpreadsheet, handleShareUrl
 }) => {
     const { savedSections, currentSectionId, deleteSection, renameSection, reorderSections, clearAllSections } = sectionsAPI;
     const { timeFormat } = settingsAPI;
@@ -66,6 +68,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                             </button>
                             <button className="icon-btn-sm" title="Export All Details" onClick={handleExportAll}>
                                 <ExternalLink size={18} />
+                            </button>
+                            <button className="icon-btn-sm" title="Share via URL" onClick={handleShareUrl} disabled={savedSections.length === 0}>
+                                <Share2 size={18} />
                             </button>
                         </>
                     )}
@@ -144,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             Clear All Sections
                         </button>
                         <div className="sidebar-disclaimer">
-                            Schedules are saved locally to your browser.
+                            Schedules are saved locally. Use Share Link to transfer between devices.
                         </div>
                     </div>
                 )}

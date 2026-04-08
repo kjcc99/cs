@@ -51,6 +51,11 @@ export function useSections() {
     setSavedSections(newOrder);
   }, []);
 
+  const importSections = useCallback((sections: SavedSection[]) => {
+    setSavedSections(sections);
+    setCurrentSectionId(null);
+  }, []);
+
   const clearAllSections = useCallback(() => {
     setSavedSections([]);
     setCurrentSectionId(null);
@@ -64,6 +69,7 @@ export function useSections() {
     deleteSection,
     renameSection,
     reorderSections,
+    importSections,
     clearAllSections
   };
 }

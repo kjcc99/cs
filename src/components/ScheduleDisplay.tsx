@@ -79,6 +79,9 @@ const ScheduleDisplayEmpty: React.FC = () => (
         <div className="hero-hint">
             <span>Pro Tip: You can save multiple versions to the sidebar for easy comparison.</span>
         </div>
+        <div className="hero-hint">
+            <span>Need to switch devices? Use the Share Link button in the sidebar to transfer your sections via URL.</span>
+        </div>
     </div>
 );
 

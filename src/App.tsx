@@ -16,6 +16,9 @@ import { DesktopView } from './components/layout/DesktopView';
 import { MobileView } from './components/layout/MobileView';
 import { AppLoader } from './components/AppLoader';
 import { ToastProvider } from './components/Toast';
+import ConfirmModal from './components/ConfirmModal';
+import { decodeSections } from './utils/shareUtils';
+import { SavedSection } from './types';
 
 function App() {
   const sectionsAPI = useSections();
@@ -24,6 +27,19 @@ function App() {
   const catalogAPI = useCatalog(settingsAPI.selectedTermId);
   const workspaceAPI = useWorkspace();
   const [calendar] = useState<AcademicTerm[]>(academicCalendar);
+  const [pendingImport, setPendingImport] = useState<SavedSection[] | null>(null);
+
+  // Read URL hash on mount for shared schedule import
+  useEffect(() => {
+    const hash = window.location.hash.slice(1);
+    if (hash && hash.startsWith('v1:')) {
+      const sections = decodeSections(hash);
+      if (sections && sections.length > 0) {
+        setPendingImport(sections);
+      }
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+  }, []);
 
   // Destructure for the useEffect dependencies
   const { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours, setGeneratedSchedule, setLastRequest, setIsCalculating } = workspaceAPI;
@@ -80,6 +96,19 @@ function App() {
   return (
     <ToastProvider>
       {isMobile ? <MobileView {...appProps} /> : <DesktopView {...appProps} />}
+      {pendingImport && (
+        <ConfirmModal
+          title="Import Shared Schedule"
+          message={`This link contains ${pendingImport.length} section${pendingImport.length !== 1 ? 's' : ''}. Import them? This will replace your current saved sections.`}
+          confirmText="Import"
+          cancelText="Cancel"
+          onConfirm={() => {
+            sectionsAPI.importSections(pendingImport);
+            setPendingImport(null);
+          }}
+          onCancel={() => setPendingImport(null)}
+        />
+      )}
     </ToastProvider>
   );
 }

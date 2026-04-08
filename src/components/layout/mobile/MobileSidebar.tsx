@@ -2,7 +2,7 @@
 import React from 'react';
 import { useToast } from '../../Toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ExternalLink, HelpCircle, Settings as SettingsIcon, Table } from 'lucide-react';
+import { X, ExternalLink, HelpCircle, Settings as SettingsIcon, Table, Share2 } from 'lucide-react';
 import { Reorder } from 'framer-motion';
 import SidebarItem from '../../SidebarItem';
 import Settings from '../../Settings';
@@ -31,13 +31,14 @@ interface MobileSidebarProps {
     setIsSettingsOpen: (v: boolean) => void;
     handleExportAll: () => void;
     handleExportSpreadsheet: () => void;
+    handleShareUrl: () => void;
 }
 
 export const MobileSidebar: React.FC<MobileSidebarProps> = ({
     isOpen, onClose, sectionsAPI, settingsAPI, workspaceAPI,
     calendar, checkIsModified, handleLoadSection, overlaySectionIds, toggleOverlay,
     setIsHelpOpen, isSettingsOpen, setIsSettingsOpen,
-    handleExportAll, handleExportSpreadsheet
+    handleExportAll, handleExportSpreadsheet, handleShareUrl
 }) => {
     const { savedSections, currentSectionId, deleteSection, renameSection, reorderSections, clearAllSections } = sectionsAPI;
     const { timeFormat } = settingsAPI;
@@ -76,6 +77,9 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                             </button>
                             <button className="ms-icon-btn" onClick={handleExportAll}>
                                 <ExternalLink size={18} /> Export
+                            </button>
+                            <button className="ms-icon-btn" onClick={handleShareUrl}>
+                                <Share2 size={18} /> Share Link
                             </button>
                             <button className="ms-icon-btn" onClick={() => { setIsHelpOpen(true); onClose(); }}>
                                 <HelpCircle size={18} /> Help
@@ -141,7 +145,7 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                 Clear All Sections
                             </button>
                             <div className="ms-disclaimer">
-                                Schedules are saved locally to your device.
+                                Schedules are saved locally. Use Share Link to transfer between devices.
                             </div>
                         </div>
                     </motion.div>
