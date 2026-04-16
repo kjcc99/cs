@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Edit2, Copy, ExternalLink, Table, Share2 } from 'lucide-react';
+import { X, Save, Edit2, Copy, ExternalLink, Table, Share2, Clock, CalendarDays } from 'lucide-react';
 
 import './HelpModal.css';
 
@@ -36,6 +36,22 @@ const faqs: FAQItem[] = [
         Hover over a section in the sidebar to see the <strong><Edit2 size={12} style={{ display: 'inline', verticalAlign: '-1px', margin: '0 2px' }} /></strong> icon for renaming. To reorder, use the <strong>⠿</strong> drag handle on the left of the section pill and slide it to a new position.
       </>
     )
+  },
+  {
+    question: "How do I set different start times for each day?",
+    answer: (
+      <>
+        In the <strong>Start Times</strong> area, click the <strong><Clock size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /></strong> icon next to Lecture or Lab to switch from a single shared start time to per-day start times. Each meeting day gets its own time picker. Click the <strong><CalendarDays size={14} style={{ display: 'inline', verticalAlign: '-2px', margin: '0 2px' }} /></strong> icon again to switch back to a shared time. You must first unlock separate Lab times (the lock icon) before you can set per-day Lab times.
+      </>
+    )
+  },
+  {
+    question: "Can I split meeting time unevenly across days?",
+    answer: "If a component (lecture or lab) meets on 2 or more days, a \"Custom Split\" button appears below the units and days area. Click it to set a different end time for each day — for example, a shorter meeting on Monday and a longer one on Wednesday. The app shows the contact hours for each day and a running total so you can balance them. Each day must have at least 1.0 contact hour. If the math doesn't work for your unit/day combination, the button will say \"unavailable\" and explain why."
+  },
+  {
+    question: "Can I move meetings by dragging on the calendar?",
+    answer: "Yes! Once a schedule is on the grid, you can click and drag any block to move it to a different time or day. The block snaps to 5-minute increments. If you drag it over another block on the same day, it will turn red — you need at least a 10-minute gap between lecture and lab. Dragging to a new day will update your meeting days automatically."
   },
   {
     question: "What are TBA Hours?",

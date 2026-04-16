@@ -269,6 +269,23 @@
 }
 .drag-ghost.overlap .ghost-time { color: #c33; }
 
+.drag-tip {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-card, #222);
+    color: var(--text-muted, #aaa);
+    font-size: 0.78rem;
+    padding: 8px 16px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color, #444);
+    box-shadow: var(--shadow-md);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 40;
+}
+
 /* Mobile Adjustments for Schedule Display */
 @media (max-width: 768px) {
   .minimal-summary-container {

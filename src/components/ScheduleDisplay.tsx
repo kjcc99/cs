@@ -251,6 +251,8 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
     const [showNudge, setShowNudge] = useState(false);
     const [dragState, setDragState] = useState<DragState | null>(null);
     const [dragOverlap, setDragOverlap] = useState(false);
+    const [showDragTip, setShowDragTip] = useState(false);
+    const dragTipShownRef = useRef(false);
     const gridRef = useRef<HTMLDivElement>(null);
 
     // Trigger nudge only once when a schedule is first displayed
@@ -265,6 +267,16 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [schedule]);
+
+    useEffect(() => {
+        if (schedule && onBlockMove && !dragTipShownRef.current) {
+            dragTipShownRef.current = true;
+            const show = setTimeout(() => setShowDragTip(true), 2800);
+            const hide = setTimeout(() => setShowDragTip(false), 7000);
+            return () => { clearTimeout(show); clearTimeout(hide); };
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [schedule, onBlockMove]);
 
     const allBlocks = React.useMemo(() => {
         return [
@@ -505,6 +517,19 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
                         );
                     })()}
                 </div>
+
+                <AnimatePresence>
+                    {showDragTip && !dragState && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="drag-tip"
+                        >
+                            Tip: Drag blocks to move them to a different time or day
+                        </motion.div>
+                    )}
+                </AnimatePresence>
 
                 <AnimatePresence>
                     {hoveredInfo && (

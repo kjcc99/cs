@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Edit2, Lock, Unlock, CheckCircle2, CalendarDays, Clock } from 'lucide-react';
+import { Edit2, Lock, Unlock, CalendarDays, Clock, ChevronUp } from 'lucide-react';
 import { TimeMode, SplitMode } from '../../../types/section';
 import CustomSplit from '../../CustomSplit';
 import { TimeSelector } from '../../Settings';
@@ -159,8 +159,8 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
                     >
                         <div className="mc-header">
                             <h3>Configuration</h3>
-                            <button className="mc-done-btn" onClick={() => setIsConfigExpanded(false)}>
-                                <CheckCircle2 size={18} /> Done
+                            <button className="mc-done-btn" onClick={() => setIsConfigExpanded(false)} title="Collapse configuration" aria-label="Collapse configuration">
+                                <ChevronUp size={18} />
                             </button>
                         </div>
 

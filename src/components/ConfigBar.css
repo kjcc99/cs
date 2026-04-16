@@ -127,8 +127,24 @@
 
 .done-btn {
   margin-left: auto;
-  /* Push to far right */
   align-self: flex-end;
+}
+
+.icon-btn-collapse {
+  margin-left: auto;
+  align-self: flex-end;
+  background: transparent;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: var(--text-muted, #888);
+  display: flex;
+  align-items: center;
+}
+.icon-btn-collapse:hover {
+  color: var(--text-main);
+  border-color: var(--text-muted);
 }
 
 .icon-btn-xs {
