@@ -15,12 +15,14 @@ interface MobileHeaderProps {
     onSaveAsNew: () => void;
     workspaceAPI: ReturnType<typeof useWorkspace>;
     sectionsAPI: ReturnType<typeof useSections>;
+    selectedTermId: string;
 }
 
 
 export const MobileHeader: React.FC<MobileHeaderProps> = ({
-    onOpenSidebar, onSave, onNew, onCopySimple, onCopyDetailed, onCopySpreadsheet, onSaveAsNew, workspaceAPI, sectionsAPI
+    onOpenSidebar, onSave, onNew, onCopySimple, onCopyDetailed, onCopySpreadsheet, onSaveAsNew, workspaceAPI, sectionsAPI, selectedTermId
 }) => {
+    const isBorrowedCatalog = ['fa2027', 'wi2028', 'sp2028', 'su2028'].includes(selectedTermId);
     const { generatedSchedule: schedule, isCalculating } = workspaceAPI;
     const { currentSectionId } = sectionsAPI;
 
@@ -49,6 +51,11 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
                     {statusInfo && (
                         <span className={`mh-badge ${statusInfo.class}`}>
                             {statusInfo.icon} {statusInfo.label}
+                        </span>
+                    )}
+                    {isBorrowedCatalog && (
+                        <span className="mh-catalog-notice" title="The AY27-28 catalog is not yet available. Course options shown reflect the AY26-27 catalog.">
+                            AY27-28 using AY26-27 catalog
                         </span>
                     )}
                 </div>

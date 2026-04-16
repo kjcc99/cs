@@ -27,6 +27,13 @@
     color: var(--text-main);
 }
 
+.mh-catalog-notice {
+    font-size: 0.65rem;
+    color: var(--text-muted, #888);
+    font-style: italic;
+    margin-top: 2px;
+}
+
 .mh-badge {
     display: flex;
     align-items: center;

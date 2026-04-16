@@ -1,7 +1,9 @@
 // src/components/ConfigBar.tsx
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Edit2, Lock, Unlock } from 'lucide-react';
+import { Edit2, Lock, Unlock, CalendarDays, Clock } from 'lucide-react';
+import { TimeMode, SplitMode } from '../types/section';
+import CustomSplit from './CustomSplit';
 import { TimeSelector } from './Settings';
 import CoursePicker from './CoursePicker';
 import CourseInput from './CourseInput';
@@ -48,6 +50,22 @@ interface ConfigBarProps {
     isLabFixed: boolean;
     lecRange: { min: number; max: number };
     labRange: { min: number; max: number };
+    lectureTimeMode: TimeMode;
+    setLectureTimeMode: (v: TimeMode) => void;
+    labTimeMode: TimeMode;
+    setLabTimeMode: (v: TimeMode) => void;
+    lectureTimesPerDay: Record<string, string>;
+    setLectureTimesPerDay: (v: Record<string, string>) => void;
+    labTimesPerDay: Record<string, string>;
+    setLabTimesPerDay: (v: Record<string, string>) => void;
+    lectureSplitMode: SplitMode;
+    setLectureSplitMode: (v: SplitMode) => void;
+    labSplitMode: SplitMode;
+    setLabSplitMode: (v: SplitMode) => void;
+    lectureHoursPerDay: Record<string, number>;
+    setLectureHoursPerDay: (v: Record<string, number>) => void;
+    labHoursPerDay: Record<string, number>;
+    setLabHoursPerDay: (v: Record<string, number>) => void;
 }
 
 const ConfigBar: React.FC<ConfigBarProps> = ({
@@ -70,8 +88,50 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
     labDays, setLabDays,
     labTbaHours, setLabTbaHours,
     isLecFixed, isLabFixed,
-    lecRange, labRange
+    lecRange, labRange,
+    lectureTimeMode, setLectureTimeMode,
+    labTimeMode, setLabTimeMode,
+    lectureTimesPerDay, setLectureTimesPerDay,
+    labTimesPerDay, setLabTimesPerDay,
+    lectureSplitMode, setLectureSplitMode,
+    labSplitMode, setLabSplitMode,
+    lectureHoursPerDay, setLectureHoursPerDay,
+    labHoursPerDay, setLabHoursPerDay
 }) => {
+    const weeks = selectedSession.weeks || 1;
+    const lecWeeklyCH = Math.max(0, (lectureUnits * 18 - (lecTbaHours || 0))) / weeks;
+    const labWeeklyCH = Math.max(0, (labUnits * 54 - (labTbaHours || 0))) / weeks;
+    const lecStartForDay = (day: string) => lectureTimeMode === 'perDay' ? (lectureTimesPerDay[day] ?? startTime) : startTime;
+    const labEffectiveStart = labStartTime ?? startTime;
+    const labStartForDay = (day: string) => labTimeMode === 'perDay' ? (labTimesPerDay[day] ?? labEffectiveStart) : labEffectiveStart;
+    const toggleLectureTimeMode = () => {
+        if (lectureTimeMode === 'shared') {
+            // Pre-fill per-day map with shared start time for every selected day
+            const next: Record<string, string> = { ...lectureTimesPerDay };
+            for (const d of lectureDays) if (next[d] === undefined) next[d] = startTime;
+            setLectureTimesPerDay(next);
+            setLectureTimeMode('perDay');
+        } else {
+            setLectureTimeMode('shared');
+        }
+    };
+    const toggleLabTimeMode = () => {
+        const labBaseTime = labStartTime ?? startTime;
+        if (labTimeMode === 'shared') {
+            const next: Record<string, string> = { ...labTimesPerDay };
+            for (const d of labDays) if (next[d] === undefined) next[d] = labBaseTime;
+            setLabTimesPerDay(next);
+            setLabTimeMode('perDay');
+        } else {
+            setLabTimeMode('shared');
+        }
+    };
+    const setLectureDayTime = (day: string, value: string) => {
+        setLectureTimesPerDay({ ...lectureTimesPerDay, [day]: value });
+    };
+    const setLabDayTime = (day: string, value: string) => {
+        setLabTimesPerDay({ ...labTimesPerDay, [day]: value });
+    };
     return (
         <div className={`config-bar ${isConfigExpanded ? 'expanded' : 'collapsed'}`}>
             <AnimatePresence mode="wait">
@@ -134,22 +194,70 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
                             <div className="config-divider" />
 
                             <div className="config-section">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: '10px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: '10px', gap: '8px' }}>
                                     <label className="config-label" style={{ lineHeight: 1 }}>Start Times</label>
-                                    <button onClick={handleLabLockToggle} className="icon-btn-xs" style={{ padding: 0 }} title="Toggle separate lab time">
-                                        {labStartTime === null ? <Lock size={10} /> : <Unlock size={10} />}
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '4px' }}>
+                                        <button
+                                            onClick={toggleLectureTimeMode}
+                                            className="icon-btn-xs"
+                                            style={{ padding: 0 }}
+                                            title={lectureTimeMode === 'shared' ? 'Use per-day start times for Lecture' : 'Use one shared start time for Lecture'}
+                                            disabled={lectureDays.length === 0}
+                                        >
+                                            {lectureTimeMode === 'shared' ? <Clock size={10} /> : <CalendarDays size={10} />}
+                                        </button>
+                                        <button onClick={handleLabLockToggle} className="icon-btn-xs" style={{ padding: 0 }} title="Toggle separate lab time">
+                                            {labStartTime === null ? <Lock size={10} /> : <Unlock size={10} />}
+                                        </button>
+                                        {labStartTime !== null && (
+                                            <button
+                                                onClick={toggleLabTimeMode}
+                                                className="icon-btn-xs"
+                                                style={{ padding: 0 }}
+                                                title={labTimeMode === 'shared' ? 'Use per-day start times for Lab' : 'Use one shared start time for Lab'}
+                                                disabled={labDays.length === 0}
+                                            >
+                                                {labTimeMode === 'shared' ? <Clock size={10} /> : <CalendarDays size={10} />}
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="config-controls">
-                                    <div className="time-sub-group">
-                                        <span className="micro-label">{labStartTime === null ? <>&nbsp;</> : 'Lec'}</span>
-                                        <TimeSelector time={startTime} onTimeChange={setStartTime} timeFormat={timeFormat} />
-                                    </div>
-                                    {labStartTime !== null && (
+                                    {lectureTimeMode === 'shared' || lectureDays.length === 0 ? (
                                         <div className="time-sub-group">
-                                            <span className="micro-label">Lab</span>
-                                            <TimeSelector time={labStartTime} onTimeChange={setLabStartTime} timeFormat={timeFormat} />
+                                            <span className="micro-label">{labStartTime === null ? <>&nbsp;</> : 'Lec'}</span>
+                                            <TimeSelector time={startTime} onTimeChange={setStartTime} timeFormat={timeFormat} />
                                         </div>
+                                    ) : (
+                                        lectureDays.map(day => (
+                                            <div key={`lec-${day}`} className="time-sub-group">
+                                                <span className="micro-label">Lec {day}</span>
+                                                <TimeSelector
+                                                    time={lectureTimesPerDay[day] ?? startTime}
+                                                    onTimeChange={(v) => setLectureDayTime(day, v)}
+                                                    timeFormat={timeFormat}
+                                                />
+                                            </div>
+                                        ))
+                                    )}
+                                    {labStartTime !== null && (
+                                        labTimeMode === 'shared' || labDays.length === 0 ? (
+                                            <div className="time-sub-group">
+                                                <span className="micro-label">Lab</span>
+                                                <TimeSelector time={labStartTime} onTimeChange={setLabStartTime} timeFormat={timeFormat} />
+                                            </div>
+                                        ) : (
+                                            labDays.map(day => (
+                                                <div key={`lab-${day}`} className="time-sub-group">
+                                                    <span className="micro-label">Lab {day}</span>
+                                                    <TimeSelector
+                                                        time={labTimesPerDay[day] ?? labStartTime}
+                                                        onTimeChange={(v) => setLabDayTime(day, v)}
+                                                        timeFormat={timeFormat}
+                                                    />
+                                                </div>
+                                            ))
+                                        )
                                     )}
                                 </div>
                             </div>
@@ -199,6 +307,37 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
                                 Done
                             </button>
                         </div>
+
+                        {(lectureUnits > 0 && lectureDays.length >= 2) || (labUnits > 0 && labDays.length >= 2) ? (
+                            <div className="config-edit-row tertiary-row">
+                                {lectureUnits > 0 && lectureDays.length >= 2 && (
+                                    <CustomSplit
+                                        label="Lecture"
+                                        days={lectureDays}
+                                        splitMode={lectureSplitMode}
+                                        setSplitMode={setLectureSplitMode}
+                                        hoursPerDay={lectureHoursPerDay}
+                                        setHoursPerDay={setLectureHoursPerDay}
+                                        startTimeForDay={lecStartForDay}
+                                        weeklyRequiredCH={lecWeeklyCH}
+                                        timeFormat={timeFormat}
+                                    />
+                                )}
+                                {labUnits > 0 && labDays.length >= 2 && (
+                                    <CustomSplit
+                                        label="Lab"
+                                        days={labDays}
+                                        splitMode={labSplitMode}
+                                        setSplitMode={setLabSplitMode}
+                                        hoursPerDay={labHoursPerDay}
+                                        setHoursPerDay={setLabHoursPerDay}
+                                        startTimeForDay={labStartForDay}
+                                        weeklyRequiredCH={labWeeklyCH}
+                                        timeFormat={timeFormat}
+                                    />
+                                )}
+                            </div>
+                        ) : null}
                     </motion.div>
                 )}
             </AnimatePresence>

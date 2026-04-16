@@ -20,6 +20,7 @@ interface DashboardHeaderProps {
     isCopyDropdownOpen: boolean;
     setIsCopyDropdownOpen: (open: boolean) => void;
     copyDropdownRef: React.RefObject<HTMLDivElement | null>;
+    selectedTermId: string;
 }
 
 
@@ -36,10 +37,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     handleCopy,
     isCopyDropdownOpen,
     setIsCopyDropdownOpen,
-    copyDropdownRef
+    copyDropdownRef,
+    selectedTermId
 }) => {
     const { generatedSchedule } = workspaceAPI;
     const { currentSectionId } = sectionsAPI;
+    const isBorrowedCatalog = ['fa2027', 'wi2028', 'sp2028', 'su2028'].includes(selectedTermId);
 
     return (
         <header className="dashboard-header">
@@ -62,6 +65,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                     >
                         {status.label}
                     </span>
+                    {isBorrowedCatalog && (
+                        <span className="catalog-notice" title="The AY27-28 catalog is not yet available. Course options shown reflect the AY26-27 catalog.">
+                            AY27-28 is using AY26-27 catalog
+                        </span>
+                    )}
                     {isStatusPopoverOpen && generatedSchedule && (
                         <div className="status-popover">
                             <h4>Schedule Details</h4>

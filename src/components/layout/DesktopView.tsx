@@ -2,7 +2,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useToast } from '../Toast';
 import { AppViewProps } from './AppViewProps';
-import ScheduleDisplay, { OverlaidSchedule } from '../ScheduleDisplay';
+import ScheduleDisplay, { OverlaidSchedule, BlockMoveEvent } from '../ScheduleDisplay';
 import HelpModal from '../HelpModal';
 import ConfirmModal from '../ConfirmModal';
 import DashboardHeader from '../DashboardHeader';
@@ -39,7 +39,15 @@ export const DesktopView: React.FC<AppViewProps> = ({
     const {
         selectedTermId, setSelectedTermId, selectedSessionId, setSelectedSessionId,
         startTime, setStartTime, labStartTime, setLabStartTime, theme,
-        timeFormat
+        timeFormat,
+        lectureTimeMode, setLectureTimeMode,
+        labTimeMode, setLabTimeMode,
+        lectureTimesPerDay, setLectureTimesPerDay,
+        labTimesPerDay, setLabTimesPerDay,
+        lectureSplitMode, setLectureSplitMode,
+        labSplitMode, setLabSplitMode,
+        lectureHoursPerDay, setLectureHoursPerDay,
+        labHoursPerDay, setLabHoursPerDay
     } = settingsAPI;
 
     const { catalog, divisions, departments } = catalogAPI;
@@ -95,12 +103,14 @@ export const DesktopView: React.FC<AppViewProps> = ({
             sectionName = `${sub} ${no} ${sectionNum}`;
         }
 
+        const usesV2 = lectureTimeMode === 'perDay' || labTimeMode === 'perDay' || lectureSplitMode === 'custom' || labSplitMode === 'custom';
         saveSection({
             lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId,
+            ...(usesV2 ? { schemaVersion: 2 as const, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay } : {}),
             ...(currentSectionId ? {} : { name: sectionName })
         });
         showToast(currentSectionId ? "Section updated" : "Section saved");
-    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, selectedCourseInfo, savedSections, currentSectionId, showToast]);
+    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedCourseInfo, savedSections, currentSectionId, showToast]);
 
     const handleSaveAsNew = useCallback(() => {
         if (lectureUnits === 0 && labUnits === 0) {
@@ -116,12 +126,14 @@ export const DesktopView: React.FC<AppViewProps> = ({
             sectionName = `${sub} ${no} ${sectionNum}`;
         }
 
+        const usesV2 = lectureTimeMode === 'perDay' || labTimeMode === 'perDay' || lectureSplitMode === 'custom' || labSplitMode === 'custom';
         saveSection({
             lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId,
+            ...(usesV2 ? { schemaVersion: 2 as const, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay } : {}),
             name: sectionName
         }, true);
         showToast("Saved as new copy");
-    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, selectedCourseInfo, savedSections, showToast]);
+    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedCourseInfo, savedSections, showToast]);
 
 
     const handleLoadSection = useCallback((section: SavedSection) => {
@@ -136,6 +148,14 @@ export const DesktopView: React.FC<AppViewProps> = ({
         setLabStartTime(section.labStartTime);
         setSelectedTermId(section.selectedTermId);
         setSelectedSessionId(section.selectedSessionId);
+        setLectureTimeMode(section.lectureTimeMode ?? 'shared');
+        setLabTimeMode(section.labTimeMode ?? 'shared');
+        setLectureTimesPerDay((section.lectureTimesPerDay as Record<string, string>) ?? {});
+        setLabTimesPerDay((section.labTimesPerDay as Record<string, string>) ?? {});
+        setLectureSplitMode(section.lectureSplitMode ?? 'even');
+        setLabSplitMode(section.labSplitMode ?? 'even');
+        setLectureHoursPerDay((section.lectureHoursPerDay as Record<string, number>) ?? {});
+        setLabHoursPerDay((section.labHoursPerDay as Record<string, number>) ?? {});
 
         if (contactHourRules && attendanceRules) {
             const term = calendar.find(t => t.id === section.selectedTermId) || calendar[0];
@@ -149,10 +169,16 @@ export const DesktopView: React.FC<AppViewProps> = ({
                 labDays: section.labDays,
                 labTbaHours: section.labTbaHours || 0
             };
-            setGeneratedSchedule(generateSchedule(request, context, section.startTime, section.labStartTime));
+            const overrides = {
+                lectureTimesPerDay: section.lectureTimeMode === 'perDay' ? (section.lectureTimesPerDay as Record<string, string>) : undefined,
+                labTimesPerDay: section.labTimeMode === 'perDay' ? (section.labTimesPerDay as Record<string, string>) : undefined,
+                lectureHoursPerDay: section.lectureSplitMode === 'custom' ? (section.lectureHoursPerDay as Record<string, number>) : undefined,
+                labHoursPerDay: section.labSplitMode === 'custom' ? (section.labHoursPerDay as Record<string, number>) : undefined,
+            };
+            setGeneratedSchedule(generateSchedule(request, context, section.startTime, section.labStartTime, overrides));
             setLastRequest(request);
         }
-    }, [contactHourRules, attendanceRules, calendar, setCurrentSectionId, setLectureUnits, setLectureDays, setLecTbaHours, setLabUnits, setLabDays, setLabTbaHours, setStartTime, setLabStartTime, setSelectedTermId, setSelectedSessionId, setGeneratedSchedule, setLastRequest]);
+    }, [contactHourRules, attendanceRules, calendar, setCurrentSectionId, setLectureUnits, setLectureDays, setLecTbaHours, setLabUnits, setLabDays, setLabTbaHours, setStartTime, setLabStartTime, setSelectedTermId, setSelectedSessionId, setLectureTimeMode, setLabTimeMode, setLectureTimesPerDay, setLabTimesPerDay, setLectureSplitMode, setLabSplitMode, setLectureHoursPerDay, setLabHoursPerDay, setGeneratedSchedule, setLastRequest]);
 
     const handleCopy = (summaryType: ExportType) => {
         if (!generatedSchedule) return;
@@ -165,7 +191,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
             if (selectedCourseInfo) name = `${selectedCourseInfo.sub} ${selectedCourseInfo.no} 01`;
             else if (currentSectionId) name = savedSections.find(s => s.id === currentSectionId)?.name || name;
 
-            const temp = getWorkspaceAsSection('temp', name, { startTime, labStartTime, selectedTermId, selectedSessionId });
+            const temp = getWorkspaceAsSection('temp', name, { startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay });
             text = exportForSpreadsheet([temp], calendar);
             toastMsg = "Section copied in spreadsheet format!";
         } else if (summaryType === 'simple') {
@@ -196,6 +222,14 @@ export const DesktopView: React.FC<AppViewProps> = ({
         setGeneratedSchedule(null);
         setLastRequest(null);
         setIsConfirmNewOpen(false);
+        setLectureTimeMode('shared');
+        setLabTimeMode('shared');
+        setLectureTimesPerDay({});
+        setLabTimesPerDay({});
+        setLectureSplitMode('even');
+        setLabSplitMode('even');
+        setLectureHoursPerDay({});
+        setLabHoursPerDay({});
         showToast("Ready for new section", "info");
     };
 
@@ -215,9 +249,17 @@ export const DesktopView: React.FC<AppViewProps> = ({
             saved.startTime !== startTime ||
             saved.labStartTime !== labStartTime ||
             saved.selectedTermId !== selectedTermId ||
-            saved.selectedSessionId !== selectedSessionId
+            saved.selectedSessionId !== selectedSessionId ||
+            (saved.lectureTimeMode ?? 'shared') !== lectureTimeMode ||
+            (saved.labTimeMode ?? 'shared') !== labTimeMode ||
+            JSON.stringify(saved.lectureTimesPerDay ?? {}) !== JSON.stringify(lectureTimesPerDay) ||
+            JSON.stringify(saved.labTimesPerDay ?? {}) !== JSON.stringify(labTimesPerDay) ||
+            (saved.lectureSplitMode ?? 'even') !== lectureSplitMode ||
+            (saved.labSplitMode ?? 'even') !== labSplitMode ||
+            JSON.stringify(saved.lectureHoursPerDay ?? {}) !== JSON.stringify(lectureHoursPerDay) ||
+            JSON.stringify(saved.labHoursPerDay ?? {}) !== JSON.stringify(labHoursPerDay)
         );
-    }, [savedSections, currentSectionId, lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId]);
+    }, [savedSections, currentSectionId, lectureUnits, lectureDays, labUnits, labDays, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay]);
 
     const handleScheduleNew = () => {
         const isModified = currentSectionId ? checkIsModified(currentSectionId) : (lectureUnits > 0 || labUnits > 0);
@@ -270,6 +312,47 @@ export const DesktopView: React.FC<AppViewProps> = ({
         setLabStartTime(labStartTime === null ? '13:00' : null);
     };
 
+    const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    const handleBlockMove = useCallback((event: BlockMoveEvent) => {
+        const { type, fromDay, toDay, newStartTime } = event;
+        const isLecture = type === 'lecture';
+        const days = isLecture ? lectureDays : labDays;
+        const setDays = isLecture ? setLectureDays : setLabDays;
+        const setTimeMode = isLecture ? setLectureTimeMode : setLabTimeMode;
+        const timesPerDay = isLecture ? lectureTimesPerDay : labTimesPerDay;
+        const setTimesPerDay = isLecture ? setLectureTimesPerDay : setLabTimesPerDay;
+        const currentSharedTime = isLecture ? startTime : (labStartTime ?? startTime);
+
+        // Auto-flip to perDay mode
+        const timeMode = isLecture ? lectureTimeMode : labTimeMode;
+        if (timeMode === 'shared') {
+            const prefilled: Record<string, string> = {};
+            for (const d of days) prefilled[d] = currentSharedTime;
+            prefilled[toDay] = newStartTime;
+            setTimesPerDay(prefilled);
+            setTimeMode('perDay');
+        } else {
+            setTimesPerDay({ ...timesPerDay, [toDay]: newStartTime });
+        }
+
+        // If moving to a non-selected day, replace fromDay with toDay in the days array
+        if (fromDay !== toDay && !days.includes(toDay)) {
+            const newDays = days.map(d => d === fromDay ? toDay : d)
+                .sort((a, b) => WEEK_DAYS.indexOf(a) - WEEK_DAYS.indexOf(b));
+            setDays(newDays);
+            // Move the per-day time entry
+            const updated = { ...timesPerDay, [toDay]: newStartTime };
+            delete updated[fromDay];
+            setTimesPerDay(updated);
+            // Reset custom split — old per-day hours no longer apply to the new day set
+            const setSplitMode = isLecture ? setLectureSplitMode : setLabSplitMode;
+            const setHoursPerDay = isLecture ? setLectureHoursPerDay : setLabHoursPerDay;
+            setSplitMode('even');
+            setHoursPerDay({});
+        }
+    }, [lectureDays, labDays, setLectureDays, setLabDays, lectureTimeMode, labTimeMode, setLectureTimeMode, setLabTimeMode, lectureTimesPerDay, labTimesPerDay, setLectureTimesPerDay, setLabTimesPerDay, startTime, labStartTime, setLectureSplitMode, setLabSplitMode, setLectureHoursPerDay, setLabHoursPerDay]);
+
     const getStatusInfo = () => {
         if (isCalculating) return { label: 'Auto-Solving...', class: 'warning' };
         if (!generatedSchedule) return { label: 'Idle', class: '' };
@@ -292,10 +375,16 @@ export const DesktopView: React.FC<AppViewProps> = ({
             lectureUnits: section.lectureUnits, lectureDays: section.lectureDays,
             labUnits: section.labUnits, labDays: section.labDays
         };
+        const overrides = {
+            lectureTimesPerDay: section.lectureTimeMode === 'perDay' ? (section.lectureTimesPerDay as Record<string, string>) : undefined,
+            labTimesPerDay: section.labTimeMode === 'perDay' ? (section.labTimesPerDay as Record<string, string>) : undefined,
+            lectureHoursPerDay: section.lectureSplitMode === 'custom' ? (section.lectureHoursPerDay as Record<string, number>) : undefined,
+            labHoursPerDay: section.labSplitMode === 'custom' ? (section.labHoursPerDay as Record<string, number>) : undefined,
+        };
         return {
             id: section.id,
             name: section.name,
-            schedule: generateSchedule(request, context, section.startTime, section.labStartTime)
+            schedule: generateSchedule(request, context, section.startTime, section.labStartTime, overrides)
         };
     }).filter(Boolean);
 
@@ -353,6 +442,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
                         isCopyDropdownOpen={isCopyDropdownOpen}
                         setIsCopyDropdownOpen={setIsCopyDropdownOpen}
                         copyDropdownRef={copyDropdownRef}
+                        selectedTermId={selectedTermId}
                     />
 
                     <ConfigBar
@@ -393,6 +483,22 @@ export const DesktopView: React.FC<AppViewProps> = ({
                         isLabFixed={isLabFixed}
                         lecRange={lecRange}
                         labRange={labRange}
+                        lectureTimeMode={lectureTimeMode}
+                        setLectureTimeMode={setLectureTimeMode}
+                        labTimeMode={labTimeMode}
+                        setLabTimeMode={setLabTimeMode}
+                        lectureTimesPerDay={lectureTimesPerDay}
+                        setLectureTimesPerDay={setLectureTimesPerDay}
+                        labTimesPerDay={labTimesPerDay}
+                        setLabTimesPerDay={setLabTimesPerDay}
+                        lectureSplitMode={lectureSplitMode}
+                        setLectureSplitMode={setLectureSplitMode}
+                        labSplitMode={labSplitMode}
+                        setLabSplitMode={setLabSplitMode}
+                        lectureHoursPerDay={lectureHoursPerDay}
+                        setLectureHoursPerDay={setLectureHoursPerDay}
+                        labHoursPerDay={labHoursPerDay}
+                        setLabHoursPerDay={setLabHoursPerDay}
                     />
 
                     <div className="scrollable-content">
@@ -404,6 +510,9 @@ export const DesktopView: React.FC<AppViewProps> = ({
                                 timeFormat={timeFormat}
                                 resultsHeadingRef={resultsHeadingRef}
                                 isCalculating={isCalculating}
+                                onBlockMove={handleBlockMove}
+                                lectureDays={lectureDays}
+                                labDays={labDays}
                             />
                         </div>
                     </div>

@@ -20,7 +20,7 @@ export type CatalogHierarchy = Record<string, DeptMap>;
 export function useCatalog(selectedTermId: string) {
   // Determine which Academic Year to use based on the term ID
   // Logic: 2025 terms use 2526, 2026 terms (except Summer) use 2627
-  // Adjusting based on your rule: Summer 2025 -> 2526, Fall 2026+ -> 2627
+  // AY27-28 terms currently fall back to AY26-27 catalog (no 2728 catalog yet)
   const catalog = useMemo(() => {
     // Specific override: Summer 2026 uses AY25-26
     if (selectedTermId === 'su2026') {
@@ -32,7 +32,7 @@ export function useCatalog(selectedTermId: string) {
       return courses2526 as CatalogHierarchy;
     }
 
-    // Default to 2627 for other 2026+ terms
+    // Default to 2627 for other 2026+ terms (including AY27-28 fallback)
     return courses2627 as CatalogHierarchy;
   }, [selectedTermId]);
 

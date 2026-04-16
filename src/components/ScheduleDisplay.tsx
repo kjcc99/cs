@@ -1,5 +1,5 @@
 // src/components/ScheduleDisplay.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GeneratedSchedule, ScheduleBlock } from '../types';
 import { ScheduleRequest } from './CourseInput';
@@ -13,6 +13,13 @@ export interface OverlaidSchedule {
     schedule: GeneratedSchedule;
 }
 
+export interface BlockMoveEvent {
+    type: 'lecture' | 'lab';
+    fromDay: string;
+    toDay: string;
+    newStartTime: string;
+}
+
 export interface ScheduleDisplayProps {
     schedule: GeneratedSchedule | null;
     request: ScheduleRequest | null;
@@ -20,6 +27,40 @@ export interface ScheduleDisplayProps {
     timeFormat: '12h' | '24h';
     resultsHeadingRef: React.RefObject<HTMLHeadingElement | null>;
     isCalculating?: boolean;
+    onBlockMove?: (event: BlockMoveEvent) => void;
+    lectureDays?: string[];
+    labDays?: string[];
+}
+
+interface DragState {
+    blockType: 'lecture' | 'lab';
+    fromDay: string;
+    durationMinutes: number;
+    ghostDay: string;
+    ghostStartMinutes: number;
+    offsetY: number;
+}
+
+function snapToGrid(minutes: number): number {
+    return Math.round(minutes / 5) * 5;
+}
+
+function checkOverlap(
+    proposedStart: number,
+    proposedEnd: number,
+    existingBlocks: { startTime: string; endTime: string; type: string }[],
+    ignoreType: string
+): boolean {
+    const BUFFER = 10;
+    for (const b of existingBlocks) {
+        if (b.type === ignoreType) continue;
+        const bStart = timeToMinutes(b.startTime);
+        const bEnd = timeToMinutes(b.endTime);
+        if (!(proposedEnd + BUFFER <= bStart || bEnd + BUFFER <= proposedStart)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 const FULL_DAYS_OF_WEEK = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -115,7 +156,9 @@ const DayColumn = React.memo(({
     timeFormat,
     isDetailsExpanded,
     handleMouseEnter,
-    handleMouseLeave
+    handleMouseLeave,
+    dragState,
+    onDragStart
 }: any) => {
     const currentBlocks = (schedule?.scheduleBlocks.filter((b: any) => b.dayOfWeek === day) || []).map((b: any) => ({ ...b, id: 'current', sectionName: 'Current', isMain: true }));
     const overlayDayBlocks = overlaidSchedules.flatMap((os: any) =>
@@ -164,10 +207,20 @@ const DayColumn = React.memo(({
                                         zIndex: isRelated ? 30 : 5
                                     }}
                                     exit={{ opacity: 0, scale: 0.95 }}
-                                    className={`schedule-block ${block.type} ${!block.isMain ? 'overlay' : ''} timeline-block ${isRelated ? 'related-highlight' : ''}`}
+                                    className={`schedule-block ${block.type} ${!block.isMain ? 'overlay' : ''} timeline-block ${isRelated ? 'related-highlight' : ''} ${block.isMain && onDragStart ? 'draggable' : ''} ${dragState && dragState.fromDay === day && dragState.blockType === block.type && block.isMain ? 'drag-source' : ''}`}
                                     style={getBlockStyle(block.startTime, block.endTime, colIndex, columns.length)}
-                                    onMouseEnter={() => handleMouseEnter(block, block.id, block.sectionName)}
-                                    onMouseLeave={handleMouseLeave}
+                                    onMouseEnter={() => !dragState && handleMouseEnter(block, block.id, block.sectionName)}
+                                    onMouseLeave={() => !dragState && handleMouseLeave()}
+                                    onPointerDown={(e: React.PointerEvent) => {
+                                        if (block.isMain && onDragStart) {
+                                            e.preventDefault();
+                                            const rect = (e.target as HTMLElement).closest('.day-column-content')?.getBoundingClientRect();
+                                            if (!rect) return;
+                                            const blockTopPx = (timeToMinutes(block.startTime) - START_HOUR * 60) * PIXELS_PER_MINUTE;
+                                            const offsetY = e.clientY - rect.top - blockTopPx;
+                                            onDragStart(block, day, offsetY, e);
+                                        }
+                                    }}
                                 >
                                     <div className="block-content">
                                         <span className="block-time">
@@ -191,11 +244,14 @@ const DayColumn = React.memo(({
 });
 
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, overlaidSchedules = [], timeFormat, resultsHeadingRef, isCalculating }) => {
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, overlaidSchedules = [], timeFormat, resultsHeadingRef, isCalculating, onBlockMove, lectureDays, labDays }) => {
     const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
     const [hoveredInfo, setHoveredInfo] = useState<{ id: string, type: string, name: string, fullSpan: string, days: string, totalInstr: number, totalBreak: number } | null>(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
     const [showNudge, setShowNudge] = useState(false);
+    const [dragState, setDragState] = useState<DragState | null>(null);
+    const [dragOverlap, setDragOverlap] = useState(false);
+    const gridRef = useRef<HTMLDivElement>(null);
 
     // Trigger nudge only once when a schedule is first displayed
     useEffect(() => {
@@ -247,6 +303,103 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
         setHoveredInfo(null);
     }, []);
 
+    const componentDaysFor = useCallback((type: 'lecture' | 'lab') => {
+        return type === 'lecture' ? (lectureDays || []) : (labDays || []);
+    }, [lectureDays, labDays]);
+
+    const handleDragStart = useCallback((block: any, day: string, offsetY: number, e: React.PointerEvent) => {
+        if (!onBlockMove) return;
+        setHoveredInfo(null);
+        const totalDuration = (schedule?.scheduleBlocks || [])
+            .filter((b: ScheduleBlock) => b.dayOfWeek === day && b.type === block.type)
+            .reduce((sum: number, b: ScheduleBlock) => sum + b.durationMinutes, 0);
+
+        setDragState({
+            blockType: block.type,
+            fromDay: day,
+            durationMinutes: totalDuration,
+            ghostDay: day,
+            ghostStartMinutes: timeToMinutes(block.startTime),
+            offsetY
+        });
+        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    }, [onBlockMove, schedule]);
+
+    const handlePointerMove = useCallback((e: React.PointerEvent) => {
+        if (!dragState || !gridRef.current) return;
+        const gridRect = gridRef.current.getBoundingClientRect();
+        const columns = gridRef.current.querySelectorAll('.day-column.timeline');
+        if (columns.length === 0) return;
+
+        // Determine which day column
+        let ghostDay = dragState.ghostDay;
+        for (let i = 0; i < columns.length; i++) {
+            const colRect = columns[i].getBoundingClientRect();
+            if (e.clientX >= colRect.left && e.clientX <= colRect.right) {
+                ghostDay = FULL_DAYS_OF_WEEK[i];
+                break;
+            }
+        }
+
+        // Determine start time from Y position
+        const contentEl = columns[0].querySelector('.day-column-content');
+        if (!contentEl) return;
+        const contentRect = contentEl.getBoundingClientRect();
+        const relativeY = e.clientY - contentRect.top - dragState.offsetY;
+        const rawMinutes = (relativeY / PIXELS_PER_MINUTE) + START_HOUR * 60;
+        const snapped = snapToGrid(Math.max(START_HOUR * 60, Math.min(END_HOUR * 60 - dragState.durationMinutes, rawMinutes)));
+
+        // Check overlap on target day
+        const targetDayBlocks = (schedule?.scheduleBlocks || []).filter(
+            (b: ScheduleBlock) => b.dayOfWeek === ghostDay
+        );
+        const hasOverlap = checkOverlap(
+            snapped,
+            snapped + dragState.durationMinutes,
+            targetDayBlocks,
+            dragState.blockType
+        );
+        setDragOverlap(hasOverlap);
+
+        setDragState(prev => prev ? { ...prev, ghostDay: ghostDay, ghostStartMinutes: snapped } : null);
+    }, [dragState, schedule]);
+
+    const handlePointerUp = useCallback(() => {
+        if (!dragState || !onBlockMove) {
+            setDragState(null);
+            return;
+        }
+        if (dragOverlap) {
+            setDragState(null);
+            setDragOverlap(false);
+            return;
+        }
+
+        // Restrict target day to a valid day for this component, or allow replacing a day
+        const validDays = componentDaysFor(dragState.blockType);
+        const toDay = dragState.ghostDay;
+
+        // Only allow moving to an already-selected day for this component, or replacing the source day
+        if (!validDays.includes(toDay) && !validDays.includes(dragState.fromDay)) {
+            setDragState(null);
+            return;
+        }
+
+        const h = Math.floor(dragState.ghostStartMinutes / 60);
+        const m = dragState.ghostStartMinutes % 60;
+        const newStartTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+
+        onBlockMove({
+            type: dragState.blockType,
+            fromDay: dragState.fromDay,
+            toDay,
+            newStartTime
+        });
+
+        setDragState(null);
+        setDragOverlap(false);
+    }, [dragState, dragOverlap, onBlockMove, componentDaysFor]);
+
     if (!schedule && overlaidSchedules.length === 0) {
         return (
             <div className={`schedule-display-container ${isCalculating ? 'is-calculating' : ''}`}>
@@ -285,8 +438,10 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
             </div>
 
             <div
-                className={`timeline-wrapper ${hoveredInfo ? 'has-hover' : ''} ${showNudge ? 'nudge-hint' : ''}`}
-                onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+                className={`timeline-wrapper ${hoveredInfo ? 'has-hover' : ''} ${showNudge ? 'nudge-hint' : ''} ${dragState ? 'is-dragging' : ''}`}
+                onMouseMove={(e) => { if (!dragState) setMousePos({ x: e.clientX, y: e.clientY }); }}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
             >
                 <div className="time-ruler">
                     {hours.map(h => (
@@ -296,7 +451,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
                     ))}
                 </div>
 
-                <div className="weekly-grid timeline">
+                <div className="weekly-grid timeline" ref={gridRef}>
                     {FULL_DAYS_OF_WEEK.map(day => (
                         <DayColumn
                             key={day}
@@ -309,8 +464,46 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
                             isDetailsExpanded={isDetailsExpanded}
                             handleMouseEnter={handleMouseEnterWrapper}
                             handleMouseLeave={handleMouseLeaveWrapper}
+                            dragState={dragState}
+                            onDragStart={onBlockMove ? handleDragStart : undefined}
                         />
                     ))}
+
+                    {dragState && gridRef.current && (() => {
+                        const ghostTop = (dragState.ghostStartMinutes - START_HOUR * 60) * PIXELS_PER_MINUTE;
+                        const ghostHeight = dragState.durationMinutes * PIXELS_PER_MINUTE;
+                        const dayIndex = FULL_DAYS_OF_WEEK.indexOf(dragState.ghostDay);
+                        const h = Math.floor(dragState.ghostStartMinutes / 60);
+                        const m = dragState.ghostStartMinutes % 60;
+                        const endMin = dragState.ghostStartMinutes + dragState.durationMinutes;
+                        const eh = Math.floor(endMin / 60);
+                        const em = endMin % 60;
+                        const startStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                        const endStr = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+
+                        const gridRect = gridRef.current!.getBoundingClientRect();
+                        const colEl = gridRef.current!.querySelectorAll('.day-column.timeline')[dayIndex];
+                        const colRect = colEl?.getBoundingClientRect();
+                        const ghostLeft = colRect ? colRect.left - gridRect.left : 0;
+                        const ghostWidth = colRect ? colRect.width : 0;
+
+                        return (
+                            <div
+                                className={`drag-ghost ${dragState.blockType} ${dragOverlap ? 'overlap' : ''}`}
+                                style={{
+                                    position: 'absolute',
+                                    top: `${ghostTop + 65}px`,
+                                    height: `${ghostHeight}px`,
+                                    left: `${ghostLeft + 2}px`,
+                                    width: `${ghostWidth - 4}px`,
+                                    pointerEvents: 'none',
+                                    zIndex: 50,
+                                }}
+                            >
+                                <span className="ghost-time">{formatTime(startStr, timeFormat)} - {formatTime(endStr, timeFormat)}</span>
+                            </div>
+                        );
+                    })()}
                 </div>
 
                 <AnimatePresence>

@@ -146,6 +146,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 4px;
+  position: relative;
 }
 
 .day-column-content.timeline {
@@ -227,6 +228,46 @@
   color: var(--text-muted);
   text-transform: uppercase;
 }
+
+/* Drag-to-move */
+.timeline-block.draggable { cursor: grab; }
+.timeline-block.draggable:active { cursor: grabbing; }
+
+.timeline-wrapper.is-dragging { cursor: grabbing; user-select: none; }
+.timeline-wrapper.is-dragging .timeline-popover { display: none; }
+
+.timeline-block.drag-source {
+    opacity: 0.35 !important;
+}
+.timeline-block.drag-source .block-content { visibility: hidden; }
+
+.drag-ghost {
+    border-radius: 4px;
+    opacity: 0.75;
+    border: 2px dashed;
+    display: flex;
+    align-items: flex-start;
+    padding: 4px 8px;
+    transition: background 0.1s, border-color 0.1s;
+}
+.drag-ghost.lecture {
+    background: var(--lecture-bg);
+    border-color: var(--lecture-color);
+}
+.drag-ghost.lab {
+    background: var(--lab-bg);
+    border-color: var(--lab-color);
+}
+.drag-ghost.overlap {
+    border-color: #c33;
+    background: rgba(200, 50, 50, 0.15);
+}
+.ghost-time {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+.drag-ghost.overlap .ghost-time { color: #c33; }
 
 /* Mobile Adjustments for Schedule Display */
 @media (max-width: 768px) {

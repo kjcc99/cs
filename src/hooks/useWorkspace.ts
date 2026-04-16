@@ -60,6 +60,7 @@ export function useWorkspace() {
     }, []);
 
     const getWorkspaceAsSection = useCallback((id: string, name: string, settings: any) => {
+        const usesV2 = settings.lectureTimeMode === 'perDay' || settings.labTimeMode === 'perDay' || settings.lectureSplitMode === 'custom' || settings.labSplitMode === 'custom';
         return {
             id,
             name,
@@ -69,7 +70,18 @@ export function useWorkspace() {
             labStartTime: settings.labStartTime,
             selectedTermId: settings.selectedTermId,
             selectedSessionId: settings.selectedSessionId,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            ...(usesV2 ? {
+                schemaVersion: 2 as const,
+                lectureTimeMode: settings.lectureTimeMode,
+                labTimeMode: settings.labTimeMode,
+                lectureTimesPerDay: settings.lectureTimesPerDay,
+                labTimesPerDay: settings.labTimesPerDay,
+                lectureSplitMode: settings.lectureSplitMode,
+                labSplitMode: settings.labSplitMode,
+                lectureHoursPerDay: settings.lectureHoursPerDay,
+                labHoursPerDay: settings.labHoursPerDay,
+            } : {})
         };
     }, [lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours]);
 

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { LOCAL_STORAGE_KEY, academicCalendar } from '../types/calendar';
+import { TimeMode, SplitMode } from '../types/section';
 
 export function useSettings() {
     const [selectedTermId, setSelectedTermId] = useState<string>(() => {
@@ -32,10 +33,48 @@ export function useSettings() {
         return saved ? JSON.parse(saved).timeFormat : '12h';
     });
 
+    const [lectureTimeMode, setLectureTimeMode] = useState<TimeMode>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).lectureTimeMode) || 'shared';
+    });
+    const [labTimeMode, setLabTimeMode] = useState<TimeMode>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).labTimeMode) || 'shared';
+    });
+    const [lectureTimesPerDay, setLectureTimesPerDay] = useState<Record<string, string>>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).lectureTimesPerDay) || {};
+    });
+    const [labTimesPerDay, setLabTimesPerDay] = useState<Record<string, string>>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).labTimesPerDay) || {};
+    });
+
+    const [lectureSplitMode, setLectureSplitMode] = useState<SplitMode>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).lectureSplitMode) || 'even';
+    });
+    const [labSplitMode, setLabSplitMode] = useState<SplitMode>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).labSplitMode) || 'even';
+    });
+    const [lectureHoursPerDay, setLectureHoursPerDay] = useState<Record<string, number>>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).lectureHoursPerDay) || {};
+    });
+    const [labHoursPerDay, setLabHoursPerDay] = useState<Record<string, number>>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).labHoursPerDay) || {};
+    });
+
     useEffect(() => {
-        const settings = { selectedTermId, selectedSessionId, startTime, labStartTime, theme, daySelectionMode, timeFormat };
+        const settings = {
+            selectedTermId, selectedSessionId, startTime, labStartTime, theme, daySelectionMode, timeFormat,
+            lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay,
+            lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay
+        };
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(settings));
-    }, [selectedTermId, selectedSessionId, startTime, labStartTime, theme, daySelectionMode, timeFormat]);
+    }, [selectedTermId, selectedSessionId, startTime, labStartTime, theme, daySelectionMode, timeFormat, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay]);
 
     useEffect(() => {
         document.body.setAttribute('data-theme', theme);
@@ -56,6 +95,14 @@ export function useSettings() {
         labStartTime, setLabStartTime,
         theme, setTheme,
         daySelectionMode, setDaySelectionMode,
-        timeFormat, setTimeFormat
+        timeFormat, setTimeFormat,
+        lectureTimeMode, setLectureTimeMode,
+        labTimeMode, setLabTimeMode,
+        lectureTimesPerDay, setLectureTimesPerDay,
+        labTimesPerDay, setLabTimesPerDay,
+        lectureSplitMode, setLectureSplitMode,
+        labSplitMode, setLabSplitMode,
+        lectureHoursPerDay, setLectureHoursPerDay,
+        labHoursPerDay, setLabHoursPerDay
     };
 }

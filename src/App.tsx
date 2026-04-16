@@ -43,7 +43,9 @@ function App() {
 
   // Destructure for the useEffect dependencies
   const { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours, setGeneratedSchedule, setLastRequest, setIsCalculating } = workspaceAPI;
-  const { startTime, labStartTime, selectedTermId, selectedSessionId } = settingsAPI;
+  const { startTime, labStartTime, selectedTermId, selectedSessionId,
+    lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay,
+    lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay } = settingsAPI;
   const { contactHourRules, attendanceRules } = rulesAPI;
 
   const selectedTerm = calendar.find(t => t.id === selectedTermId) || calendar[0];
@@ -63,7 +65,13 @@ function App() {
       if (contactHourRules && attendanceRules) {
         const request: ScheduleRequest = { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours };
         const context: RuleAndTermContext = { contactHourRules, attendanceRules, term: selectedTerm, session: selectedSession };
-        const schedule = generateSchedule(request, context, startTime, labStartTime);
+        const overrides = {
+          lectureTimesPerDay: lectureTimeMode === 'perDay' ? lectureTimesPerDay : undefined,
+          labTimesPerDay: labTimeMode === 'perDay' ? labTimesPerDay : undefined,
+          lectureHoursPerDay: lectureSplitMode === 'custom' ? lectureHoursPerDay : undefined,
+          labHoursPerDay: labSplitMode === 'custom' ? labHoursPerDay : undefined,
+        };
+        const schedule = generateSchedule(request, context, startTime, labStartTime, overrides);
         setGeneratedSchedule(schedule);
         setLastRequest(request);
       }
@@ -74,6 +82,8 @@ function App() {
   }, [
     lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours,
     startTime, labStartTime, selectedTermId, selectedSessionId,
+    lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay,
+    lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay,
     contactHourRules, attendanceRules, selectedTerm, selectedSession,
     setGeneratedSchedule, setLastRequest, setIsCalculating
   ]);

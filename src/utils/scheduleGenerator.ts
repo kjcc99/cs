@@ -8,6 +8,16 @@ import { ScheduleBlock, ScheduleInfo, GeneratedSchedule, RuleAndTermContext } fr
 
 
 
+// Given total clock minutes (end - start), compute contact hours using the official rules.
+// Rounds to the nearest 0.1 CH. Returns null if the duration is less than 1 CH minimum (50 min).
+export function contactHoursFromClockMinutes(totalClockMinutes: number): number | null {
+    if (totalClockMinutes < 50) return null;
+    const numBreaks = totalClockMinutes <= 95 ? 0 : Math.floor((totalClockMinutes - 50) / 60);
+    const instructionalMinutes = totalClockMinutes - (numBreaks * 10);
+    const ch = instructionalMinutes / 50;
+    return Math.round(ch * 10) / 10;
+}
+
 // --- Main Calculation Logic (Exported for UI consistency) ---
 export function calculateTimeMetrics(dailyCH: number): { totalClockMinutes: number, numStandardBreaks: number, manualBreak: number } {
     const dailyCHDecimal = parseFloat((dailyCH - Math.floor(dailyCH)).toFixed(1));
@@ -20,14 +30,59 @@ export function calculateTimeMetrics(dailyCH: number): { totalClockMinutes: numb
     return { totalClockMinutes, numStandardBreaks, manualBreak };
 }
 
+// Build the per-day block template for a fixed number of contact hours.
+// Mirrors the existing inline logic — extracted so it can run per-day or once.
+function buildBlocksForContactHours(
+    dailyCH: number,
+    type: 'lecture' | 'lab'
+): { blocks: Omit<ScheduleBlock, 'dayOfWeek' | 'startTime' | 'endTime'>[], totalBreakMinutes: number } {
+    const { totalClockMinutes, numStandardBreaks, manualBreak } = calculateTimeMetrics(dailyCH);
+    const totalBreakMinutes = (numStandardBreaks * 10) + manualBreak;
+    const instructionalMinutes = totalClockMinutes - totalBreakMinutes;
+
+    const blocks: Omit<ScheduleBlock, 'dayOfWeek' | 'startTime' | 'endTime'>[] = [];
+    let remainingInstructional = instructionalMinutes;
+    let remainingStdBreaks = numStandardBreaks;
+
+    while (remainingInstructional > 0) {
+        const isLastBlock = remainingStdBreaks <= 0;
+        const blockInstruction = isLastBlock ? remainingInstructional : 50;
+        const blockBreak = isLastBlock ? 0 : 10;
+
+        blocks.push({
+            type,
+            durationMinutes: blockInstruction + blockBreak,
+            instructionalMinutes: blockInstruction,
+            breakMinutes: blockBreak,
+        });
+        remainingInstructional -= blockInstruction;
+        if (!isLastBlock) remainingStdBreaks--;
+    }
+    if (manualBreak > 0 && blocks.length > 0) {
+        blocks[blocks.length - 1].breakMinutes += manualBreak;
+        blocks[blocks.length - 1].durationMinutes += manualBreak;
+    }
+    return { blocks, totalBreakMinutes };
+}
+
+type DailyBlocks = Omit<ScheduleBlock, 'dayOfWeek' | 'startTime' | 'endTime'>[];
+
+interface DailyScheduleResult {
+    // When splitMode === 'even', blocksPerDay[day] is the same template for every day.
+    // When splitMode === 'custom', each day has its own template.
+    blocksPerDay: Record<string, DailyBlocks>;
+    info: ScheduleInfo;
+}
+
 function calculateDailySchedule(
     units: number,
     daysOfWeek: string[],
     type: 'lecture' | 'lab',
     tbaHours: number = 0,
     context: RuleAndTermContext,
-    warnings: string[]
-): { dailyBlocks: Omit<ScheduleBlock, 'dayOfWeek' | 'startTime' | 'endTime'>[], info: ScheduleInfo } | null {
+    warnings: string[],
+    customHoursPerDay?: Partial<Record<string, number>>
+): DailyScheduleResult | null {
     const { term, session, attendanceRules } = context;
     const { weeks } = session;
 
@@ -77,7 +132,7 @@ function calculateDailySchedule(
     }
 
     if (effectiveContactHoursForTerm === 0) {
-        return { dailyBlocks: [], info: { contactHoursForTerm, weeklyContactHours: contactHoursForTerm / weeks, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 } };
+        return { blocksPerDay: {}, info: { contactHoursForTerm, weeklyContactHours: contactHoursForTerm / weeks, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 } };
     }
 
     if (actualMeetingDays === 0 && effectiveContactHoursForTerm > 0) {
@@ -85,6 +140,57 @@ function calculateDailySchedule(
         return null;
     }
 
+    const useCustomSplit = !!customHoursPerDay && daysOfWeek.some(d => customHoursPerDay[d] !== undefined);
+
+    if (useCustomSplit) {
+        // --- Custom (uneven) split path ---
+        const weeklyRequiredCH = effectiveContactHoursForTerm / weeks;
+        const blocksPerDay: Record<string, DailyBlocks> = {};
+        let sumWeeklyCH = 0;
+        let totalBreakMinutesSum = 0;
+
+        for (const day of daysOfWeek) {
+            const raw = customHoursPerDay![day];
+            if (raw === undefined) {
+                warnings.push(`ERROR: Custom split is missing a value for ${day} (${type}).`);
+                return null;
+            }
+            const ch = Math.round(raw * 10) / 10;
+            if (Math.abs(ch - raw) > 0.001) {
+                warnings.push(`Custom ${type} hours for ${day} rounded from ${raw} to ${ch.toFixed(1)} CH.`);
+            }
+            if (ch < 1.0) {
+                warnings.push(`ERROR: Minimum of 1.0 CH per meeting required. ${type} on ${day} is ${ch.toFixed(1)} CH.`);
+                return null;
+            }
+            const { blocks, totalBreakMinutes } = buildBlocksForContactHours(ch, type);
+            blocksPerDay[day] = blocks;
+            totalBreakMinutesSum += totalBreakMinutes;
+            sumWeeklyCH += ch;
+        }
+
+        if (Math.abs(sumWeeklyCH - weeklyRequiredCH) > 0.05) {
+            warnings.push(`ERROR: Custom ${type} split sums to ${sumWeeklyCH.toFixed(1)} CH/week but requires ${weeklyRequiredCH.toFixed(1)} CH/week.`);
+            return null;
+        }
+
+        // Totals: weekly sum × (actualMeetingDays / selectedDaysPerWeek) approximates term scheduled CH.
+        const perWeekDayCount = daysOfWeek.length || 1;
+        const totalScheduledContactHours = sumWeeklyCH * (actualMeetingDays / perWeekDayCount);
+
+        const info: ScheduleInfo = {
+            contactHoursForTerm,
+            weeklyContactHours: contactHoursForTerm / weeks,
+            totalScheduledContactHours,
+            contactHoursPerDay: sumWeeklyCH / perWeekDayCount,
+            totalBreakMinutesPerDay: totalBreakMinutesSum / perWeekDayCount,
+            actualMeetingDays
+        };
+
+        return { blocksPerDay, info };
+    }
+
+    // --- Even split path (unchanged math) ---
     const idealContactHoursPerDay = effectiveContactHoursForTerm / actualMeetingDays;
 
     if (idealContactHoursPerDay < 1.0) {
@@ -98,33 +204,12 @@ function calculateDailySchedule(
         warnings.push(`Ideal daily time of ${idealContactHoursPerDay.toFixed(2)} CH for the ${type} was rounded to ${finalDailyContactHours.toFixed(1)} CH/day.`);
     }
 
-    // 4. Generate daily blocks
-    const { totalClockMinutes, numStandardBreaks, manualBreak } = calculateTimeMetrics(finalDailyContactHours);
-    const totalBreakMinutesPerDay = (numStandardBreaks * 10) + manualBreak;
-    const instructionalMinutesPerDay = totalClockMinutes - totalBreakMinutesPerDay;
+    const { blocks: dailyTemplate, totalBreakMinutes: totalBreakMinutesPerDay } = buildBlocksForContactHours(finalDailyContactHours, type);
     const totalScheduledContactHours = finalDailyContactHours * actualMeetingDays;
 
-    const dailyBlocks: Omit<ScheduleBlock, 'dayOfWeek' | 'startTime' | 'endTime'>[] = [];
-    let remainingInstructional = instructionalMinutesPerDay;
-    let remainingStdBreaks = numStandardBreaks;
-
-    while (remainingInstructional > 0) {
-        const isLastBlock = remainingStdBreaks <= 0;
-        const blockInstruction = isLastBlock ? remainingInstructional : 50;
-        const blockBreak = isLastBlock ? 0 : 10;
-
-        dailyBlocks.push({
-            type,
-            durationMinutes: blockInstruction + blockBreak,
-            instructionalMinutes: blockInstruction,
-            breakMinutes: blockBreak,
-        });
-        remainingInstructional -= blockInstruction;
-        if (!isLastBlock) remainingStdBreaks--;
-    }
-    if (manualBreak > 0 && dailyBlocks.length > 0) {
-        dailyBlocks[dailyBlocks.length - 1].breakMinutes += manualBreak;
-        dailyBlocks[dailyBlocks.length - 1].durationMinutes += manualBreak;
+    const blocksPerDay: Record<string, DailyBlocks> = {};
+    for (const day of daysOfWeek) {
+        blocksPerDay[day] = dailyTemplate;
     }
 
     const info: ScheduleInfo = {
@@ -136,16 +221,42 @@ function calculateDailySchedule(
         actualMeetingDays
     };
 
-    return { dailyBlocks, info };
+    return { blocksPerDay, info };
 }
 
+
+export interface GenerateScheduleOverrides {
+    lectureTimesPerDay?: Partial<Record<string, string>>;
+    labTimesPerDay?: Partial<Record<string, string>>;
+    lectureHoursPerDay?: Partial<Record<string, number>>;
+    labHoursPerDay?: Partial<Record<string, number>>;
+}
+
+export function parseTimeToMinutes(t: string): number {
+    const [h, m] = t.split(':').map(Number);
+    return h * 60 + m;
+}
+
+export function formatMinutes(total: number): string {
+    const h = Math.floor(total / 60);
+    const m = total % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+}
+
+// End time = start + clock-minutes(CH). Uses the same formula as the generator.
+export function endTimeForContactHours(startTime: string, ch: number): string {
+    const start = parseTimeToMinutes(startTime);
+    const { totalClockMinutes } = calculateTimeMetrics(ch);
+    return formatMinutes(start + totalClockMinutes);
+}
 
 // --- MAIN GENERATOR ---
 export function generateSchedule(
     request: ScheduleRequest,
     context: RuleAndTermContext,
     startTime: string,
-    labStartTime: string | null
+    labStartTime: string | null,
+    overrides?: GenerateScheduleOverrides
 ): GeneratedSchedule {
     const warnings: string[] = [];
     const emptyInfo: ScheduleInfo = { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 };
@@ -153,33 +264,37 @@ export function generateSchedule(
 
     if (request.lectureUnits === 0 && request.labUnits === 0) return emptySchedule;
 
-    const lectureResult = calculateDailySchedule(request.lectureUnits, request.lectureDays, 'lecture', request.lecTbaHours || 0, context, warnings);
-    const labResult = calculateDailySchedule(request.labUnits, request.labDays, 'lab', request.labTbaHours || 0, context, warnings);
+    const lectureResult = calculateDailySchedule(request.lectureUnits, request.lectureDays, 'lecture', request.lecTbaHours || 0, context, warnings, overrides?.lectureHoursPerDay);
+    const labResult = calculateDailySchedule(request.labUnits, request.labDays, 'lab', request.labTbaHours || 0, context, warnings, overrides?.labHoursPerDay);
 
     if (!lectureResult || !labResult) {
         return { ...emptySchedule, lectureInfo: lectureResult?.info || emptyInfo, labInfo: labResult?.info || emptyInfo, warnings };
     }
 
-    const { dailyBlocks: lectureDaily, info: lectureInfo } = lectureResult;
-    const { dailyBlocks: labDaily, info: labInfo } = labResult;
+    const { blocksPerDay: lecBlocksPerDay, info: lectureInfo } = lectureResult;
+    const { blocksPerDay: labBlocksPerDay, info: labInfo } = labResult;
 
     const finalBlocks: ScheduleBlock[] = [];
-    const lecStartHour = parseInt(startTime.split(':')[0]);
-    const lecStartMinute = parseInt(startTime.split(':')[1]);
-    const initialLecTime = lecStartHour * 60 + lecStartMinute;
+    const initialLecTime = parseTimeToMinutes(startTime);
+    const initialLabTime = labStartTime ? parseTimeToMinutes(labStartTime) : initialLecTime;
 
     const dailyEndTimes: { [key: string]: number } = {};
 
     // Process lecture days
     for (const day of request.lectureDays) {
-        let currentTime = initialLecTime;
-        lectureDaily.forEach(block => {
+        const dayBlocks = lecBlocksPerDay[day];
+        if (!dayBlocks) continue;
+
+        const override = overrides?.lectureTimesPerDay?.[day];
+        let currentTime = override ? parseTimeToMinutes(override) : initialLecTime;
+
+        dayBlocks.forEach(block => {
             const endTime = currentTime + block.durationMinutes;
             finalBlocks.push({
                 ...block,
                 dayOfWeek: day,
-                startTime: `${Math.floor(currentTime / 60).toString().padStart(2, '0')}:${(currentTime % 60).toString().padStart(2, '0')}`,
-                endTime: `${Math.floor(endTime / 60).toString().padStart(2, '0')}:${(endTime % 60).toString().padStart(2, '0')}`,
+                startTime: formatMinutes(currentTime),
+                endTime: formatMinutes(endTime),
             });
             currentTime = endTime;
         });
@@ -188,33 +303,29 @@ export function generateSchedule(
 
     // Process lab days
     for (const day of request.labDays) {
-        let initialLabTime = initialLecTime;
-        if (labStartTime) {
-            const labStartHour = parseInt(labStartTime.split(':')[0]);
-            const labStartMinute = parseInt(labStartTime.split(':')[1]);
-            initialLabTime = labStartHour * 60 + labStartMinute;
-        }
+        const dayBlocks = labBlocksPerDay[day];
+        if (!dayBlocks) continue;
+
+        const override = overrides?.labTimesPerDay?.[day];
 
         let currentTime: number;
-
-        if (labStartTime) {
-            // User explicitly set a lab time, use it regardless of lecture presence
+        if (override) {
+            currentTime = parseTimeToMinutes(override);
+        } else if (labStartTime) {
             currentTime = initialLabTime;
         } else if (dailyEndTimes[day] && request.lectureUnits > 0) {
-            // No custom lab time, and there's a lecture today: start 10m after lecture
             currentTime = dailyEndTimes[day] + 10;
         } else {
-            // No custom lab time, no lecture today: start at default time (initialLecTime)
             currentTime = initialLabTime;
         }
 
-        labDaily.forEach(block => {
+        dayBlocks.forEach(block => {
             const endTime = currentTime + block.durationMinutes;
             finalBlocks.push({
                 ...block,
                 dayOfWeek: day,
-                startTime: `${Math.floor(currentTime / 60).toString().padStart(2, '0')}:${(currentTime % 60).toString().padStart(2, '0')}`,
-                endTime: `${Math.floor(endTime / 60).toString().padStart(2, '0')}:${(endTime % 60).toString().padStart(2, '0')}`,
+                startTime: formatMinutes(currentTime),
+                endTime: formatMinutes(endTime),
             });
             currentTime = endTime;
         });
