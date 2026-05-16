@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Edit2, Lock, Unlock, CalendarDays, Clock, ChevronUp } from 'lucide-react';
 import { TimeMode, SplitMode } from '../../../types/section';
 import CustomSplit from '../../CustomSplit';
+import RoomSelector from '../../RoomSelector';
+import { Building } from '../../../types/rooms';
 import { TimeSelector } from '../../Settings';
 import CoursePicker from '../../CoursePicker';
 import CourseInput from '../../CourseInput';
@@ -65,6 +67,23 @@ interface MobileConfigProps {
     setLectureHoursPerDay: (v: Record<string, number>) => void;
     labHoursPerDay: Record<string, number>;
     setLabHoursPerDay: (v: Record<string, number>) => void;
+    buildings: Building[];
+    hasDivision: boolean;
+    lectureBuildingId: string;
+    setLectureBuildingId: (v: string) => void;
+    lectureRoomId: string;
+    setLectureRoomId: (v: string) => void;
+    labBuildingId: string;
+    setLabBuildingId: (v: string) => void;
+    labRoomId: string;
+    setLabRoomId: (v: string) => void;
+    // Smart Split
+    smartSplit: boolean;
+    setSmartSplit: (v: boolean) => void;
+    smartSplitDays: string[];
+    setSmartSplitDays: (v: string[]) => void;
+    canSmartSplit: boolean;
+    onSmartSplitToggle: (enabled: boolean) => void;
 }
 
 export const MobileConfig: React.FC<MobileConfigProps> = ({
@@ -85,7 +104,15 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
     lectureSplitMode, setLectureSplitMode,
     labSplitMode, setLabSplitMode,
     lectureHoursPerDay, setLectureHoursPerDay,
-    labHoursPerDay, setLabHoursPerDay
+    labHoursPerDay, setLabHoursPerDay,
+    buildings, hasDivision,
+    lectureBuildingId, setLectureBuildingId,
+    lectureRoomId, setLectureRoomId,
+    labBuildingId, setLabBuildingId,
+    labRoomId, setLabRoomId,
+    smartSplit, setSmartSplit,
+    smartSplitDays, setSmartSplitDays,
+    canSmartSplit, onSmartSplitToggle
 }) => {
     const weeks = selectedSession.weeks || 1;
     const lecWeeklyCH = Math.max(0, (lectureUnits * 18 - (lecTbaHours || 0))) / weeks;
@@ -164,6 +191,22 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
                             </button>
                         </div>
 
+                        <div className="config-mode-toggle" style={{ padding: '4px 16px 0' }}>
+                            <button
+                                className={`mode-btn ${!smartSplit ? 'active' : ''}`}
+                                onClick={() => smartSplit && onSmartSplitToggle(false)}
+                            >
+                                Manual
+                            </button>
+                            <button
+                                className={`mode-btn ${smartSplit ? 'active' : ''}`}
+                                onClick={() => !smartSplit && onSmartSplitToggle(true)}
+                                disabled={!canSmartSplit}
+                            >
+                                Smart Split
+                            </button>
+                        </div>
+
                         <div className="mc-section">
                             <label>Academic Session</label>
                             <div className="mc-row">
@@ -179,69 +222,80 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
                         <div className="mc-section">
                             <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 4 }}>
                                 <label>Start Times</label>
-                                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                    <button
-                                        onClick={toggleLectureTimeMode}
-                                        className="mc-lock-btn"
-                                        disabled={lectureDays.length === 0}
-                                        title={lectureTimeMode === 'shared' ? 'Per-day Lec times' : 'Shared Lec time'}
-                                    >
-                                        {lectureTimeMode === 'shared' ? <Clock size={14} /> : <CalendarDays size={14} />}
-                                        <span style={{ marginLeft: 4 }}>Lec</span>
-                                    </button>
-                                    <button onClick={handleLabLockToggle} className="mc-lock-btn">
-                                        {labStartTime === null ? <Lock size={14} /> : <Unlock size={14} />}
-                                        <span style={{ marginLeft: 4 }}>Separate</span>
-                                    </button>
-                                    {labStartTime !== null && (
+                                {!smartSplit && (
+                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                         <button
-                                            onClick={toggleLabTimeMode}
+                                            onClick={toggleLectureTimeMode}
                                             className="mc-lock-btn"
-                                            disabled={labDays.length === 0}
-                                            title={labTimeMode === 'shared' ? 'Per-day Lab times' : 'Shared Lab time'}
+                                            disabled={lectureDays.length === 0}
+                                            title={lectureTimeMode === 'shared' ? 'Per-day Lec times' : 'Shared Lec time'}
                                         >
-                                            {labTimeMode === 'shared' ? <Clock size={14} /> : <CalendarDays size={14} />}
-                                            <span style={{ marginLeft: 4 }}>Lab</span>
+                                            {lectureTimeMode === 'shared' ? <Clock size={14} /> : <CalendarDays size={14} />}
+                                            <span style={{ marginLeft: 4 }}>Lec</span>
                                         </button>
-                                    )}
-                                </div>
+                                        <button onClick={handleLabLockToggle} className="mc-lock-btn">
+                                            {labStartTime === null ? <Lock size={14} /> : <Unlock size={14} />}
+                                            <span style={{ marginLeft: 4 }}>Separate</span>
+                                        </button>
+                                        {labStartTime !== null && (
+                                            <button
+                                                onClick={toggleLabTimeMode}
+                                                className="mc-lock-btn"
+                                                disabled={labDays.length === 0}
+                                                title={labTimeMode === 'shared' ? 'Per-day Lab times' : 'Shared Lab time'}
+                                            >
+                                                {labTimeMode === 'shared' ? <Clock size={14} /> : <CalendarDays size={14} />}
+                                                <span style={{ marginLeft: 4 }}>Lab</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div className="mc-row" style={{ flexWrap: 'wrap' }}>
-                                {lectureTimeMode === 'shared' || lectureDays.length === 0 ? (
+                                {smartSplit ? (
                                     <div className="mc-col">
-                                        <span className="mc-micro">Local</span>
+                                        <span className="mc-micro">Start</span>
                                         <TimeSelector time={startTime} onTimeChange={setStartTime} timeFormat={timeFormat} />
                                     </div>
                                 ) : (
-                                    lectureDays.map(day => (
-                                        <div key={`lec-${day}`} className="mc-col">
-                                            <span className="mc-micro">Lec {day}</span>
-                                            <TimeSelector
-                                                time={lectureTimesPerDay[day] ?? startTime}
-                                                onTimeChange={(v) => setLectureDayTime(day, v)}
-                                                timeFormat={timeFormat}
-                                            />
-                                        </div>
-                                    ))
-                                )}
-                                {labStartTime !== null && (
-                                    labTimeMode === 'shared' || labDays.length === 0 ? (
-                                        <div className="mc-col">
-                                            <span className="mc-micro">Lab</span>
-                                            <TimeSelector time={labStartTime} onTimeChange={setLabStartTime} timeFormat={timeFormat} />
-                                        </div>
-                                    ) : (
-                                        labDays.map(day => (
-                                            <div key={`lab-${day}`} className="mc-col">
-                                                <span className="mc-micro">Lab {day}</span>
-                                                <TimeSelector
-                                                    time={labTimesPerDay[day] ?? labStartTime}
-                                                    onTimeChange={(v) => setLabDayTime(day, v)}
-                                                    timeFormat={timeFormat}
-                                                />
+                                    <>
+                                        {lectureTimeMode === 'shared' || lectureDays.length === 0 ? (
+                                            <div className="mc-col">
+                                                <span className="mc-micro">Local</span>
+                                                <TimeSelector time={startTime} onTimeChange={setStartTime} timeFormat={timeFormat} />
                                             </div>
-                                        ))
-                                    )
+                                        ) : (
+                                            lectureDays.map(day => (
+                                                <div key={`lec-${day}`} className="mc-col">
+                                                    <span className="mc-micro">Lec {day}</span>
+                                                    <TimeSelector
+                                                        time={lectureTimesPerDay[day] ?? startTime}
+                                                        onTimeChange={(v) => setLectureDayTime(day, v)}
+                                                        timeFormat={timeFormat}
+                                                    />
+                                                </div>
+                                            ))
+                                        )}
+                                        {labStartTime !== null && (
+                                            labTimeMode === 'shared' || labDays.length === 0 ? (
+                                                <div className="mc-col">
+                                                    <span className="mc-micro">Lab</span>
+                                                    <TimeSelector time={labStartTime} onTimeChange={setLabStartTime} timeFormat={timeFormat} />
+                                                </div>
+                                            ) : (
+                                                labDays.map(day => (
+                                                    <div key={`lab-${day}`} className="mc-col">
+                                                        <span className="mc-micro">Lab {day}</span>
+                                                        <TimeSelector
+                                                            time={labTimesPerDay[day] ?? labStartTime}
+                                                            onTimeChange={(v) => setLabDayTime(day, v)}
+                                                            timeFormat={timeFormat}
+                                                        />
+                                                    </div>
+                                                ))
+                                            )
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -264,10 +318,13 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
                                 labTbaHours={labTbaHours} setLabTbaHours={setLabTbaHours}
                                 isLecFixed={isLecFixed} isLabFixed={isLabFixed}
                                 lecRange={lecRange} labRange={labRange}
+                                smartSplit={smartSplit}
+                                smartSplitDays={smartSplitDays}
+                                setSmartSplitDays={setSmartSplitDays}
                             />
                         </div>
 
-                        {((lectureUnits > 0 && lectureDays.length >= 2) || (labUnits > 0 && labDays.length >= 2)) && (
+                        {!smartSplit && ((lectureUnits > 0 && lectureDays.length >= 2) || (labUnits > 0 && labDays.length >= 2)) && (
                             <div className="mc-section">
                                 <label>Uneven Splits</label>
                                 {lectureUnits > 0 && lectureDays.length >= 2 && (
@@ -298,6 +355,26 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
                                 )}
                             </div>
                         )}
+
+                        {/* ROOMS: hidden until feature ships
+                        <div className="mc-section">
+                            <label>Room Assignment</label>
+                            <RoomSelector
+                                buildings={buildings}
+                                hasDivision={hasDivision}
+                                lectureBuildingId={lectureBuildingId}
+                                setLectureBuildingId={setLectureBuildingId}
+                                lectureRoomId={lectureRoomId}
+                                setLectureRoomId={setLectureRoomId}
+                                labBuildingId={labBuildingId}
+                                setLabBuildingId={setLabBuildingId}
+                                labRoomId={labRoomId}
+                                setLabRoomId={setLabRoomId}
+                                lectureUnits={lectureUnits}
+                                labUnits={labUnits}
+                            />
+                        </div>
+                        */}
 
                     </motion.div>
                 )}

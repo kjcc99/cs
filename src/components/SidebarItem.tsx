@@ -156,19 +156,15 @@ ${section.labUnits > 0 ? `Lab: ${section.labDays.join('')} ${formattedLabTime}${
         </div>
 
         {!isCollapsed && !isEditing && (
-          <div className="section-meta">
-            {section.lectureUnits > 0 && (
-              <div className="meta-row">
-                <strong>Lec:</strong> {section.lectureDays.join('')} {formattedLecTime}
-                {!!section.lecTbaHours && <span style={{ marginLeft: 4, fontWeight: 700, fontSize: '0.6rem', color: 'var(--primary)', opacity: 0.8 }}>(+{section.lecTbaHours} hrs TBA)</span>}
-              </div>
-            )}
-            {section.labUnits > 0 && (
-              <div className="meta-row">
-                <strong>Lab:</strong> {section.labDays.join('')} {formattedLabTime}
-                {!!section.labTbaHours && <span style={{ marginLeft: 4, fontWeight: 700, fontSize: '0.6rem', color: 'var(--lab-color)', opacity: 0.8 }}>(+{section.labTbaHours} hrs TBA)</span>}
-              </div>
-            )}
+          <div className="section-meta compact">
+            <span className="meta-compact">
+              {section.lectureUnits > 0 && (
+                <span className="meta-tag lec">Lec: {section.lectureDays.join('')} {formattedLecTime}</span>
+              )}
+              {section.labUnits > 0 && (
+                <span className="meta-tag lab">Lab: {section.labDays.join('')} {formattedLabTime}</span>
+              )}
+            </span>
           </div>
         )}
       </div>

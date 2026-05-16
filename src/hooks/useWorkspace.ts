@@ -25,6 +25,9 @@ export function useWorkspace() {
 
     const [selectedCourseInfo, setSelectedCourseInfo] = useState<{ sub: string, no: string, title?: string } | null>(null);
 
+    const [smartSplit, setSmartSplit] = useState(false);
+    const [smartSplitDays, setSmartSplitDays] = useState<string[]>([]);
+
     const handleCourseSelect = useCallback((sub: string, course: Course) => {
         setSelectedCourseInfo({ sub, no: course.no, title: course.title });
 
@@ -57,10 +60,12 @@ export function useWorkspace() {
         setLabUnits(0);
         setLecTbaHours(0);
         setLabTbaHours(0);
+        setSmartSplit(false);
+        setSmartSplitDays([]);
     }, []);
 
     const getWorkspaceAsSection = useCallback((id: string, name: string, settings: any) => {
-        const usesV2 = settings.lectureTimeMode === 'perDay' || settings.labTimeMode === 'perDay' || settings.lectureSplitMode === 'custom' || settings.labSplitMode === 'custom';
+        const usesV2 = settings.lectureTimeMode === 'perDay' || settings.labTimeMode === 'perDay' || settings.lectureSplitMode === 'custom' || settings.labSplitMode === 'custom' || !!settings.lectureRoomId || !!settings.labRoomId;
         return {
             id,
             name,
@@ -81,6 +86,10 @@ export function useWorkspace() {
                 labSplitMode: settings.labSplitMode,
                 lectureHoursPerDay: settings.lectureHoursPerDay,
                 labHoursPerDay: settings.labHoursPerDay,
+                lectureBuildingId: settings.lectureBuildingId,
+                lectureRoomId: settings.lectureRoomId,
+                labBuildingId: settings.labBuildingId,
+                labRoomId: settings.labRoomId,
             } : {})
         };
     }, [lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours]);
@@ -100,6 +109,8 @@ export function useWorkspace() {
         lastRequest, setLastRequest,
         isCalculating, setIsCalculating,
         selectedCourseInfo, setSelectedCourseInfo,
+        smartSplit, setSmartSplit,
+        smartSplitDays, setSmartSplitDays,
         handleCourseSelect, clearCourseSelection,
         getWorkspaceAsSection
     };

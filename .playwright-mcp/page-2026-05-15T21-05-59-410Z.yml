@@ -1,0 +1,179 @@
+- generic [ref=e3]:
+  - link "Skip to results" [ref=e4] [cursor=pointer]:
+    - /url: "#results-header"
+  - generic [ref=e5]:
+    - complementary [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]: Saved Sections
+        - generic [ref=e9]:
+          - button "Export for Spreadsheet" [ref=e10] [cursor=pointer]:
+            - img [ref=e11]
+          - button "Export All Details" [ref=e13] [cursor=pointer]:
+            - img [ref=e14]
+          - button "Share via URL" [disabled] [ref=e18] [cursor=pointer]:
+            - img [ref=e19]
+          - button "Help" [ref=e25] [cursor=pointer]:
+            - img [ref=e26]
+          - button "Settings" [ref=e30] [cursor=pointer]:
+            - img [ref=e31]
+          - button "Collapse Sidebar" [ref=e34] [cursor=pointer]:
+            - img [ref=e35]
+      - generic [ref=e37]:
+        - list
+    - main [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - img "logo" [ref=e41]
+          - heading "Course Scheduler" [level=1] [ref=e42]
+          - button "Adjusted" [ref=e179] [cursor=pointer]
+        - generic [ref=e45]:
+          - button "Schedule New Section" [ref=e46] [cursor=pointer]:
+            - img [ref=e47]
+            - text: Schedule New Section
+          - button "Save Section" [ref=e48] [cursor=pointer]:
+            - img [ref=e49]
+            - text: Save Section
+          - generic [ref=e180]:
+            - button "Copy" [ref=e181] [cursor=pointer]:
+              - img [ref=e182]
+              - text: Copy
+            - button [ref=e185] [cursor=pointer]:
+              - img [ref=e186]
+      - generic [ref=e54]:
+        - generic [ref=e55]:
+          - button "Manual" [ref=e56] [cursor=pointer]
+          - button "Smart Split" [active] [ref=e57] [cursor=pointer]
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - generic [ref=e60]: Academic Session
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - generic [ref=e63]: Term
+                - combobox [ref=e64]:
+                  - option "Summer 2026" [selected]
+                  - option "Fall 2026"
+                  - option "Winter 2027"
+                  - option "Spring 2027"
+                  - option "Fall 2027"
+                  - option "Winter 2028"
+                  - option "Spring 2028"
+                  - option "Summer 2028"
+              - generic [ref=e65]:
+                - generic [ref=e66]: Weeks
+                - combobox [ref=e67]:
+                  - option "Full Session (8 wks)" [selected]
+                  - option "First 6-Week Session"
+                  - option "Second 6-Week Session"
+                  - option "First 4-Week Session"
+                  - option "Second 4-Week Session"
+          - generic [ref=e69]:
+            - generic [ref=e71]: Start Time
+            - generic [ref=e84]:
+              - combobox [ref=e85] [cursor=pointer]:
+                - option "6 AM"
+                - option "7 AM"
+                - option "8 AM" [selected]
+                - option "9 AM"
+                - option "10 AM"
+                - option "11 AM"
+                - option "12 PM"
+                - option "1 PM"
+                - option "2 PM"
+                - option "3 PM"
+                - option "4 PM"
+                - option "5 PM"
+                - option "6 PM"
+                - option "7 PM"
+                - option "8 PM"
+              - generic [ref=e86]: ":"
+              - combobox [ref=e87] [cursor=pointer]:
+                - option "00" [selected]
+                - option "05"
+                - option "10"
+                - option "15"
+                - option "20"
+                - option "25"
+                - option "30"
+                - option "35"
+                - option "40"
+                - option "45"
+                - option "50"
+                - option "55"
+          - generic [ref=e89]:
+            - generic [ref=e90]: Course Catalog
+            - button "Select Course..." [ref=e96] [cursor=pointer]:
+              - generic [ref=e97]:
+                - img [ref=e98]
+                - generic [ref=e100]: Select Course...
+          - generic [ref=e103]: Select a division in Settings to assign rooms
+        - generic [ref=e104]:
+          - generic [ref=e105]:
+            - generic [ref=e106]:
+              - generic [ref=e107]: Lecture Units
+              - generic [ref=e109]:
+                - generic [ref=e110]: Units
+                - generic [ref=e111]:
+                  - button "Decrease Units" [ref=e112] [cursor=pointer]: "-"
+                  - textbox [ref=e113]: "0.75"
+                  - button "Increase Units" [ref=e114] [cursor=pointer]: +
+            - generic [ref=e136]:
+              - generic [ref=e137]: Lab Units
+              - generic [ref=e139]:
+                - generic [ref=e140]: Units
+                - generic [ref=e141]:
+                  - button "Decrease Units" [ref=e142] [cursor=pointer]: "-"
+                  - textbox [ref=e143]: "0.25"
+                  - button "Increase Units" [ref=e144] [cursor=pointer]: +
+            - generic [ref=e369]:
+              - generic [ref=e370]: Meeting Days
+              - generic [ref=e373]:
+                - generic [ref=e374]:
+                  - button "MW" [ref=e375] [cursor=pointer]
+                  - button "TTh" [ref=e376] [cursor=pointer]
+                  - button "MWF" [ref=e377] [cursor=pointer]
+                  - button "TThF" [ref=e378] [cursor=pointer]
+                  - button "MTWTh" [ref=e379] [cursor=pointer]
+                - generic [ref=e380]:
+                  - generic [ref=e381] [cursor=pointer]: Mon
+                  - generic [ref=e382] [cursor=pointer]: Tue
+                  - generic [ref=e383] [cursor=pointer]: Wed
+                  - generic [ref=e384] [cursor=pointer]: Thu
+                  - generic [ref=e385] [cursor=pointer]: Fri
+                  - generic [ref=e386] [cursor=pointer]: Sat
+                  - generic [ref=e387] [cursor=pointer]: Sun
+          - button "Collapse configuration" [ref=e165] [cursor=pointer]:
+            - img [ref=e166]
+      - generic [ref=e170]:
+        - generic [ref=e189]:
+          - generic [ref=e190]: "* Generated schedules are estimates"
+          - button "Show Details" [ref=e191] [cursor=pointer]
+        - generic [ref=e192]:
+          - generic [ref=e193]:
+            - generic [ref=e194]: 06:00 AM
+            - generic [ref=e195]: 07:00 AM
+            - generic [ref=e196]: 08:00 AM
+            - generic [ref=e197]: 09:00 AM
+            - generic [ref=e198]: 10:00 AM
+            - generic [ref=e199]: 11:00 AM
+            - generic [ref=e200]: 12:00 PM
+            - generic [ref=e201]: 01:00 PM
+            - generic [ref=e202]: 02:00 PM
+            - generic [ref=e203]: 03:00 PM
+            - generic [ref=e204]: 04:00 PM
+            - generic [ref=e205]: 05:00 PM
+            - generic [ref=e206]: 06:00 PM
+            - generic [ref=e207]: 07:00 PM
+            - generic [ref=e208]: 08:00 PM
+            - generic [ref=e209]: 09:00 PM
+            - generic [ref=e210]: 10:00 PM
+            - generic [ref=e211]: 11:00 PM
+            - generic [ref=e212]: 12:00 AM
+          - generic [ref=e213]:
+            - heading "Mon" [level=4] [ref=e215]
+            - heading "Tue" [level=4] [ref=e237]
+            - heading "Wed" [level=4] [ref=e259]
+            - heading "Thu" [level=4] [ref=e281]
+            - heading "Fri" [level=4] [ref=e303]
+            - heading "Sat" [level=4] [ref=e325]
+            - heading "Sun" [level=4] [ref=e347]
+          - generic: "Tip: Drag blocks to move all days together. Hold Shift to move one day only."

@@ -307,6 +307,22 @@
   line-height: 1.2;
 }
 
+.section-meta.compact {
+  flex-direction: row;
+}
+
+.meta-compact {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.meta-tag {
+  font-size: 0.65rem;
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
 .meta-row {
   font-size: 0.7rem;
   opacity: 0.8;

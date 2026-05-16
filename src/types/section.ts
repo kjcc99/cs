@@ -30,4 +30,10 @@ export interface SavedSection {
     labTimesPerDay?: Partial<Record<DayOfWeek, string>>;
     lectureHoursPerDay?: Partial<Record<DayOfWeek, number>>;
     labHoursPerDay?: Partial<Record<DayOfWeek, number>>;
+
+    // Room assignment (per-component)
+    lectureBuildingId?: string;
+    lectureRoomId?: string;
+    labBuildingId?: string;
+    labRoomId?: string;
 }

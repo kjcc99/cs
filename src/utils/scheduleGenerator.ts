@@ -169,7 +169,8 @@ function calculateDailySchedule(
             sumWeeklyCH += ch;
         }
 
-        if (Math.abs(sumWeeklyCH - weeklyRequiredCH) > 0.05) {
+        const tolerance = Math.max(0.05, daysOfWeek.length * 0.05);
+        if (Math.abs(sumWeeklyCH - weeklyRequiredCH) > tolerance) {
             warnings.push(`ERROR: Custom ${type} split sums to ${sumWeeklyCH.toFixed(1)} CH/week but requires ${weeklyRequiredCH.toFixed(1)} CH/week.`);
             return null;
         }

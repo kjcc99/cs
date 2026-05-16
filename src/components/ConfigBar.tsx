@@ -3,7 +3,9 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Edit2, Lock, Unlock, CalendarDays, Clock, ChevronUp } from 'lucide-react';
 import { TimeMode, SplitMode } from '../types/section';
+import { Building } from '../types/rooms';
 import CustomSplit from './CustomSplit';
+import RoomSelector from './RoomSelector';
 import { TimeSelector } from './Settings';
 import CoursePicker from './CoursePicker';
 import CourseInput from './CourseInput';
@@ -66,6 +68,26 @@ interface ConfigBarProps {
     setLectureHoursPerDay: (v: Record<string, number>) => void;
     labHoursPerDay: Record<string, number>;
     setLabHoursPerDay: (v: Record<string, number>) => void;
+    // Smart Split
+    smartSplit: boolean;
+    setSmartSplit: (v: boolean) => void;
+    smartSplitDays: string[];
+    setSmartSplitDays: (v: string[]) => void;
+    canSmartSplit: boolean;
+    onSmartSplitToggle: (enabled: boolean) => void;
+    // Room assignment
+    buildings: Building[];
+    hasDivision: boolean;
+    lectureBuildingId: string;
+    setLectureBuildingId: (v: string) => void;
+    lectureRoomId: string;
+    setLectureRoomId: (v: string) => void;
+    labBuildingId: string;
+    setLabBuildingId: (v: string) => void;
+    labRoomId: string;
+    setLabRoomId: (v: string) => void;
+    lectureRoomLabel?: string;
+    labRoomLabel?: string;
 }
 
 const ConfigBar: React.FC<ConfigBarProps> = ({
@@ -96,7 +118,15 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
     lectureSplitMode, setLectureSplitMode,
     labSplitMode, setLabSplitMode,
     lectureHoursPerDay, setLectureHoursPerDay,
-    labHoursPerDay, setLabHoursPerDay
+    labHoursPerDay, setLabHoursPerDay,
+    smartSplit, setSmartSplit, smartSplitDays, setSmartSplitDays,
+    canSmartSplit, onSmartSplitToggle,
+    buildings, hasDivision,
+    lectureBuildingId, setLectureBuildingId,
+    lectureRoomId, setLectureRoomId,
+    labBuildingId, setLabBuildingId,
+    labRoomId, setLabRoomId,
+    lectureRoomLabel, labRoomLabel
 }) => {
     const weeks = selectedSession.weeks || 1;
     const lecWeeklyCH = Math.max(0, (lectureUnits * 18 - (lecTbaHours || 0))) / weeks;
@@ -158,6 +188,10 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
                             starting at <strong>{formatTime(startTime, timeFormat)}</strong>
                             {labStartTime && <> (Labs at <strong>{formatTime(labStartTime, timeFormat)}</strong>)</>}
                             • <strong>{lectureUnits}u</strong> Lec / <strong>{labUnits}u</strong> Lab
+                            {/* ROOMS: hidden until feature ships
+                            {lectureRoomLabel && <> • {lectureRoomLabel}</>}
+                            {labRoomLabel && labRoomLabel !== lectureRoomLabel && <> • Lab: {labRoomLabel}</>}
+                            */}
                         </div>
                         <div className="edit-pill">
                             <Edit2 size={12} /> Edit Configuration
@@ -171,6 +205,24 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
                         exit={{ opacity: 0, y: 10 }}
                         className="config-edit-container"
                     >
+                        {/* Mode Toggle */}
+                        <div className="config-mode-toggle">
+                            <button
+                                className={`mode-btn ${!smartSplit ? 'active' : ''}`}
+                                onClick={() => { if (smartSplit) onSmartSplitToggle(false); }}
+                            >
+                                Manual
+                            </button>
+                            <button
+                                className={`mode-btn ${smartSplit ? 'active' : ''}`}
+                                onClick={() => { if (!smartSplit) onSmartSplitToggle(true); }}
+                                disabled={!canSmartSplit}
+                                title={!canSmartSplit ? 'Smart Split requires both lecture and lab units' : 'Automatically distribute lecture and lab across selected days'}
+                            >
+                                Smart Split
+                            </button>
+                        </div>
+
                         {/* Row 1: Session, Times, Catalog */}
                         <div className="config-edit-row">
                             <div className="config-section">
@@ -195,69 +247,80 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
 
                             <div className="config-section">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', height: '10px', gap: '8px' }}>
-                                    <label className="config-label" style={{ lineHeight: 1 }}>Start Times</label>
-                                    <div style={{ display: 'flex', gap: '4px' }}>
-                                        <button
-                                            onClick={toggleLectureTimeMode}
-                                            className="icon-btn-xs"
-                                            style={{ padding: 0 }}
-                                            title={lectureTimeMode === 'shared' ? 'Use per-day start times for Lecture' : 'Use one shared start time for Lecture'}
-                                            disabled={lectureDays.length === 0}
-                                        >
-                                            {lectureTimeMode === 'shared' ? <Clock size={10} /> : <CalendarDays size={10} />}
-                                        </button>
-                                        <button onClick={handleLabLockToggle} className="icon-btn-xs" style={{ padding: 0 }} title="Toggle separate lab time">
-                                            {labStartTime === null ? <Lock size={10} /> : <Unlock size={10} />}
-                                        </button>
-                                        {labStartTime !== null && (
+                                    <label className="config-label" style={{ lineHeight: 1 }}>Start Time{!smartSplit && 's'}</label>
+                                    {!smartSplit && (
+                                        <div style={{ display: 'flex', gap: '4px' }}>
                                             <button
-                                                onClick={toggleLabTimeMode}
+                                                onClick={toggleLectureTimeMode}
                                                 className="icon-btn-xs"
                                                 style={{ padding: 0 }}
-                                                title={labTimeMode === 'shared' ? 'Use per-day start times for Lab' : 'Use one shared start time for Lab'}
-                                                disabled={labDays.length === 0}
+                                                title={lectureTimeMode === 'shared' ? 'Use per-day start times for Lecture' : 'Use one shared start time for Lecture'}
+                                                disabled={lectureDays.length === 0}
                                             >
-                                                {labTimeMode === 'shared' ? <Clock size={10} /> : <CalendarDays size={10} />}
+                                                {lectureTimeMode === 'shared' ? <Clock size={10} /> : <CalendarDays size={10} />}
                                             </button>
-                                        )}
-                                    </div>
+                                            <button onClick={handleLabLockToggle} className="icon-btn-xs" style={{ padding: 0 }} title="Toggle separate lab time">
+                                                {labStartTime === null ? <Lock size={10} /> : <Unlock size={10} />}
+                                            </button>
+                                            {labStartTime !== null && (
+                                                <button
+                                                    onClick={toggleLabTimeMode}
+                                                    className="icon-btn-xs"
+                                                    style={{ padding: 0 }}
+                                                    title={labTimeMode === 'shared' ? 'Use per-day start times for Lab' : 'Use one shared start time for Lab'}
+                                                    disabled={labDays.length === 0}
+                                                >
+                                                    {labTimeMode === 'shared' ? <Clock size={10} /> : <CalendarDays size={10} />}
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="config-controls">
-                                    {lectureTimeMode === 'shared' || lectureDays.length === 0 ? (
+                                    {smartSplit ? (
                                         <div className="time-sub-group">
-                                            <span className="micro-label">{labStartTime === null ? <>&nbsp;</> : 'Lec'}</span>
+                                            <span className="micro-label">&nbsp;</span>
                                             <TimeSelector time={startTime} onTimeChange={setStartTime} timeFormat={timeFormat} />
                                         </div>
                                     ) : (
-                                        lectureDays.map(day => (
-                                            <div key={`lec-${day}`} className="time-sub-group">
-                                                <span className="micro-label">Lec {day}</span>
-                                                <TimeSelector
-                                                    time={lectureTimesPerDay[day] ?? startTime}
-                                                    onTimeChange={(v) => setLectureDayTime(day, v)}
-                                                    timeFormat={timeFormat}
-                                                />
-                                            </div>
-                                        ))
-                                    )}
-                                    {labStartTime !== null && (
-                                        labTimeMode === 'shared' || labDays.length === 0 ? (
-                                            <div className="time-sub-group">
-                                                <span className="micro-label">Lab</span>
-                                                <TimeSelector time={labStartTime} onTimeChange={setLabStartTime} timeFormat={timeFormat} />
-                                            </div>
-                                        ) : (
-                                            labDays.map(day => (
-                                                <div key={`lab-${day}`} className="time-sub-group">
-                                                    <span className="micro-label">Lab {day}</span>
-                                                    <TimeSelector
-                                                        time={labTimesPerDay[day] ?? labStartTime}
-                                                        onTimeChange={(v) => setLabDayTime(day, v)}
-                                                        timeFormat={timeFormat}
-                                                    />
+                                        <>
+                                            {lectureTimeMode === 'shared' || lectureDays.length === 0 ? (
+                                                <div className="time-sub-group">
+                                                    <span className="micro-label">{labStartTime === null ? <>&nbsp;</> : 'Lec'}</span>
+                                                    <TimeSelector time={startTime} onTimeChange={setStartTime} timeFormat={timeFormat} />
                                                 </div>
-                                            ))
-                                        )
+                                            ) : (
+                                                lectureDays.map(day => (
+                                                    <div key={`lec-${day}`} className="time-sub-group">
+                                                        <span className="micro-label">Lec {day}</span>
+                                                        <TimeSelector
+                                                            time={lectureTimesPerDay[day] ?? startTime}
+                                                            onTimeChange={(v) => setLectureDayTime(day, v)}
+                                                            timeFormat={timeFormat}
+                                                        />
+                                                    </div>
+                                                ))
+                                            )}
+                                            {labStartTime !== null && (
+                                                labTimeMode === 'shared' || labDays.length === 0 ? (
+                                                    <div className="time-sub-group">
+                                                        <span className="micro-label">Lab</span>
+                                                        <TimeSelector time={labStartTime} onTimeChange={setLabStartTime} timeFormat={timeFormat} />
+                                                    </div>
+                                                ) : (
+                                                    labDays.map(day => (
+                                                        <div key={`lab-${day}`} className="time-sub-group">
+                                                            <span className="micro-label">Lab {day}</span>
+                                                            <TimeSelector
+                                                                time={labTimesPerDay[day] ?? labStartTime}
+                                                                onTimeChange={(v) => setLabDayTime(day, v)}
+                                                                timeFormat={timeFormat}
+                                                            />
+                                                        </div>
+                                                    ))
+                                                )
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -280,6 +343,25 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
                                     </div>
                                 </div>
                             </div>
+
+                            {/* ROOMS: hidden until feature ships
+                            <div className="config-divider" />
+
+                            <RoomSelector
+                                buildings={buildings}
+                                hasDivision={hasDivision}
+                                lectureBuildingId={lectureBuildingId}
+                                setLectureBuildingId={setLectureBuildingId}
+                                lectureRoomId={lectureRoomId}
+                                setLectureRoomId={setLectureRoomId}
+                                labBuildingId={labBuildingId}
+                                setLabBuildingId={setLabBuildingId}
+                                labRoomId={labRoomId}
+                                setLabRoomId={setLabRoomId}
+                                lectureUnits={lectureUnits}
+                                labUnits={labUnits}
+                            />
+                            */}
                         </div>
 
                         {/* Row 2: Course Input (Units/Days) */}
@@ -301,6 +383,9 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
                                 isLabFixed={isLabFixed}
                                 lecRange={lecRange}
                                 labRange={labRange}
+                                smartSplit={smartSplit}
+                                smartSplitDays={smartSplitDays}
+                                setSmartSplitDays={setSmartSplitDays}
                             />
 
                             <button className="icon-btn-collapse" onClick={() => setIsConfigExpanded(false)} title="Collapse configuration" aria-label="Collapse configuration">
@@ -308,7 +393,7 @@ const ConfigBar: React.FC<ConfigBarProps> = ({
                             </button>
                         </div>
 
-                        {(lectureUnits > 0 && lectureDays.length >= 2) || (labUnits > 0 && labDays.length >= 2) ? (
+                        {!smartSplit && ((lectureUnits > 0 && lectureDays.length >= 2) || (labUnits > 0 && labDays.length >= 2)) ? (
                             <div className="config-edit-row tertiary-row">
                                 {lectureUnits > 0 && lectureDays.length >= 2 && (
                                     <CustomSplit

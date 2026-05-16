@@ -32,6 +32,9 @@ interface CourseInputProps {
   isLabFixed?: boolean;
   lecRange?: { min: number, max: number };
   labRange?: { min: number, max: number };
+  smartSplit?: boolean;
+  smartSplitDays?: string[];
+  setSmartSplitDays?: (v: string[]) => void;
 }
 
 const CourseInput: React.FC<CourseInputProps> = ({
@@ -44,7 +47,10 @@ const CourseInput: React.FC<CourseInputProps> = ({
   isLecFixed = false,
   isLabFixed = false,
   lecRange = { min: 0, max: 10 },
-  labRange = { min: 0, max: 10 }
+  labRange = { min: 0, max: 10 },
+  smartSplit = false,
+  smartSplitDays = [],
+  setSmartSplitDays
 }) => {
   const maxLecContactHours = lectureUnits * 18;
   const maxLabContactHours = labUnits * 54;
@@ -66,6 +72,57 @@ const CourseInput: React.FC<CourseInputProps> = ({
     setLabDays(newDays);
   };
 
+  const handleSmartSplitDayToggle = (day: string) => {
+    if (!setSmartSplitDays) return;
+    const newDays = smartSplitDays.includes(day) ? smartSplitDays.filter(d => d !== day) : [...smartSplitDays, day];
+    newDays.sort((a, b) => WEEK_DAYS.indexOf(a) - WEEK_DAYS.indexOf(b));
+    setSmartSplitDays(newDays);
+  };
+
+  if (smartSplit && setSmartSplitDays) {
+    return (
+      <div className="course-input-panel">
+        <div className={`ci-panel lecture-panel ${activePanel === 'lecture' ? 'active' : ''}`}
+          onFocus={() => setActivePanel('lecture')}
+          onBlur={() => setActivePanel(null)}
+        >
+          <label className="ci-panel-label lec-label">Lecture Units</label>
+          <div className="ci-controls">
+            <div className="time-sub-group">
+              <span className="micro-label">Units</span>
+              <UnitSelector label="Units" value={lectureUnits} onChange={setLectureUnits} step={0.25} disabled={isLecFixed} min={lecRange.min} max={lecRange.max} />
+            </div>
+          </div>
+        </div>
+
+        <div className="config-divider" />
+
+        <div className={`ci-panel lab-panel ${activePanel === 'lab' ? 'active' : ''}`}
+          onFocus={() => setActivePanel('lab')}
+          onBlur={() => setActivePanel(null)}
+        >
+          <label className="ci-panel-label lab-label">Lab Units</label>
+          <div className="ci-controls">
+            <div className="time-sub-group">
+              <span className="micro-label">Units</span>
+              <UnitSelector label="Units" value={labUnits} onChange={setLabUnits} step={0.25} disabled={isLabFixed} min={labRange.min} max={labRange.max} />
+            </div>
+          </div>
+        </div>
+
+        <div className="config-divider" />
+
+        <div className="ci-panel smart-split-days-panel">
+          <label className="ci-panel-label">Meeting Days</label>
+          <div className="ci-controls">
+            <div className="time-sub-group">
+              <DayPicker selectedDays={smartSplitDays} onDayToggle={handleSmartSplitDayToggle} onSetDays={setSmartSplitDays} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="course-input-panel">
@@ -91,7 +148,7 @@ const CourseInput: React.FC<CourseInputProps> = ({
           </div>
           <div className="time-sub-group">
             <span className="micro-label">Meeting Days</span>
-            <DayPicker selectedDays={lectureDays} onDayToggle={handleLectureDayToggle} />
+            <DayPicker selectedDays={lectureDays} onDayToggle={handleLectureDayToggle} onSetDays={setLectureDays} />
           </div>
         </div>
         {showLecTba ? (
@@ -145,7 +202,7 @@ const CourseInput: React.FC<CourseInputProps> = ({
           </div>
           <div className="time-sub-group">
             <span className="micro-label">Meeting Days</span>
-            <DayPicker selectedDays={labDays} onDayToggle={handleLabDayToggle} />
+            <DayPicker selectedDays={labDays} onDayToggle={handleLabDayToggle} onSetDays={setLabDays} />
           </div>
         </div>
         {showLabTba ? (

@@ -229,6 +229,20 @@
   text-transform: uppercase;
 }
 
+/* Room context blocks */
+.timeline-block.room-context {
+    border-left: 3px solid var(--text-muted, #888) !important;
+    background: var(--bg-well, rgba(128,128,128,0.12)) !important;
+    opacity: 0.55;
+}
+.timeline-block.room-context .block-time {
+    color: var(--text-muted, #999);
+}
+.timeline-block.room-context .block-desc {
+    color: var(--text-muted, #999);
+    font-weight: 600;
+}
+
 /* Drag-to-move */
 .timeline-block.draggable { cursor: grab; }
 .timeline-block.draggable:active { cursor: grabbing; }

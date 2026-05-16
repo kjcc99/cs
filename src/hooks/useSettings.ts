@@ -67,14 +67,38 @@ export function useSettings() {
         return (saved && JSON.parse(saved).labHoursPerDay) || {};
     });
 
+    const [selectedDivisionId, setSelectedDivisionId] = useState<string>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).selectedDivisionId) || '';
+    });
+
+    const [lectureBuildingId, setLectureBuildingId] = useState<string>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).lectureBuildingId) || '';
+    });
+    const [lectureRoomId, setLectureRoomId] = useState<string>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).lectureRoomId) || '';
+    });
+    const [labBuildingId, setLabBuildingId] = useState<string>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).labBuildingId) || '';
+    });
+    const [labRoomId, setLabRoomId] = useState<string>(() => {
+        const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
+        return (saved && JSON.parse(saved).labRoomId) || '';
+    });
+
     useEffect(() => {
         const settings = {
             selectedTermId, selectedSessionId, startTime, labStartTime, theme, daySelectionMode, timeFormat,
             lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay,
-            lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay
+            lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay,
+            selectedDivisionId,
+            lectureBuildingId, lectureRoomId, labBuildingId, labRoomId
         };
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(settings));
-    }, [selectedTermId, selectedSessionId, startTime, labStartTime, theme, daySelectionMode, timeFormat, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay]);
+    }, [selectedTermId, selectedSessionId, startTime, labStartTime, theme, daySelectionMode, timeFormat, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedDivisionId, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId]);
 
     useEffect(() => {
         document.body.setAttribute('data-theme', theme);
@@ -103,6 +127,11 @@ export function useSettings() {
         lectureSplitMode, setLectureSplitMode,
         labSplitMode, setLabSplitMode,
         lectureHoursPerDay, setLectureHoursPerDay,
-        labHoursPerDay, setLabHoursPerDay
+        labHoursPerDay, setLabHoursPerDay,
+        selectedDivisionId, setSelectedDivisionId,
+        lectureBuildingId, setLectureBuildingId,
+        lectureRoomId, setLectureRoomId,
+        labBuildingId, setLabBuildingId,
+        labRoomId, setLabRoomId
     };
 }

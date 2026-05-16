@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Plus, Save, Copy, ChevronDown } from 'lucide-react';
 import { useWorkspace } from '../hooks/useWorkspace';
 import { useSections } from '../hooks/useSections';
+import { RoomConflict } from '../utils/roomConflicts';
 import './DashboardHeader.css';
 
 interface DashboardHeaderProps {
@@ -21,6 +22,7 @@ interface DashboardHeaderProps {
     setIsCopyDropdownOpen: (open: boolean) => void;
     copyDropdownRef: React.RefObject<HTMLDivElement | null>;
     selectedTermId: string;
+    roomConflicts?: RoomConflict[];
 }
 
 
@@ -38,7 +40,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     isCopyDropdownOpen,
     setIsCopyDropdownOpen,
     copyDropdownRef,
-    selectedTermId
+    selectedTermId,
+    roomConflicts = []
 }) => {
     const { generatedSchedule } = workspaceAPI;
     const { currentSectionId } = sectionsAPI;
@@ -80,9 +83,14 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                                             {w.replace('ERROR: ', '')}
                                         </li>
                                     ))
-                                ) : (
+                                ) : roomConflicts.length === 0 ? (
                                     <li>This schedule is fully rule-compliant.</li>
-                                )}
+                                ) : null}
+                                {roomConflicts.map((c, i) => (
+                                    <li key={`rc-${i}`} className="error">
+                                        Room conflict: {c.sectionName} on {c.day} {c.conflictTime} ({c.weekLabel})
+                                    </li>
+                                ))}
                             </ul>
                         </div>
                     )}

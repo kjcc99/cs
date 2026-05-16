@@ -6,9 +6,11 @@ import { useRules } from './hooks/useRules';
 import { useSettings } from './hooks/useSettings';
 import { useCatalog } from './hooks/useCatalog';
 import { useWorkspace } from './hooks/useWorkspace';
+import { useRooms } from './hooks/useRooms';
 import { generateSchedule } from './utils/scheduleGenerator';
+import { computeSmartSplit } from './utils/smartSplit';
 import { ScheduleRequest } from './components/CourseInput';
-import { RuleAndTermContext, AcademicTerm } from './types';
+import { RuleAndTermContext, AcademicTerm, ScheduleInfo } from './types';
 import { academicCalendar } from './types/calendar';
 
 import { useMediaQuery } from './hooks/useMediaQuery';
@@ -26,6 +28,7 @@ function App() {
   const settingsAPI = useSettings();
   const catalogAPI = useCatalog(settingsAPI.selectedTermId);
   const workspaceAPI = useWorkspace();
+  const roomsAPI = useRooms(settingsAPI.selectedDivisionId);
   const [calendar] = useState<AcademicTerm[]>(academicCalendar);
   const [pendingImport, setPendingImport] = useState<SavedSection[] | null>(null);
 
@@ -42,7 +45,7 @@ function App() {
   }, []);
 
   // Destructure for the useEffect dependencies
-  const { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours, setGeneratedSchedule, setLastRequest, setIsCalculating } = workspaceAPI;
+  const { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours, setGeneratedSchedule, setLastRequest, setIsCalculating, smartSplit, smartSplitDays } = workspaceAPI;
   const { startTime, labStartTime, selectedTermId, selectedSessionId,
     lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay,
     lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay } = settingsAPI;
@@ -63,20 +66,44 @@ function App() {
     setIsCalculating(true);
     const handler = setTimeout(() => {
       if (contactHourRules && attendanceRules) {
-        const request: ScheduleRequest = { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours };
         const context: RuleAndTermContext = { contactHourRules, attendanceRules, term: selectedTerm, session: selectedSession };
-        const overrides = {
-          lectureTimesPerDay: lectureTimeMode === 'perDay' ? lectureTimesPerDay : undefined,
-          labTimesPerDay: labTimeMode === 'perDay' ? labTimesPerDay : undefined,
-          lectureHoursPerDay: lectureSplitMode === 'custom' ? lectureHoursPerDay : undefined,
-          labHoursPerDay: labSplitMode === 'custom' ? labHoursPerDay : undefined,
-        };
-        const schedule = generateSchedule(request, context, startTime, labStartTime, overrides);
-        setGeneratedSchedule(schedule);
-        setLastRequest(request);
+
+        if (smartSplit && smartSplitDays.length > 0 && lectureUnits > 0 && labUnits > 0) {
+          // Smart Split path
+          const result = computeSmartSplit(lectureUnits, labUnits, smartSplitDays, selectedSession.weeks);
+          if ('error' in result) {
+            const emptyInfo: ScheduleInfo = { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 };
+            setGeneratedSchedule({ lectureInfo: emptyInfo, labInfo: emptyInfo, scheduleBlocks: [], warnings: ['ERROR: ' + result.error] });
+          } else {
+            const request: ScheduleRequest = {
+              lectureUnits, lectureDays: result.lectureDays,
+              labUnits, labDays: result.labDays,
+              lecTbaHours: 0, labTbaHours: 0
+            };
+            const overrides = {
+              lectureHoursPerDay: result.lectureHoursPerDay,
+              labHoursPerDay: result.labHoursPerDay,
+            };
+            const schedule = generateSchedule(request, context, startTime, null, overrides);
+            setGeneratedSchedule(schedule);
+            setLastRequest(request);
+          }
+        } else {
+          // Manual path
+          const request: ScheduleRequest = { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours };
+          const overrides = {
+            lectureTimesPerDay: lectureTimeMode === 'perDay' ? lectureTimesPerDay : undefined,
+            labTimesPerDay: labTimeMode === 'perDay' ? labTimesPerDay : undefined,
+            lectureHoursPerDay: lectureSplitMode === 'custom' ? lectureHoursPerDay : undefined,
+            labHoursPerDay: labSplitMode === 'custom' ? labHoursPerDay : undefined,
+          };
+          const schedule = generateSchedule(request, context, startTime, labStartTime, overrides);
+          setGeneratedSchedule(schedule);
+          setLastRequest(request);
+        }
       }
       setIsCalculating(false);
-    }, 500); // 500ms debounce
+    }, 500);
 
     return () => clearTimeout(handler);
   }, [
@@ -84,6 +111,7 @@ function App() {
     startTime, labStartTime, selectedTermId, selectedSessionId,
     lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay,
     lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay,
+    smartSplit, smartSplitDays,
     contactHourRules, attendanceRules, selectedTerm, selectedSession,
     setGeneratedSchedule, setLastRequest, setIsCalculating
   ]);
@@ -94,6 +122,7 @@ function App() {
     settingsAPI,
     catalogAPI,
     workspaceAPI,
+    roomsAPI,
     calendar
   };
 

@@ -18,12 +18,21 @@ export interface BlockMoveEvent {
     fromDay: string;
     toDay: string;
     newStartTime: string;
+    isPerDayMove: boolean;
+}
+
+export interface RoomContextSchedule {
+    id: string;
+    name: string;
+    schedule: GeneratedSchedule;
+    weekLabel: string;
 }
 
 export interface ScheduleDisplayProps {
     schedule: GeneratedSchedule | null;
     request: ScheduleRequest | null;
     overlaidSchedules?: OverlaidSchedule[];
+    roomContextSchedules?: RoomContextSchedule[];
     timeFormat: '12h' | '24h';
     resultsHeadingRef: React.RefObject<HTMLHeadingElement | null>;
     isCalculating?: boolean;
@@ -39,6 +48,7 @@ interface DragState {
     ghostDay: string;
     ghostStartMinutes: number;
     offsetY: number;
+    isPerDayDrag: boolean;
 }
 
 function snapToGrid(minutes: number): number {
@@ -78,36 +88,95 @@ const formatMinutes = (totalMinutes: number) => {
     return result.trim();
 };
 
-const InfoCard: React.FC<{ title: string, info: any, units: number | undefined, color: string }> = ({ title, info, units, color }) => (
-    <div className="summary-details-card">
-        <h4>
-            <span className="summary-dot" style={{ backgroundColor: color }}></span>
-            <span className="summary-title">{title}</span>
-        </h4>
-        <div className="summary-details">
-            {units !== undefined && units > 0 && <p><strong>Selected Units:</strong> {units}</p>}
-            <p><strong>Contact Hours for Course:</strong> {info.contactHoursForTerm.toFixed(2)}</p>
-            <p><strong>Actual Meeting Days:</strong> {info.actualMeetingDays}</p>
-            <p><strong>Contact Hours Per Day:</strong> {info.contactHoursPerDay.toFixed(1)}</p>
-            <p><strong>Time Block Per Day:</strong> {formatMinutes(info.totalBreakMinutesPerDay + (info.contactHoursPerDay * 50))}</p>
-            <p><strong>Total Scheduled Hours:</strong> {info.totalScheduledContactHours.toFixed(2)}</p>
+const InfoCard: React.FC<{ title: string, info: any, units: number | undefined, color: string, blocks?: ScheduleBlock[] }> = ({ title, info, units, color, blocks }) => {
+    const perDayBreakdown = React.useMemo(() => {
+        if (!blocks || blocks.length === 0) return null;
+        const dayMap = new Map<string, { ch: number, totalMin: number }>();
+        for (const b of blocks) {
+            const existing = dayMap.get(b.dayOfWeek) || { ch: 0, totalMin: 0 };
+            existing.ch += b.instructionalMinutes / 50;
+            existing.totalMin += b.durationMinutes;
+            dayMap.set(b.dayOfWeek, existing);
+        }
+        if (dayMap.size <= 1) return null;
+        const values = Array.from(dayMap.values());
+        const allSame = values.every(v => Math.abs(v.ch - values[0].ch) < 0.05);
+        if (allSame) return null;
+        return Array.from(dayMap.entries())
+            .sort(([a], [b]) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b));
+    }, [blocks]);
+
+    return (
+        <div className="summary-details-card">
+            <h4>
+                <span className="summary-dot" style={{ backgroundColor: color }}></span>
+                <span className="summary-title">{title}</span>
+            </h4>
+            <div className="summary-details">
+                {units !== undefined && units > 0 && <p><strong>Selected Units:</strong> {units}</p>}
+                <p><strong>Contact Hours for Course:</strong> {info.contactHoursForTerm.toFixed(2)}</p>
+                <p><strong>Actual Meeting Days:</strong> {info.actualMeetingDays}</p>
+                {perDayBreakdown ? (
+                    perDayBreakdown.map(([day, data]) => (
+                        <p key={day}><strong>{day}:</strong> {formatMinutes(data.totalMin)} ({data.ch.toFixed(1)} CH)</p>
+                    ))
+                ) : (
+                    <>
+                        <p><strong>Contact Hours Per Day:</strong> {info.contactHoursPerDay.toFixed(1)}</p>
+                        <p><strong>Time Block Per Day:</strong> {formatMinutes(info.totalBreakMinutesPerDay + (info.contactHoursPerDay * 50))}</p>
+                    </>
+                )}
+                <p><strong>Total Scheduled Hours:</strong> {info.totalScheduledContactHours.toFixed(2)}</p>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const MinimalSummary: React.FC<{ blocks: ScheduleBlock[], type: 'lecture' | 'lab', timeFormat: '12h' | '24h' }> = ({ blocks, type, timeFormat }) => {
     if (blocks.length === 0) return null;
-    const days = Array.from(new Set(blocks.map(b => b.dayOfWeek))).sort((a, b) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b)).join('/');
-    const startTimes = blocks.map(b => b.startTime);
-    const endTimes = blocks.map(b => b.endTime);
-    const startTime = startTimes.reduce((min, t) => t < min ? t : min, startTimes[0]);
-    const endTime = endTimes.reduce((max, t) => t > max ? t : max, endTimes[0]);
+
+    const dayGroups = new Map<string, { start: string, end: string }>();
+    for (const b of blocks) {
+        const existing = dayGroups.get(b.dayOfWeek);
+        if (!existing) {
+            dayGroups.set(b.dayOfWeek, { start: b.startTime, end: b.endTime });
+        } else {
+            if (b.startTime < existing.start) existing.start = b.startTime;
+            if (b.endTime > existing.end) existing.end = b.endTime;
+        }
+    }
+
+    const sortedDays = Array.from(dayGroups.entries())
+        .sort(([a], [b]) => FULL_DAYS_OF_WEEK.indexOf(a) - FULL_DAYS_OF_WEEK.indexOf(b));
+
+    // Check if all days have the same time range — if so, collapse into one line
+    const allSame = sortedDays.length > 1 && sortedDays.every(
+        ([, times]) => times.start === sortedDays[0][1].start && times.end === sortedDays[0][1].end
+    );
+
+    const label = type.charAt(0).toUpperCase() + type.slice(1);
+
+    if (allSame || sortedDays.length === 1) {
+        const days = sortedDays.map(([d]) => d).join('/');
+        const { start, end } = sortedDays[0][1];
+        return (
+            <p className="minimal-summary-item">
+                <span className="summary-dot" style={{ backgroundColor: `var(--${type}-color)` }}></span>
+                <strong>{label}:</strong> {days} ({formatTime(start, timeFormat)} - {formatTime(end, timeFormat)})
+            </p>
+        );
+    }
+
     return (
-        <p className="minimal-summary-item">
-            <span className="summary-dot" style={{ backgroundColor: `var(--${type}-color)` }}></span>
-            <strong>{type.charAt(0).toUpperCase() + type.slice(1)}:</strong> {days} ({formatTime(startTime, timeFormat)} - {formatTime(endTime, timeFormat)})
-        </p>
-    )
+        <>
+            {sortedDays.map(([day, times]) => (
+                <p key={`${type}-${day}`} className="minimal-summary-item">
+                    <span className="summary-dot" style={{ backgroundColor: `var(--${type}-color)` }}></span>
+                    <strong>{label}:</strong> {day} ({formatTime(times.start, timeFormat)} - {formatTime(times.end, timeFormat)})
+                </p>
+            ))}
+        </>
+    );
 };
 
 const ScheduleDisplayEmpty: React.FC = () => (
@@ -152,6 +221,7 @@ const DayColumn = React.memo(({
     hours,
     schedule,
     overlaidSchedules,
+    roomContextSchedules,
     hoveredInfo,
     timeFormat,
     isDetailsExpanded,
@@ -160,13 +230,18 @@ const DayColumn = React.memo(({
     dragState,
     onDragStart
 }: any) => {
-    const currentBlocks = (schedule?.scheduleBlocks.filter((b: any) => b.dayOfWeek === day) || []).map((b: any) => ({ ...b, id: 'current', sectionName: 'Current', isMain: true }));
-    const overlayDayBlocks = overlaidSchedules.flatMap((os: any) =>
+    const currentBlocks = (schedule?.scheduleBlocks.filter((b: any) => b.dayOfWeek === day) || []).map((b: any) => ({ ...b, id: 'current', sectionName: 'Current', isMain: true, isRoomContext: false }));
+    const overlayDayBlocks = (overlaidSchedules || []).flatMap((os: any) =>
         os.schedule.scheduleBlocks
             .filter((b: any) => b.dayOfWeek === day)
-            .map((b: any) => ({ ...b, id: os.id, sectionName: os.name, isMain: false }))
+            .map((b: any) => ({ ...b, id: os.id, sectionName: os.name, isMain: false, isRoomContext: false }))
     );
-    const allDayBlocks = [...currentBlocks, ...overlayDayBlocks].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+    const roomContextDayBlocks = (roomContextSchedules || []).flatMap((rs: any) =>
+        rs.schedule.scheduleBlocks
+            .filter((b: any) => b.dayOfWeek === day)
+            .map((b: any) => ({ ...b, id: `room-${rs.id}`, sectionName: rs.name, weekLabel: rs.weekLabel, isMain: false, isRoomContext: true }))
+    );
+    const allDayBlocks = [...currentBlocks, ...overlayDayBlocks, ...roomContextDayBlocks].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
 
     const columns: any[][] = [];
     allDayBlocks.forEach(block => {
@@ -207,7 +282,7 @@ const DayColumn = React.memo(({
                                         zIndex: isRelated ? 30 : 5
                                     }}
                                     exit={{ opacity: 0, scale: 0.95 }}
-                                    className={`schedule-block ${block.type} ${!block.isMain ? 'overlay' : ''} timeline-block ${isRelated ? 'related-highlight' : ''} ${block.isMain && onDragStart ? 'draggable' : ''} ${dragState && dragState.fromDay === day && dragState.blockType === block.type && block.isMain ? 'drag-source' : ''}`}
+                                    className={`schedule-block ${block.type} ${!block.isMain ? 'overlay' : ''} ${block.isRoomContext ? 'room-context' : ''} timeline-block ${isRelated ? 'related-highlight' : ''} ${block.isMain && onDragStart ? 'draggable' : ''} ${dragState && dragState.blockType === block.type && block.isMain && (dragState.isPerDayDrag ? dragState.fromDay === day : true) ? 'drag-source' : ''}`}
                                     style={getBlockStyle(block.startTime, block.endTime, colIndex, columns.length)}
                                     onMouseEnter={() => !dragState && handleMouseEnter(block, block.id, block.sectionName)}
                                     onMouseLeave={() => !dragState && handleMouseLeave()}
@@ -230,7 +305,9 @@ const DayColumn = React.memo(({
                                             }
                                         </span>
                                         {columns.length === 1 && !isDetailsExpanded && !isDimmed && (
-                                            <span className="block-desc">{block.isMain ? '' : block.sectionName}</span>
+                                            <span className="block-desc">
+                                                {block.isRoomContext ? `${block.sectionName}${block.weekLabel ? ` (${block.weekLabel})` : ''}` : (block.isMain ? '' : block.sectionName)}
+                                            </span>
                                         )}
                                     </div>
                                 </motion.div>
@@ -244,7 +321,7 @@ const DayColumn = React.memo(({
 });
 
 
-const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, overlaidSchedules = [], timeFormat, resultsHeadingRef, isCalculating, onBlockMove, lectureDays, labDays }) => {
+const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, overlaidSchedules = [], roomContextSchedules = [], timeFormat, resultsHeadingRef, isCalculating, onBlockMove, lectureDays, labDays }) => {
     const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
     const [hoveredInfo, setHoveredInfo] = useState<{ id: string, type: string, name: string, fullSpan: string, days: string, totalInstr: number, totalBreak: number } | null>(null);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -288,6 +365,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
     const handleMouseEnterWrapper = React.useCallback((block: any, scheduleId: string, scheduleName: string) => {
         const relatedBlocks = allBlocks.filter((b: any) => b.type === block.type && (b.id === scheduleId || b.sectionName === scheduleName));
         const sameDayBlocks = relatedBlocks.filter((b: any) => b.dayOfWeek === block.dayOfWeek);
+        if (sameDayBlocks.length === 0) return;
 
         const sorted = [...sameDayBlocks].sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
         const startTime = sorted[0].startTime;
@@ -332,25 +410,29 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
             durationMinutes: totalDuration,
             ghostDay: day,
             ghostStartMinutes: timeToMinutes(block.startTime),
-            offsetY
+            offsetY,
+            isPerDayDrag: e.shiftKey
         });
         (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     }, [onBlockMove, schedule]);
 
     const handlePointerMove = useCallback((e: React.PointerEvent) => {
         if (!dragState || !gridRef.current) return;
-        const gridRect = gridRef.current.getBoundingClientRect();
         const columns = gridRef.current.querySelectorAll('.day-column.timeline');
         if (columns.length === 0) return;
 
-        // Determine which day column
+        // Determine which day column (only relevant for per-day drag)
         let ghostDay = dragState.ghostDay;
-        for (let i = 0; i < columns.length; i++) {
-            const colRect = columns[i].getBoundingClientRect();
-            if (e.clientX >= colRect.left && e.clientX <= colRect.right) {
-                ghostDay = FULL_DAYS_OF_WEEK[i];
-                break;
+        if (dragState.isPerDayDrag) {
+            for (let i = 0; i < columns.length; i++) {
+                const colRect = columns[i].getBoundingClientRect();
+                if (e.clientX >= colRect.left && e.clientX <= colRect.right) {
+                    ghostDay = FULL_DAYS_OF_WEEK[i];
+                    break;
+                }
             }
+        } else {
+            ghostDay = dragState.fromDay;
         }
 
         // Determine start time from Y position
@@ -361,20 +443,25 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
         const rawMinutes = (relativeY / PIXELS_PER_MINUTE) + START_HOUR * 60;
         const snapped = snapToGrid(Math.max(START_HOUR * 60, Math.min(END_HOUR * 60 - dragState.durationMinutes, rawMinutes)));
 
-        // Check overlap on target day
-        const targetDayBlocks = (schedule?.scheduleBlocks || []).filter(
-            (b: ScheduleBlock) => b.dayOfWeek === ghostDay
-        );
-        const hasOverlap = checkOverlap(
-            snapped,
-            snapped + dragState.durationMinutes,
-            targetDayBlocks,
-            dragState.blockType
-        );
+        // Check overlap — for shared drag, check ALL component days
+        const daysToCheck = dragState.isPerDayDrag
+            ? [ghostDay]
+            : componentDaysFor(dragState.blockType);
+
+        let hasOverlap = false;
+        for (const day of daysToCheck) {
+            const dayBlocks = (schedule?.scheduleBlocks || []).filter(
+                (b: ScheduleBlock) => b.dayOfWeek === day
+            );
+            if (checkOverlap(snapped, snapped + dragState.durationMinutes, dayBlocks, dragState.blockType)) {
+                hasOverlap = true;
+                break;
+            }
+        }
         setDragOverlap(hasOverlap);
 
         setDragState(prev => prev ? { ...prev, ghostDay: ghostDay, ghostStartMinutes: snapped } : null);
-    }, [dragState, schedule]);
+    }, [dragState, schedule, componentDaysFor]);
 
     const handlePointerUp = useCallback(() => {
         if (!dragState || !onBlockMove) {
@@ -404,8 +491,9 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
         onBlockMove({
             type: dragState.blockType,
             fromDay: dragState.fromDay,
-            toDay,
-            newStartTime
+            toDay: dragState.isPerDayDrag ? toDay : dragState.fromDay,
+            newStartTime,
+            isPerDayMove: dragState.isPerDayDrag
         });
 
         setDragState(null);
@@ -443,8 +531,8 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
             <div className={`details-container ${isDetailsExpanded ? 'expanded' : ''}`}>
                 {schedule && (
                     <div className="summary-card">
-                        {schedule.lectureInfo.contactHoursForTerm > 0 && <InfoCard title="Lecture Summary" info={schedule.lectureInfo} units={request?.lectureUnits} color="var(--lecture-color)" />}
-                        {schedule.labInfo.contactHoursForTerm > 0 && <InfoCard title="Lab Summary" info={schedule.labInfo} units={request?.labUnits} color="var(--lab-color)" />}
+                        {schedule.lectureInfo.contactHoursForTerm > 0 && <InfoCard title="Lecture Summary" info={schedule.lectureInfo} units={request?.lectureUnits} color="var(--lecture-color)" blocks={schedule.scheduleBlocks.filter(b => b.type === 'lecture')} />}
+                        {schedule.labInfo.contactHoursForTerm > 0 && <InfoCard title="Lab Summary" info={schedule.labInfo} units={request?.labUnits} color="var(--lab-color)" blocks={schedule.scheduleBlocks.filter(b => b.type === 'lab')} />}
                     </div>
                 )}
             </div>
@@ -471,6 +559,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
                             hours={hours}
                             schedule={schedule}
                             overlaidSchedules={overlaidSchedules}
+                            roomContextSchedules={roomContextSchedules}
                             hoveredInfo={hoveredInfo}
                             timeFormat={timeFormat}
                             isDetailsExpanded={isDetailsExpanded}
@@ -484,7 +573,6 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
                     {dragState && gridRef.current && (() => {
                         const ghostTop = (dragState.ghostStartMinutes - START_HOUR * 60) * PIXELS_PER_MINUTE;
                         const ghostHeight = dragState.durationMinutes * PIXELS_PER_MINUTE;
-                        const dayIndex = FULL_DAYS_OF_WEEK.indexOf(dragState.ghostDay);
                         const h = Math.floor(dragState.ghostStartMinutes / 60);
                         const m = dragState.ghostStartMinutes % 60;
                         const endMin = dragState.ghostStartMinutes + dragState.durationMinutes;
@@ -492,29 +580,42 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
                         const em = endMin % 60;
                         const startStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
                         const endStr = `${String(eh).padStart(2, '0')}:${String(em).padStart(2, '0')}`;
+                        const timeLabel = `${formatTime(startStr, timeFormat)} - ${formatTime(endStr, timeFormat)}`;
 
                         const gridRect = gridRef.current!.getBoundingClientRect();
-                        const colEl = gridRef.current!.querySelectorAll('.day-column.timeline')[dayIndex];
-                        const colRect = colEl?.getBoundingClientRect();
-                        const ghostLeft = colRect ? colRect.left - gridRect.left : 0;
-                        const ghostWidth = colRect ? colRect.width : 0;
+                        const allCols = gridRef.current!.querySelectorAll('.day-column.timeline');
 
-                        return (
-                            <div
-                                className={`drag-ghost ${dragState.blockType} ${dragOverlap ? 'overlap' : ''}`}
-                                style={{
-                                    position: 'absolute',
-                                    top: `${ghostTop + 65}px`,
-                                    height: `${ghostHeight}px`,
-                                    left: `${ghostLeft + 2}px`,
-                                    width: `${ghostWidth - 4}px`,
-                                    pointerEvents: 'none',
-                                    zIndex: 50,
-                                }}
-                            >
-                                <span className="ghost-time">{formatTime(startStr, timeFormat)} - {formatTime(endStr, timeFormat)}</span>
-                            </div>
-                        );
+                        const ghostDays = dragState.isPerDayDrag
+                            ? [dragState.ghostDay]
+                            : componentDaysFor(dragState.blockType);
+
+                        return ghostDays.map(day => {
+                            const dayIndex = FULL_DAYS_OF_WEEK.indexOf(day);
+                            const colEl = allCols[dayIndex];
+                            const colRect = colEl?.getBoundingClientRect();
+                            const ghostLeft = colRect ? colRect.left - gridRect.left : 0;
+                            const ghostWidth = colRect ? colRect.width : 0;
+                            const isPrimary = dragState.isPerDayDrag || day === dragState.fromDay;
+
+                            return (
+                                <div
+                                    key={`ghost-${day}`}
+                                    className={`drag-ghost ${dragState.blockType} ${dragOverlap ? 'overlap' : ''}`}
+                                    style={{
+                                        position: 'absolute',
+                                        top: `${ghostTop + 65}px`,
+                                        height: `${ghostHeight}px`,
+                                        left: `${ghostLeft + 2}px`,
+                                        width: `${ghostWidth - 4}px`,
+                                        pointerEvents: 'none',
+                                        zIndex: 50,
+                                        opacity: isPrimary ? undefined : 0.6,
+                                    }}
+                                >
+                                    <span className="ghost-time">{isPrimary ? timeLabel : formatTime(startStr, timeFormat)}</span>
+                                </div>
+                            );
+                        });
                     })()}
                 </div>
 
@@ -526,7 +627,7 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
                             exit={{ opacity: 0, y: -10 }}
                             className="drag-tip"
                         >
-                            Tip: Drag blocks to move them to a different time or day
+                            Tip: Drag blocks to move all days together. Hold Shift to move one day only.
                         </motion.div>
                     )}
                 </AnimatePresence>

@@ -1,0 +1,164 @@
+- generic [ref=e3]:
+  - link "Skip to results" [ref=e4] [cursor=pointer]:
+    - /url: "#results-header"
+  - generic [ref=e5]:
+    - complementary [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]: Saved Sections
+        - generic [ref=e9]:
+          - button "Export for Spreadsheet" [ref=e10] [cursor=pointer]:
+            - img [ref=e11]
+          - button "Export All Details" [ref=e13] [cursor=pointer]:
+            - img [ref=e14]
+          - button "Share via URL" [disabled] [ref=e18] [cursor=pointer]:
+            - img [ref=e19]
+          - button "Help" [ref=e25] [cursor=pointer]:
+            - img [ref=e26]
+          - button "Settings" [ref=e30] [cursor=pointer]:
+            - img [ref=e31]
+          - button "Collapse Sidebar" [ref=e34] [cursor=pointer]:
+            - img [ref=e35]
+      - generic [ref=e37]:
+        - list
+    - main [ref=e38]:
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - img "logo" [ref=e41]
+          - heading "Course Scheduler" [level=1] [ref=e42]
+          - button "Valid" [ref=e389] [cursor=pointer]
+        - generic [ref=e45]:
+          - button "Schedule New Section" [ref=e46] [cursor=pointer]:
+            - img [ref=e47]
+            - text: Schedule New Section
+          - button "Save Section" [ref=e48] [cursor=pointer]:
+            - img [ref=e49]
+            - text: Save Section
+          - generic [ref=e180]:
+            - button "Copy" [ref=e181] [cursor=pointer]:
+              - img [ref=e182]
+              - text: Copy
+            - button [ref=e185] [cursor=pointer]:
+              - img [ref=e186]
+      - button "Scheduling Summer 2026 (Full Session (8 wks)) starting at 08:00 AM• 3u Lec / 1u Lab Edit Configuration" [ref=e390] [cursor=pointer]:
+        - generic [ref=e391]:
+          - text: Scheduling
+          - strong [ref=e392]: Summer 2026
+          - text: (Full Session (8 wks)) starting at
+          - strong [ref=e393]: 08:00 AM
+          - text: •
+          - strong [ref=e394]: 3u
+          - text: Lec /
+          - strong [ref=e395]: 1u
+          - text: Lab
+        - generic [ref=e396]:
+          - img [ref=e397]
+          - text: Edit Configuration
+      - generic [ref=e170]:
+        - generic [ref=e188]:
+          - generic [ref=e399]:
+            - paragraph [ref=e400]:
+              - strong [ref=e402]: "Lecture:"
+              - text: Mon (08:00 AM - 12:15 PM)
+            - paragraph [ref=e403]:
+              - strong [ref=e405]: "Lecture:"
+              - text: Wed (08:00 AM - 10:05 AM)
+            - paragraph [ref=e406]:
+              - strong [ref=e408]: "Lab:"
+              - text: Wed (10:15 AM - 12:20 PM)
+            - paragraph [ref=e409]:
+              - strong [ref=e411]: "Lab:"
+              - text: Fri (08:00 AM - 12:20 PM)
+          - generic [ref=e189]:
+            - generic [ref=e190]: "* Generated schedules are estimates"
+            - button "Hide Details" [active] [ref=e481] [cursor=pointer]
+        - generic [ref=e412]:
+          - generic [ref=e413]:
+            - heading "Lecture Summary" [level=4] [ref=e414]: Lecture Summary
+            - generic [ref=e416]:
+              - paragraph [ref=e417]:
+                - strong [ref=e418]: "Selected Units:"
+                - text: "3"
+              - paragraph [ref=e419]:
+                - strong [ref=e420]: "Contact Hours for Course:"
+                - text: "54.00"
+              - paragraph [ref=e421]:
+                - strong [ref=e422]: "Actual Meeting Days:"
+                - text: "16"
+              - paragraph [ref=e423]:
+                - strong [ref=e424]: "Mon:"
+                - text: 4h 15m (4.5 CH)
+              - paragraph [ref=e425]:
+                - strong [ref=e426]: "Wed:"
+                - text: 2h 5m (2.3 CH)
+              - paragraph [ref=e427]:
+                - strong [ref=e428]: "Total Scheduled Hours:"
+                - text: "54.40"
+          - generic [ref=e429]:
+            - heading "Lab Summary" [level=4] [ref=e430]: Lab Summary
+            - generic [ref=e432]:
+              - paragraph [ref=e433]:
+                - strong [ref=e434]: "Selected Units:"
+                - text: "1"
+              - paragraph [ref=e435]:
+                - strong [ref=e436]: "Contact Hours for Course:"
+                - text: "54.00"
+              - paragraph [ref=e437]:
+                - strong [ref=e438]: "Actual Meeting Days:"
+                - text: "14"
+              - paragraph [ref=e439]:
+                - strong [ref=e440]: "Wed:"
+                - text: 2h 5m (2.2 CH)
+              - paragraph [ref=e441]:
+                - strong [ref=e442]: "Fri:"
+                - text: 4h 20m (4.6 CH)
+              - paragraph [ref=e443]:
+                - strong [ref=e444]: "Total Scheduled Hours:"
+                - text: "47.60"
+        - generic [ref=e192]:
+          - generic [ref=e193]:
+            - generic [ref=e194]: 06:00 AM
+            - generic [ref=e195]: 07:00 AM
+            - generic [ref=e196]: 08:00 AM
+            - generic [ref=e197]: 09:00 AM
+            - generic [ref=e198]: 10:00 AM
+            - generic [ref=e199]: 11:00 AM
+            - generic [ref=e200]: 12:00 PM
+            - generic [ref=e201]: 01:00 PM
+            - generic [ref=e202]: 02:00 PM
+            - generic [ref=e203]: 03:00 PM
+            - generic [ref=e204]: 04:00 PM
+            - generic [ref=e205]: 05:00 PM
+            - generic [ref=e206]: 06:00 PM
+            - generic [ref=e207]: 07:00 PM
+            - generic [ref=e208]: 08:00 PM
+            - generic [ref=e209]: 09:00 PM
+            - generic [ref=e210]: 10:00 PM
+            - generic [ref=e211]: 11:00 PM
+            - generic [ref=e212]: 12:00 AM
+          - generic [ref=e213]:
+            - generic [ref=e214]:
+              - heading "Mon" [level=4] [ref=e215]
+              - generic [ref=e216]:
+                - generic [ref=e447]: 08:00 AM - 09:00 AM
+                - generic [ref=e450]: 09:00 AM - 10:00 AM
+                - generic [ref=e453]: 10:00 AM - 11:00 AM
+                - generic [ref=e456]: 11:00 AM - 12:15 PM
+            - heading "Tue" [level=4] [ref=e237]
+            - generic [ref=e258]:
+              - heading "Wed" [level=4] [ref=e259]
+              - generic [ref=e260]:
+                - generic [ref=e459]: 08:00 AM - 09:00 AM
+                - generic [ref=e462]: 09:00 AM - 10:05 AM
+                - generic [ref=e465]: 10:15 AM - 11:15 AM
+                - generic [ref=e468]: 11:15 AM - 12:20 PM
+            - heading "Thu" [level=4] [ref=e281]
+            - generic [ref=e302]:
+              - heading "Fri" [level=4] [ref=e303]
+              - generic [ref=e304]:
+                - generic [ref=e471]: 08:00 AM - 09:00 AM
+                - generic [ref=e474]: 09:00 AM - 10:00 AM
+                - generic [ref=e477]: 10:00 AM - 11:00 AM
+                - generic [ref=e480]: 11:00 AM - 12:20 PM
+            - heading "Sat" [level=4] [ref=e325]
+            - heading "Sun" [level=4] [ref=e347]
+          - generic: "Tip: Drag blocks to move all days together. Hold Shift to move one day only."

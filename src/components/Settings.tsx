@@ -1,8 +1,9 @@
 // src/components/Settings.tsx
 import React from 'react';
-import { Sun, Moon, Clock, X } from 'lucide-react';
+import { Sun, Moon, Clock, X, Building2 } from 'lucide-react';
 import { AcademicTerm } from '../types';
 import { useSettings } from '../hooks/useSettings';
+import { useRooms } from '../hooks/useRooms';
 import './Settings.css';
 
 interface SettingsProps {
@@ -57,7 +58,9 @@ export const TimeSelector: React.FC<TimeSelectorProps> = ({ time, onTimeChange, 
 const Settings: React.FC<SettingsProps> = ({ settingsAPI, onClose }) => {
   const {
     theme, setTheme, timeFormat, setTimeFormat,
+    selectedDivisionId, setSelectedDivisionId
   } = settingsAPI;
+  const { divisionOptions } = useRooms(selectedDivisionId);
 
   return (
     <div className="settings-panel">
@@ -103,6 +106,19 @@ const Settings: React.FC<SettingsProps> = ({ settingsAPI, onClose }) => {
               <Clock size={14} /> 24-Hour
             </button>
           </div>
+        </div>
+        <div className="setting-group">
+          <label className="setting-label"><Building2 size={14} style={{ verticalAlign: '-2px', marginRight: 4 }} />Division</label>
+          <select
+            className="division-select"
+            value={selectedDivisionId}
+            onChange={(e) => setSelectedDivisionId(e.target.value)}
+          >
+            <option value="">— Select Division —</option>
+            {divisionOptions.map(d => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
         </div>
       </div>
     </div>

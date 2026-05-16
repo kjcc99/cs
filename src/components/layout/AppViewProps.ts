@@ -4,6 +4,7 @@ import { useRules } from '../../hooks/useRules';
 import { useSettings } from '../../hooks/useSettings';
 import { useCatalog } from '../../hooks/useCatalog';
 import { useWorkspace } from '../../hooks/useWorkspace';
+import { useRooms } from '../../hooks/useRooms';
 import { AcademicTerm } from '../../types/calendar';
 
 export interface AppViewProps {
@@ -12,5 +13,6 @@ export interface AppViewProps {
     settingsAPI: ReturnType<typeof useSettings>;
     catalogAPI: ReturnType<typeof useCatalog>;
     workspaceAPI: ReturnType<typeof useWorkspace>;
+    roomsAPI: ReturnType<typeof useRooms>;
     calendar: AcademicTerm[];
 }

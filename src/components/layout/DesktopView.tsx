@@ -1,8 +1,10 @@
 // src/components/layout/DesktopView.tsx
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '../Toast';
 import { AppViewProps } from './AppViewProps';
 import ScheduleDisplay, { OverlaidSchedule, BlockMoveEvent } from '../ScheduleDisplay';
+import { useRoomContext } from '../../hooks/useRoomContext';
+import { detectRoomConflicts } from '../../utils/roomConflicts';
 import HelpModal from '../HelpModal';
 import ConfirmModal from '../ConfirmModal';
 import DashboardHeader from '../DashboardHeader';
@@ -14,6 +16,7 @@ import {
     ExportType
 } from '../../types';
 import { generateSchedule } from '../../utils/scheduleGenerator';
+import { computeSmartSplit } from '../../utils/smartSplit';
 import { formatScheduleSimple, formatScheduleDetailed, formatBulkExport, copyToClipboard } from '../../utils/copyUtils';
 import { generateShareUrl } from '../../utils/shareUtils';
 
@@ -27,6 +30,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
     settingsAPI,
     catalogAPI,
     workspaceAPI,
+    roomsAPI,
     calendar
 }) => {
     const { showToast } = useToast();
@@ -47,8 +51,19 @@ export const DesktopView: React.FC<AppViewProps> = ({
         lectureSplitMode, setLectureSplitMode,
         labSplitMode, setLabSplitMode,
         lectureHoursPerDay, setLectureHoursPerDay,
-        labHoursPerDay, setLabHoursPerDay
+        labHoursPerDay, setLabHoursPerDay,
+        lectureBuildingId, setLectureBuildingId,
+        lectureRoomId, setLectureRoomId,
+        labBuildingId, setLabBuildingId,
+        labRoomId, setLabRoomId,
+        selectedDivisionId
     } = settingsAPI;
+
+    const { buildings, findRoom } = roomsAPI;
+    const lecRoomInfo = lectureRoomId ? findRoom(lectureRoomId) : null;
+    const labRoomInfo = labRoomId ? findRoom(labRoomId) : null;
+    const lectureRoomLabel = lecRoomInfo ? `${lecRoomInfo.building.code}-${lecRoomInfo.room.number}` : '';
+    const labRoomLabel = labRoomInfo ? `${labRoomInfo.building.code}-${labRoomInfo.room.number}` : '';
 
     const { catalog, divisions, departments } = catalogAPI;
 
@@ -59,7 +74,8 @@ export const DesktopView: React.FC<AppViewProps> = ({
         lecRange, labRange, generatedSchedule, setGeneratedSchedule,
         lastRequest, setLastRequest, isCalculating,
         selectedCourseInfo, handleCourseSelect, clearCourseSelection,
-        getWorkspaceAsSection
+        getWorkspaceAsSection,
+        smartSplit, setSmartSplit, smartSplitDays, setSmartSplitDays
     } = workspaceAPI;
 
     // --- Dashboard & UI State ---
@@ -71,6 +87,14 @@ export const DesktopView: React.FC<AppViewProps> = ({
     const [isStatusPopoverOpen, setIsStatusPopoverOpen] = useState(false);
     const [isConfigExpanded, setIsConfigExpanded] = useState(true);
     const [overlaySectionIds, setOverlaySectionIds] = useState<string[]>([]);
+    const hasAutoCollapsed = useRef(false);
+
+    useEffect(() => {
+        if (generatedSchedule && generatedSchedule.scheduleBlocks.length > 0 && !hasAutoCollapsed.current) {
+            hasAutoCollapsed.current = true;
+            setIsConfigExpanded(false);
+        }
+    }, [generatedSchedule]);
 
     const copyDropdownRef = useRef<HTMLDivElement>(null);
     const settingsDropdownRef = useRef<HTMLDivElement>(null);
@@ -103,14 +127,38 @@ export const DesktopView: React.FC<AppViewProps> = ({
             sectionName = `${sub} ${no} ${sectionNum}`;
         }
 
-        const usesV2 = lectureTimeMode === 'perDay' || labTimeMode === 'perDay' || lectureSplitMode === 'custom' || labSplitMode === 'custom';
+        if (smartSplit && smartSplitDays.length > 0) {
+            // Save Smart Split as concrete manual split values
+            const selTerm = calendar.find(t => t.id === selectedTermId) || calendar[0];
+            const selSession = selTerm.sessions.find(s => s.id === selectedSessionId) || selTerm.sessions[0];
+            const result = computeSmartSplit(lectureUnits, labUnits, smartSplitDays, selSession.weeks);
+            if (!('error' in result)) {
+                saveSection({
+                    lectureUnits, lectureDays: result.lectureDays, lecTbaHours: 0,
+                    labUnits, labDays: result.labDays, labTbaHours: 0,
+                    startTime, labStartTime: null, selectedTermId, selectedSessionId,
+                    schemaVersion: 2 as const,
+                    lectureTimeMode: 'shared', labTimeMode: 'shared',
+                    lectureTimesPerDay: {}, labTimesPerDay: {},
+                    lectureSplitMode: 'custom', labSplitMode: 'custom',
+                    lectureHoursPerDay: result.lectureHoursPerDay,
+                    labHoursPerDay: result.labHoursPerDay,
+                    lectureBuildingId, lectureRoomId, labBuildingId, labRoomId,
+                    ...(currentSectionId ? {} : { name: sectionName })
+                });
+                showToast("Section saved. Smart Split sections save as fixed schedules — edits will use Manual mode.", "info");
+                return;
+            }
+        }
+
+        const usesV2 = lectureTimeMode === 'perDay' || labTimeMode === 'perDay' || lectureSplitMode === 'custom' || labSplitMode === 'custom' || !!lectureRoomId || !!labRoomId;
         saveSection({
             lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId,
-            ...(usesV2 ? { schemaVersion: 2 as const, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay } : {}),
+            ...(usesV2 ? { schemaVersion: 2 as const, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId } : {}),
             ...(currentSectionId ? {} : { name: sectionName })
         });
         showToast(currentSectionId ? "Section updated" : "Section saved");
-    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedCourseInfo, savedSections, currentSectionId, showToast]);
+    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedCourseInfo, savedSections, currentSectionId, smartSplit, smartSplitDays, calendar, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId, showToast]);
 
     const handleSaveAsNew = useCallback(() => {
         if (lectureUnits === 0 && labUnits === 0) {
@@ -126,10 +174,10 @@ export const DesktopView: React.FC<AppViewProps> = ({
             sectionName = `${sub} ${no} ${sectionNum}`;
         }
 
-        const usesV2 = lectureTimeMode === 'perDay' || labTimeMode === 'perDay' || lectureSplitMode === 'custom' || labSplitMode === 'custom';
+        const usesV2 = lectureTimeMode === 'perDay' || labTimeMode === 'perDay' || lectureSplitMode === 'custom' || labSplitMode === 'custom' || !!lectureRoomId || !!labRoomId;
         saveSection({
             lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId,
-            ...(usesV2 ? { schemaVersion: 2 as const, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay } : {}),
+            ...(usesV2 ? { schemaVersion: 2 as const, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId } : {}),
             name: sectionName
         }, true);
         showToast("Saved as new copy");
@@ -137,6 +185,8 @@ export const DesktopView: React.FC<AppViewProps> = ({
 
 
     const handleLoadSection = useCallback((section: SavedSection) => {
+        setSmartSplit(false);
+        setSmartSplitDays([]);
         setCurrentSectionId(section.id);
         setLectureUnits(section.lectureUnits);
         setLectureDays(section.lectureDays);
@@ -156,6 +206,10 @@ export const DesktopView: React.FC<AppViewProps> = ({
         setLabSplitMode(section.labSplitMode ?? 'even');
         setLectureHoursPerDay((section.lectureHoursPerDay as Record<string, number>) ?? {});
         setLabHoursPerDay((section.labHoursPerDay as Record<string, number>) ?? {});
+        setLectureBuildingId(section.lectureBuildingId ?? '');
+        setLectureRoomId(section.lectureRoomId ?? '');
+        setLabBuildingId(section.labBuildingId ?? '');
+        setLabRoomId(section.labRoomId ?? '');
 
         if (contactHourRules && attendanceRules) {
             const term = calendar.find(t => t.id === section.selectedTermId) || calendar[0];
@@ -191,7 +245,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
             if (selectedCourseInfo) name = `${selectedCourseInfo.sub} ${selectedCourseInfo.no} 01`;
             else if (currentSectionId) name = savedSections.find(s => s.id === currentSectionId)?.name || name;
 
-            const temp = getWorkspaceAsSection('temp', name, { startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay });
+            const temp = getWorkspaceAsSection('temp', name, { startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId });
             text = exportForSpreadsheet([temp], calendar);
             toastMsg = "Section copied in spreadsheet format!";
         } else if (summaryType === 'simple') {
@@ -230,6 +284,12 @@ export const DesktopView: React.FC<AppViewProps> = ({
         setLabSplitMode('even');
         setLectureHoursPerDay({});
         setLabHoursPerDay({});
+        setLectureBuildingId('');
+        setLectureRoomId('');
+        setLabBuildingId('');
+        setLabRoomId('');
+        setSmartSplit(false);
+        setSmartSplitDays([]);
         showToast("Ready for new section", "info");
     };
 
@@ -312,46 +372,118 @@ export const DesktopView: React.FC<AppViewProps> = ({
         setLabStartTime(labStartTime === null ? '13:00' : null);
     };
 
+    const canSmartSplit = lectureUnits > 0 && labUnits > 0;
+
+    const handleSmartSplitToggle = useCallback((enabled: boolean) => {
+        if (enabled) {
+            setSmartSplit(true);
+            setSmartSplitDays([]);
+            setLecTbaHours(0);
+            setLabTbaHours(0);
+            setLectureTimesPerDay({});
+            setLabTimesPerDay({});
+            setLectureTimeMode('shared');
+            setLabTimeMode('shared');
+            setLectureSplitMode('even');
+            setLabSplitMode('even');
+            setLectureHoursPerDay({});
+            setLabHoursPerDay({});
+            setLabStartTime(null);
+        } else {
+            // Toggling off: compute what Smart Split produced and persist to manual controls
+            const selTerm = calendar.find(t => t.id === selectedTermId) || calendar[0];
+            const selSession = selTerm.sessions.find(s => s.id === selectedSessionId) || selTerm.sessions[0];
+            if (smartSplitDays.length > 0 && lectureUnits > 0 && labUnits > 0) {
+                const result = computeSmartSplit(lectureUnits, labUnits, smartSplitDays, selSession.weeks);
+                if (!('error' in result)) {
+                    setLectureDays(result.lectureDays);
+                    setLabDays(result.labDays);
+                    setLectureSplitMode('custom');
+                    setLabSplitMode('custom');
+                    setLectureHoursPerDay(result.lectureHoursPerDay);
+                    setLabHoursPerDay(result.labHoursPerDay);
+                }
+            }
+            setSmartSplit(false);
+            setSmartSplitDays([]);
+        }
+    }, [smartSplitDays, lectureUnits, labUnits, calendar, selectedTermId, selectedSessionId, setSmartSplit, setSmartSplitDays, setLectureDays, setLabDays, setLecTbaHours, setLabTbaHours, setLectureTimesPerDay, setLabTimesPerDay, setLectureTimeMode, setLabTimeMode, setLectureSplitMode, setLabSplitMode, setLectureHoursPerDay, setLabHoursPerDay, setLabStartTime]);
+
     const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+    // Auto-deactivate Smart Split when units go to 0
+    React.useEffect(() => {
+        if (smartSplit && (lectureUnits <= 0 || labUnits <= 0)) {
+            setSmartSplit(false);
+            setSmartSplitDays([]);
+            showToast("Smart Split requires both lecture and lab — switching to Manual mode.", "info");
+        }
+    }, [smartSplit, lectureUnits, labUnits, setSmartSplit, setSmartSplitDays, showToast]);
+
     const handleBlockMove = useCallback((event: BlockMoveEvent) => {
-        const { type, fromDay, toDay, newStartTime } = event;
+        const { type, fromDay, toDay, newStartTime, isPerDayMove } = event;
+
+        if (smartSplit) {
+            // Smart Split drag behavior
+            if (fromDay === toDay) {
+                // Vertical drag: change shared start time, all blocks move together
+                setStartTime(newStartTime);
+            } else {
+                // Horizontal drag: replace day in smartSplitDays (no-op if target already in set)
+                if (smartSplitDays.includes(toDay)) return;
+                const newDays = smartSplitDays.map(d => d === fromDay ? toDay : d)
+                    .sort((a, b) => WEEK_DAYS.indexOf(a) - WEEK_DAYS.indexOf(b));
+                setSmartSplitDays(newDays);
+            }
+            return;
+        }
+
+        // Manual mode drag (existing behavior)
         const isLecture = type === 'lecture';
         const days = isLecture ? lectureDays : labDays;
         const setDays = isLecture ? setLectureDays : setLabDays;
         const setTimeMode = isLecture ? setLectureTimeMode : setLabTimeMode;
         const timesPerDay = isLecture ? lectureTimesPerDay : labTimesPerDay;
         const setTimesPerDay = isLecture ? setLectureTimesPerDay : setLabTimesPerDay;
-        const currentSharedTime = isLecture ? startTime : (labStartTime ?? startTime);
 
-        // Auto-flip to perDay mode
-        const timeMode = isLecture ? lectureTimeMode : labTimeMode;
-        if (timeMode === 'shared') {
-            const prefilled: Record<string, string> = {};
-            for (const d of days) prefilled[d] = currentSharedTime;
-            prefilled[toDay] = newStartTime;
-            setTimesPerDay(prefilled);
-            setTimeMode('perDay');
+        if (isPerDayMove) {
+            const currentSharedTime = isLecture ? startTime : (labStartTime ?? startTime);
+            const timeMode = isLecture ? lectureTimeMode : labTimeMode;
+            if (timeMode === 'shared') {
+                const prefilled: Record<string, string> = {};
+                for (const d of days) prefilled[d] = currentSharedTime;
+                prefilled[toDay] = newStartTime;
+                setTimesPerDay(prefilled);
+                setTimeMode('perDay');
+            } else {
+                setTimesPerDay({ ...timesPerDay, [toDay]: newStartTime });
+            }
+
+            if (fromDay !== toDay && !days.includes(toDay)) {
+                const newDays = days.map(d => d === fromDay ? toDay : d)
+                    .sort((a, b) => WEEK_DAYS.indexOf(a) - WEEK_DAYS.indexOf(b));
+                setDays(newDays);
+                const updated = { ...timesPerDay, [toDay]: newStartTime };
+                delete updated[fromDay];
+                setTimesPerDay(updated);
+                const setSplitMode = isLecture ? setLectureSplitMode : setLabSplitMode;
+                const setHoursPerDay = isLecture ? setLectureHoursPerDay : setLabHoursPerDay;
+                setSplitMode('even');
+                setHoursPerDay({});
+            }
         } else {
-            setTimesPerDay({ ...timesPerDay, [toDay]: newStartTime });
+            const timeMode = isLecture ? lectureTimeMode : labTimeMode;
+            if (isLecture) {
+                setStartTime(newStartTime);
+            } else {
+                setLabStartTime(newStartTime);
+            }
+            if (timeMode === 'perDay') {
+                setTimeMode('shared');
+                setTimesPerDay({});
+            }
         }
-
-        // If moving to a non-selected day, replace fromDay with toDay in the days array
-        if (fromDay !== toDay && !days.includes(toDay)) {
-            const newDays = days.map(d => d === fromDay ? toDay : d)
-                .sort((a, b) => WEEK_DAYS.indexOf(a) - WEEK_DAYS.indexOf(b));
-            setDays(newDays);
-            // Move the per-day time entry
-            const updated = { ...timesPerDay, [toDay]: newStartTime };
-            delete updated[fromDay];
-            setTimesPerDay(updated);
-            // Reset custom split — old per-day hours no longer apply to the new day set
-            const setSplitMode = isLecture ? setLectureSplitMode : setLabSplitMode;
-            const setHoursPerDay = isLecture ? setLectureHoursPerDay : setLabHoursPerDay;
-            setSplitMode('even');
-            setHoursPerDay({});
-        }
-    }, [lectureDays, labDays, setLectureDays, setLabDays, lectureTimeMode, labTimeMode, setLectureTimeMode, setLabTimeMode, lectureTimesPerDay, labTimesPerDay, setLectureTimesPerDay, setLabTimesPerDay, startTime, labStartTime, setLectureSplitMode, setLabSplitMode, setLectureHoursPerDay, setLabHoursPerDay]);
+    }, [smartSplit, smartSplitDays, setSmartSplitDays, lectureDays, labDays, setLectureDays, setLabDays, lectureTimeMode, labTimeMode, setLectureTimeMode, setLabTimeMode, lectureTimesPerDay, labTimesPerDay, setLectureTimesPerDay, setLabTimesPerDay, startTime, labStartTime, setStartTime, setLabStartTime, setLectureSplitMode, setLabSplitMode, setLectureHoursPerDay, setLabHoursPerDay]);
 
     const getStatusInfo = () => {
         if (isCalculating) return { label: 'Auto-Solving...', class: 'warning' };
@@ -361,8 +493,6 @@ export const DesktopView: React.FC<AppViewProps> = ({
         if (generatedSchedule.warnings.length > 0) return { label: 'Adjusted', class: 'warning' };
         return { label: 'Valid', class: 'valid' };
     };
-
-    const status = getStatusInfo();
 
     const overlaidSchedules = overlaySectionIds.map(id => {
         const section = savedSections.find(s => s.id === id);
@@ -387,6 +517,30 @@ export const DesktopView: React.FC<AppViewProps> = ({
             schedule: generateSchedule(request, context, section.startTime, section.labStartTime, overrides)
         };
     }).filter(Boolean);
+
+    // ROOMS: disabled until feature ships
+    const roomContextSchedules: never[] = [];
+    const roomConflicts: never[] = [];
+    /* const roomContextSchedules = useRoomContext({
+        savedSections,
+        currentSectionId,
+        lectureRoomId,
+        labRoomId,
+        selectedTermId,
+        selectedSessionId,
+        calendar,
+        contactHourRules,
+        attendanceRules
+    });
+
+    const roomConflicts = detectRoomConflicts(generatedSchedule, roomContextSchedules); */
+    const status = (() => {
+        const base = getStatusInfo();
+        if (base.class !== 'conflict' && roomConflicts.length > 0) {
+            return { label: 'Room Conflict', class: 'conflict' };
+        }
+        return base;
+    })();
 
     return (
         <div className={`App ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
@@ -443,9 +597,16 @@ export const DesktopView: React.FC<AppViewProps> = ({
                         setIsCopyDropdownOpen={setIsCopyDropdownOpen}
                         copyDropdownRef={copyDropdownRef}
                         selectedTermId={selectedTermId}
+                        roomConflicts={roomConflicts}
                     />
 
                     <ConfigBar
+                        smartSplit={smartSplit}
+                        setSmartSplit={setSmartSplit}
+                        smartSplitDays={smartSplitDays}
+                        setSmartSplitDays={setSmartSplitDays}
+                        canSmartSplit={canSmartSplit}
+                        onSmartSplitToggle={handleSmartSplitToggle}
                         isConfigExpanded={isConfigExpanded}
                         setIsConfigExpanded={setIsConfigExpanded}
                         selectedTerm={selectedTerm}
@@ -499,6 +660,18 @@ export const DesktopView: React.FC<AppViewProps> = ({
                         setLectureHoursPerDay={setLectureHoursPerDay}
                         labHoursPerDay={labHoursPerDay}
                         setLabHoursPerDay={setLabHoursPerDay}
+                        buildings={buildings}
+                        hasDivision={!!selectedDivisionId}
+                        lectureBuildingId={lectureBuildingId}
+                        setLectureBuildingId={setLectureBuildingId}
+                        lectureRoomId={lectureRoomId}
+                        setLectureRoomId={setLectureRoomId}
+                        labBuildingId={labBuildingId}
+                        setLabBuildingId={setLabBuildingId}
+                        labRoomId={labRoomId}
+                        setLabRoomId={setLabRoomId}
+                        lectureRoomLabel={lectureRoomLabel}
+                        labRoomLabel={labRoomLabel}
                     />
 
                     <div className="scrollable-content">
@@ -513,6 +686,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
                                 onBlockMove={handleBlockMove}
                                 lectureDays={lectureDays}
                                 labDays={labDays}
+                                roomContextSchedules={roomContextSchedules}
                             />
                         </div>
                     </div>

@@ -1,0 +1,284 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "Skip to results" [ref=e4] [cursor=pointer]:
+      - /url: "#results-header"
+    - generic [ref=e5]:
+      - complementary [ref=e6]:
+        - generic [ref=e7]:
+          - generic [ref=e8]: Saved Sections
+          - generic [ref=e9]:
+            - button "Export for Spreadsheet" [ref=e10] [cursor=pointer]:
+              - img [ref=e11]
+            - button "Export All Details" [ref=e13] [cursor=pointer]:
+              - img [ref=e14]
+            - button "Share via URL" [ref=e18] [cursor=pointer]:
+              - img [ref=e19]
+            - button "Help" [ref=e25] [cursor=pointer]:
+              - img [ref=e26]
+            - button "Settings" [ref=e30] [cursor=pointer]:
+              - img [ref=e31]
+            - button "Collapse Sidebar" [ref=e34] [cursor=pointer]:
+              - img [ref=e35]
+        - generic [ref=e37]:
+          - list [ref=e568]:
+            - 'button "Include in multi-view Section 1 4.0u Lec: MonWed 08:00 AM - 11:10 AM Lab: WedFri 08:00 AM - 11:10 AM" [ref=e569] [cursor=pointer]':
+              - generic [ref=e570]:
+                - checkbox "Include in multi-view" [ref=e571]
+                - generic [ref=e572]: ⠿
+              - generic [ref=e573]:
+                - generic [ref=e574]:
+                  - generic [ref=e575]:
+                    - generic [ref=e576]:
+                      - text: Section 1
+                      - img [ref=e577]
+                    - button "Rename" [ref=e579]:
+                      - img [ref=e580]
+                  - generic [ref=e582]: 4.0u
+                - generic [ref=e584]:
+                  - generic [ref=e585]: "Lec: MonWed 08:00 AM - 11:10 AM"
+                  - generic [ref=e586]: "Lab: WedFri 08:00 AM - 11:10 AM"
+              - button "Delete Section" [ref=e587]:
+                - img [ref=e588]
+          - generic [ref=e591]:
+            - button "Clear All Sections" [ref=e592] [cursor=pointer]
+            - generic [ref=e593]: Schedules are saved locally. Use Share Link to transfer between devices.
+      - main [ref=e38]:
+        - generic [ref=e39]:
+          - generic [ref=e40]:
+            - img "logo" [ref=e41]
+            - heading "Course Scheduler" [level=1] [ref=e42]
+            - button "Valid" [ref=e389] [cursor=pointer]
+          - generic [ref=e45]:
+            - button "Schedule New Section" [ref=e46] [cursor=pointer]:
+              - img [ref=e47]
+              - text: Schedule New Section
+            - button "Update Section" [active] [ref=e594] [cursor=pointer]:
+              - img [ref=e49]
+              - text: Update Section
+            - button "Save as New" [ref=e595] [cursor=pointer]:
+              - img [ref=e596]
+              - text: Save as New
+            - generic [ref=e180]:
+              - button "Copy" [ref=e181] [cursor=pointer]:
+                - img [ref=e182]
+                - text: Copy
+              - button [ref=e185] [cursor=pointer]:
+                - img [ref=e186]
+        - generic [ref=e483]:
+          - generic [ref=e484]:
+            - button "Manual" [ref=e485] [cursor=pointer]
+            - button "Smart Split" [ref=e486] [cursor=pointer]
+          - generic [ref=e487]:
+            - generic [ref=e488]:
+              - generic [ref=e489]: Academic Session
+              - generic [ref=e490]:
+                - generic [ref=e491]:
+                  - generic [ref=e492]: Term
+                  - combobox [ref=e493]:
+                    - option "Summer 2026" [selected]
+                    - option "Fall 2026"
+                    - option "Winter 2027"
+                    - option "Spring 2027"
+                    - option "Fall 2027"
+                    - option "Winter 2028"
+                    - option "Spring 2028"
+                    - option "Summer 2028"
+                - generic [ref=e494]:
+                  - generic [ref=e495]: Weeks
+                  - combobox [ref=e496]:
+                    - option "Full Session (8 wks)" [selected]
+                    - option "First 6-Week Session"
+                    - option "Second 6-Week Session"
+                    - option "First 4-Week Session"
+                    - option "Second 4-Week Session"
+            - generic [ref=e498]:
+              - generic [ref=e500]: Start Time
+              - generic [ref=e504]:
+                - combobox [ref=e505] [cursor=pointer]:
+                  - option "6 AM"
+                  - option "7 AM"
+                  - option "8 AM" [selected]
+                  - option "9 AM"
+                  - option "10 AM"
+                  - option "11 AM"
+                  - option "12 PM"
+                  - option "1 PM"
+                  - option "2 PM"
+                  - option "3 PM"
+                  - option "4 PM"
+                  - option "5 PM"
+                  - option "6 PM"
+                  - option "7 PM"
+                  - option "8 PM"
+                - generic [ref=e506]: ":"
+                - combobox [ref=e507] [cursor=pointer]:
+                  - option "00" [selected]
+                  - option "05"
+                  - option "10"
+                  - option "15"
+                  - option "20"
+                  - option "25"
+                  - option "30"
+                  - option "35"
+                  - option "40"
+                  - option "45"
+                  - option "50"
+                  - option "55"
+            - generic [ref=e509]:
+              - generic [ref=e510]: Course Catalog
+              - button "Select Course..." [ref=e516] [cursor=pointer]:
+                - generic [ref=e517]:
+                  - img [ref=e518]
+                  - generic [ref=e520]: Select Course...
+            - generic [ref=e523]: Select a division in Settings to assign rooms
+          - generic [ref=e524]:
+            - generic [ref=e525]:
+              - generic [ref=e526]:
+                - generic [ref=e527]: Lecture Units
+                - generic [ref=e529]:
+                  - generic [ref=e530]: Units
+                  - generic [ref=e531]:
+                    - button "Decrease Units" [ref=e532] [cursor=pointer]: "-"
+                    - textbox [ref=e533]: "3"
+                    - button "Increase Units" [ref=e534] [cursor=pointer]: +
+              - generic [ref=e536]:
+                - generic [ref=e537]: Lab Units
+                - generic [ref=e539]:
+                  - generic [ref=e540]: Units
+                  - generic [ref=e541]:
+                    - button "Decrease Units" [ref=e542] [cursor=pointer]: "-"
+                    - textbox [ref=e543]: "1"
+                    - button "Increase Units" [ref=e544] [cursor=pointer]: +
+              - generic [ref=e546]:
+                - generic [ref=e547]: Meeting Days
+                - generic [ref=e550]:
+                  - generic [ref=e551]:
+                    - button "MW" [ref=e552] [cursor=pointer]
+                    - button "TTh" [ref=e553] [cursor=pointer]
+                    - button "MWF" [ref=e554] [cursor=pointer]
+                    - button "TThF" [ref=e555] [cursor=pointer]
+                    - button "MTWTh" [ref=e556] [cursor=pointer]
+                  - generic [ref=e557]:
+                    - generic [ref=e558] [cursor=pointer]: Mon
+                    - generic [ref=e559] [cursor=pointer]: Tue
+                    - generic [ref=e560] [cursor=pointer]: Wed
+                    - generic [ref=e561] [cursor=pointer]: Thu
+                    - generic [ref=e562] [cursor=pointer]: Fri
+                    - generic [ref=e563] [cursor=pointer]: Sat
+                    - generic [ref=e564] [cursor=pointer]: Sun
+            - button "Collapse configuration" [ref=e565] [cursor=pointer]:
+              - img [ref=e566]
+        - generic [ref=e170]:
+          - generic [ref=e188]:
+            - generic [ref=e399]:
+              - paragraph [ref=e400]:
+                - strong [ref=e402]: "Lecture:"
+                - text: Mon (08:00 AM - 12:15 PM)
+              - paragraph [ref=e403]:
+                - strong [ref=e405]: "Lecture:"
+                - text: Wed (08:00 AM - 10:05 AM)
+              - paragraph [ref=e406]:
+                - strong [ref=e408]: "Lab:"
+                - text: Wed (10:15 AM - 12:20 PM)
+              - paragraph [ref=e409]:
+                - strong [ref=e411]: "Lab:"
+                - text: Fri (08:00 AM - 12:20 PM)
+            - generic [ref=e189]:
+              - generic [ref=e190]: "* Generated schedules are estimates"
+              - button "Hide Details" [ref=e481] [cursor=pointer]
+          - generic [ref=e412]:
+            - generic [ref=e413]:
+              - heading "Lecture Summary" [level=4] [ref=e414]: Lecture Summary
+              - generic [ref=e416]:
+                - paragraph [ref=e417]:
+                  - strong [ref=e418]: "Selected Units:"
+                  - text: "3"
+                - paragraph [ref=e419]:
+                  - strong [ref=e420]: "Contact Hours for Course:"
+                  - text: "54.00"
+                - paragraph [ref=e421]:
+                  - strong [ref=e422]: "Actual Meeting Days:"
+                  - text: "16"
+                - paragraph [ref=e423]:
+                  - strong [ref=e424]: "Mon:"
+                  - text: 4h 15m (4.5 CH)
+                - paragraph [ref=e425]:
+                  - strong [ref=e426]: "Wed:"
+                  - text: 2h 5m (2.3 CH)
+                - paragraph [ref=e427]:
+                  - strong [ref=e428]: "Total Scheduled Hours:"
+                  - text: "54.40"
+            - generic [ref=e429]:
+              - heading "Lab Summary" [level=4] [ref=e430]: Lab Summary
+              - generic [ref=e432]:
+                - paragraph [ref=e433]:
+                  - strong [ref=e434]: "Selected Units:"
+                  - text: "1"
+                - paragraph [ref=e435]:
+                  - strong [ref=e436]: "Contact Hours for Course:"
+                  - text: "54.00"
+                - paragraph [ref=e437]:
+                  - strong [ref=e438]: "Actual Meeting Days:"
+                  - text: "14"
+                - paragraph [ref=e439]:
+                  - strong [ref=e440]: "Wed:"
+                  - text: 2h 5m (2.2 CH)
+                - paragraph [ref=e441]:
+                  - strong [ref=e442]: "Fri:"
+                  - text: 4h 20m (4.6 CH)
+                - paragraph [ref=e443]:
+                  - strong [ref=e444]: "Total Scheduled Hours:"
+                  - text: "47.60"
+          - generic [ref=e192]:
+            - generic [ref=e193]:
+              - generic [ref=e194]: 06:00 AM
+              - generic [ref=e195]: 07:00 AM
+              - generic [ref=e196]: 08:00 AM
+              - generic [ref=e197]: 09:00 AM
+              - generic [ref=e198]: 10:00 AM
+              - generic [ref=e199]: 11:00 AM
+              - generic [ref=e200]: 12:00 PM
+              - generic [ref=e201]: 01:00 PM
+              - generic [ref=e202]: 02:00 PM
+              - generic [ref=e203]: 03:00 PM
+              - generic [ref=e204]: 04:00 PM
+              - generic [ref=e205]: 05:00 PM
+              - generic [ref=e206]: 06:00 PM
+              - generic [ref=e207]: 07:00 PM
+              - generic [ref=e208]: 08:00 PM
+              - generic [ref=e209]: 09:00 PM
+              - generic [ref=e210]: 10:00 PM
+              - generic [ref=e211]: 11:00 PM
+              - generic [ref=e212]: 12:00 AM
+            - generic [ref=e213]:
+              - generic [ref=e214]:
+                - heading "Mon" [level=4] [ref=e215]
+                - generic [ref=e216]:
+                  - generic [ref=e447]: 08:00 AM - 09:00 AM
+                  - generic [ref=e450]: 09:00 AM - 10:00 AM
+                  - generic [ref=e453]: 10:00 AM - 11:00 AM
+                  - generic [ref=e456]: 11:00 AM - 12:15 PM
+              - heading "Tue" [level=4] [ref=e237]
+              - generic [ref=e258]:
+                - heading "Wed" [level=4] [ref=e259]
+                - generic [ref=e260]:
+                  - generic [ref=e459]: 08:00 AM - 09:00 AM
+                  - generic [ref=e462]: 09:00 AM - 10:05 AM
+                  - generic [ref=e465]: 10:15 AM - 11:15 AM
+                  - generic [ref=e468]: 11:15 AM - 12:20 PM
+              - heading "Thu" [level=4] [ref=e281]
+              - generic [ref=e302]:
+                - heading "Fri" [level=4] [ref=e303]
+                - generic [ref=e304]:
+                  - generic [ref=e471]: 08:00 AM - 09:00 AM
+                  - generic [ref=e474]: 09:00 AM - 10:00 AM
+                  - generic [ref=e477]: 10:00 AM - 11:00 AM
+                  - generic [ref=e480]: 11:00 AM - 12:20 PM
+              - heading "Sat" [level=4] [ref=e325]
+              - heading "Sun" [level=4] [ref=e347]
+            - generic: "Tip: Drag blocks to move all days together. Hold Shift to move one day only."
+  - generic [ref=e599]:
+    - img [ref=e600]
+    - generic [ref=e602]: Section saved. Smart Split sections save as fixed schedules — edits will use Manual mode.
+    - button [ref=e603] [cursor=pointer]:
+      - img [ref=e604]

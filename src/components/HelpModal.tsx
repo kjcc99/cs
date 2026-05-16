@@ -51,7 +51,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Can I move meetings by dragging on the calendar?",
-    answer: "Yes! Once a schedule is on the grid, you can click and drag any block to move it to a different time or day. The block snaps to 5-minute increments. If you drag it over another block on the same day, it will turn red — you need at least a 10-minute gap between lecture and lab. Dragging to a new day will update your meeting days automatically."
+    answer: "Yes! Once a schedule is on the grid, you can click and drag any block to change its start time. A normal drag moves all days for that component together. Hold Shift while dragging to move just one day independently (this enables per-day start times). The block snaps to 5-minute increments. If you drag it over another block on the same day, it will turn red — you need at least a 10-minute gap between lecture and lab."
   },
   {
     question: "What are TBA Hours?",
