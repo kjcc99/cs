@@ -31,7 +31,9 @@ export const DesktopView: React.FC<AppViewProps> = ({
     catalogAPI,
     workspaceAPI,
     roomsAPI,
-    calendar
+    calendar,
+    appMode,
+    setAppMode
 }) => {
     const { showToast } = useToast();
     const {
@@ -598,6 +600,8 @@ export const DesktopView: React.FC<AppViewProps> = ({
                         copyDropdownRef={copyDropdownRef}
                         selectedTermId={selectedTermId}
                         roomConflicts={roomConflicts}
+                        appMode={appMode}
+                        setAppMode={setAppMode}
                     />
 
                     <ConfigBar

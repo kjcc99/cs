@@ -28,7 +28,9 @@ export const MobileView: React.FC<AppViewProps> = ({
     catalogAPI,
     workspaceAPI,
     roomsAPI,
-    calendar
+    calendar,
+    appMode,
+    setAppMode
 }) => {
     const { showToast } = useToast();
     const {

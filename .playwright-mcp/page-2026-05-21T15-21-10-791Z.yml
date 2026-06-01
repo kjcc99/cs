@@ -1,0 +1,20 @@
+- generic [ref=e203]:
+  - banner [ref=e204]:
+    - generic [ref=e205]:
+      - img "logo" [ref=e206]
+      - heading "Course Scheduler" [level=1] [ref=e207]
+      - generic [ref=e208]:
+        - button "Scheduler" [ref=e209] [cursor=pointer]
+        - button "Splitter" [ref=e210] [cursor=pointer]
+  - main [ref=e211]:
+    - generic [ref=e212]:
+      - generic [ref=e213]:
+        - img [ref=e214]
+        - heading "Paste Schedule Data" [level=2] [ref=e219]
+      - generic [ref=e220]: Paste your registrar spreadsheet data (TSV) below. The 26-column format is expected. Columns Y and Z (formula-based) will not round-trip cleanly.
+      - textbox "Paste tab-separated data here..." [ref=e221]
+      - generic [ref=e222]:
+        - generic [ref=e223]: No data
+        - button "Parse" [disabled] [ref=e224]:
+          - text: Parse
+          - img [ref=e225]

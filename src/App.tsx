@@ -21,6 +21,7 @@ import { ToastProvider } from './components/Toast';
 import ConfirmModal from './components/ConfirmModal';
 import { decodeSections } from './utils/shareUtils';
 import { SavedSection } from './types';
+import SplitterView from './splitter/SplitterView';
 
 function App() {
   const sectionsAPI = useSections();
@@ -30,6 +31,7 @@ function App() {
   const workspaceAPI = useWorkspace();
   const roomsAPI = useRooms(settingsAPI.selectedDivisionId);
   const [calendar] = useState<AcademicTerm[]>(academicCalendar);
+  const [appMode, setAppMode] = useState<'scheduler' | 'splitter'>('scheduler');
   const [pendingImport, setPendingImport] = useState<SavedSection[] | null>(null);
 
   // Read URL hash on mount for shared schedule import
@@ -123,7 +125,9 @@ function App() {
     catalogAPI,
     workspaceAPI,
     roomsAPI,
-    calendar
+    calendar,
+    appMode,
+    setAppMode
   };
 
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -134,7 +138,11 @@ function App() {
 
   return (
     <ToastProvider>
-      {isMobile ? <MobileView {...appProps} /> : <DesktopView {...appProps} />}
+      {appMode === 'splitter' ? (
+        <SplitterView appMode={appMode} setAppMode={setAppMode} />
+      ) : (
+        isMobile ? <MobileView {...appProps} /> : <DesktopView {...appProps} />
+      )}
       {pendingImport && (
         <ConfirmModal
           title="Import Shared Schedule"

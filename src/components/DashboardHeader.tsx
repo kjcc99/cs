@@ -23,6 +23,8 @@ interface DashboardHeaderProps {
     copyDropdownRef: React.RefObject<HTMLDivElement | null>;
     selectedTermId: string;
     roomConflicts?: RoomConflict[];
+    appMode?: 'scheduler' | 'splitter';
+    setAppMode?: (mode: 'scheduler' | 'splitter') => void;
 }
 
 
@@ -41,7 +43,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     setIsCopyDropdownOpen,
     copyDropdownRef,
     selectedTermId,
-    roomConflicts = []
+    roomConflicts = [],
+    appMode,
+    setAppMode
 }) => {
     const { generatedSchedule } = workspaceAPI;
     const { currentSectionId } = sectionsAPI;
@@ -52,6 +56,22 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             <div className="header-left">
                 <img src={process.env.PUBLIC_URL + '/logo.svg'} className="app-logo" alt="logo" />
                 <h1>Course Scheduler</h1>
+                {setAppMode && (
+                    <div className="mode-tabs">
+                        <button
+                            className={`mode-tab ${appMode === 'scheduler' ? 'active' : ''}`}
+                            onClick={() => setAppMode('scheduler')}
+                        >
+                            Scheduler
+                        </button>
+                        <button
+                            className={`mode-tab ${appMode === 'splitter' ? 'active' : ''}`}
+                            onClick={() => setAppMode('splitter')}
+                        >
+                            Splitter
+                        </button>
+                    </div>
+                )}
                 <div className="status-container" ref={statusPopoverRef}>
                     <span
                         className={`status-badge ${status.class} ${generatedSchedule ? 'clickable' : ''}`}

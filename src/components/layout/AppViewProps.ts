@@ -15,4 +15,6 @@ export interface AppViewProps {
     workspaceAPI: ReturnType<typeof useWorkspace>;
     roomsAPI: ReturnType<typeof useRooms>;
     calendar: AcademicTerm[];
+    appMode: 'scheduler' | 'splitter';
+    setAppMode: (mode: 'scheduler' | 'splitter') => void;
 }
