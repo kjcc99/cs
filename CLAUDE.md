@@ -29,7 +29,7 @@ Optional additive fields — missing = legacy behavior:
 - `lectureHoursPerDay` / `labHoursPerDay`: `Record<Day, number>`
 
 ## Academic Calendar
-- AY26-27: Fall 2026, Winter 2027, Spring 2027, Summer 2026
+- AY26-27: Fall 2026, Winter 2027, Spring 2027, Summer 2027 (Summer 2026 belongs to AY25-26 and uses the 2526 catalog)
 - AY27-28: Fall 2027, Winter 2028, Spring 2028, Summer 2028 (uses AY26-27 catalog as fallback)
 - No Sunday holidays in any term
 
