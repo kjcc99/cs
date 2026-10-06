@@ -54,18 +54,63 @@ function isHeaderRow(cells: string[]): boolean {
     return crn === 'crn' || crn === '' || !/^\d+$/.test(crn);
 }
 
+/**
+ * Split TSV text into records of cells using Excel's clipboard rules: a cell
+ * that begins with `"` is quoted and may contain tabs/newlines, with `""`
+ * representing a literal quote. Unquoted cells end at the next tab/newline.
+ */
+export function splitTsvRecords(text: string): string[][] {
+    const records: string[][] = [];
+    let record: string[] = [];
+    let i = 0;
+    const n = text.length;
+    while (true) {
+        let field = '';
+        if (text[i] === '"') {
+            const start = i;
+            i++;
+            let closed = false;
+            while (i < n) {
+                if (text[i] === '"') {
+                    if (text[i + 1] === '"') { field += '"'; i += 2; }
+                    else { i++; closed = true; break; }
+                } else {
+                    field += text[i++];
+                }
+            }
+            if (!closed) {
+                // Unbalanced quote: treat the cell as literal text up to the next delimiter
+                i = start;
+                field = '';
+                while (i < n && text[i] !== '\t' && text[i] !== '\n') field += text[i++];
+            } else {
+                while (i < n && text[i] !== '\t' && text[i] !== '\n') field += text[i++];
+            }
+        } else {
+            while (i < n && text[i] !== '\t' && text[i] !== '\n') field += text[i++];
+        }
+        record.push(field);
+        if (i >= n) { records.push(record); break; }
+        if (text[i] === '\t') { i++; continue; }
+        i++; // newline
+        records.push(record);
+        record = [];
+    }
+    return records;
+}
+
 export function parseTsv(raw: string): { rows: SpreadsheetRow[]; warnings: string[] } {
     const warnings: string[] = [];
-    const lines = raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    const records = splitTsvRecords(raw.replace(/\r\n/g, '\n').replace(/\r/g, '\n'));
     const rows: SpreadsheetRow[] = [];
 
     let skippedHeader = false;
 
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (!line.trim()) continue;
+    for (let i = 0; i < records.length; i++) {
+        const record = records[i];
+        if (record.every(c => !c.trim())) continue;
 
-        let cells = line.split('\t').map(c => c.trim());
+        let cells = record.map(c => c.trim());
 
         // Detect header row (first non-empty line only)
         if (rows.length === 0 && !skippedHeader && isHeaderRow(cells)) {

@@ -186,8 +186,18 @@ export function processGroups(
     };
 }
 
+/**
+ * Quote a cell the way Excel does when copying: any cell containing a tab,
+ * newline, CR, or double quote is wrapped in quotes with inner quotes doubled.
+ * Without this, Excel's paste parser treats a leading `"` as the start of a
+ * quoted field and swallows subsequent tabs/newlines, merging many rows.
+ */
+export function escapeTsvCell(cell: string): string {
+    return /[\t\n\r"]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
+}
+
 export function outputToTsv(results: SplitterResults): string {
     return results.outputRows
-        .map(row => row.cells.join('\t'))
+        .map(row => row.cells.map(escapeTsvCell).join('\t'))
         .join('\n');
 }
