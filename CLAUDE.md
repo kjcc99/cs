@@ -33,6 +33,10 @@ Optional additive fields — missing = legacy behavior:
 - AY27-28: Fall 2027, Winter 2028, Spring 2028, Summer 2028 (uses AY26-27 catalog as fallback)
 - No Sunday holidays in any term
 
+## Schedule Splitter (`src/splitter/`)
+- Paste → Review → Results pipeline; spec in `docs/spec-schedule-splitter.md`
+- TSV in/out must follow Excel quoting: `splitTsvRecords` (parseTsv.ts) reads quoted cells that contain tabs/newlines/`""`; `escapeTsvCell` (pipeline.ts) quotes such cells on export. Don't replace with plain `split('\n')` / `join('\t')` — that silently drops rows on paste into Excel.
+
 ## Commands
 - `npm start` — dev server on port 3000
 - `npx tsc --noEmit` — typecheck

@@ -174,10 +174,12 @@ Constants and type definitions:
 ### `src/splitter/parseTsv.ts`
 ```
 parseTsv(raw: string): { rows: SpreadsheetRow[]; warnings: string[] }
+splitTsvRecords(text: string): string[][] // Excel-style TSV → records of cells
 parseTime(raw: string): string          // "8:00 AM" → "08:00"
 parseFlexDate(raw: string): Date | null // "06/15/26" → Date
 ```
-- Split on `\n`, handle `\r\n`
+- Split into records with `splitTsvRecords`, which understands Excel-style quoting: a cell wrapped in `"…"` may contain tabs, newlines, and `""` (a literal quote). Handles `\r\n`. An unclosed leading quote is treated as plain text up to the next tab/newline.
+- Row numbers in parse warnings ("Row N") count records, not physical lines — these differ only when a cell contains a line break (common in Comments)
 - Detect and skip header row (non-numeric CRN field)
 - Trim whitespace from cells
 - Skip empty lines
@@ -240,7 +242,9 @@ parseAndGroup(raw: string): { groups: CRNGroup[]; parseWarnings: string[] }
 classifyGroups(groups: CRNGroup[]): ReviewSummary
 processGroups(groups: CRNGroup[], summary: ReviewSummary): SplitterResults
 outputToTsv(results: SplitterResults): string
+escapeTsvCell(cell: string): string     // Excel-style quoting for one cell
 ```
+- `outputToTsv` runs every cell through `escapeTsvCell`: any cell containing a tab, newline, CR, or `"` is wrapped in quotes with inner quotes doubled, matching how Excel itself copies cells. Without this, a cell starting with `"` (e.g. a comment like `"Honors" section`) makes Excel's paste parser open a quoted field that swallows tabs and newlines, silently merging many rows into one.
 - Imports catalog data and academic calendar directly
 - Each function corresponds to a stage transition in the UI
 
@@ -366,5 +370,13 @@ setAppMode: (mode: 'scheduler' | 'splitter') => void;
 7. Review stage — shows correct summary counts, errors visible, expandable details work
 8. Process — results table with status column, split rows have correct mt codes (L/B), days in single-char format, recalculated times/hours
 9. Sequential scheduling — lecture starts at original time, lab starts after lecture end + 10 min passing time; no overlapping times
-10. Copy to Spreadsheet — TSV on clipboard with 27 columns (26 data + status), tab-separated
+10. Copy to Spreadsheet — TSV on clipboard with 27 columns (26 data + status), tab-separated; pasting into Excel yields exactly the number of rows reported on the results stage, including when Comments cells contain line breaks or quote characters
 11. Edge cases: TBA sections (TBA status), already-split L+B sections (OK), courses not in catalog (Error), crosslisted sections with matching units (same split), crosslisted sections with mismatched units (Error), variable-unit courses, mixed-MT CRNs (OK, skipped), multi-A-row CRNs (days merged, one split), false-acceptable L-only rows (split)
+
+---
+
+## Changelog
+
+### 2026-10-06 — TSV quoting fix (copy-to-spreadsheet row loss)
+
+Reported: results stage showed 673 output rows but pasting the copied data into Excel produced 468. Cause: `outputToTsv` joined cells without quoting, and `parseTsv` split input on raw newlines before considering quotes, so Comments cells containing line breaks or leading quote characters broke row boundaries on both input and output. Fix: added `splitTsvRecords` (input) and `escapeTsvCell` (output) so both directions follow Excel's TSV quoting conventions. See the `parseTsv.ts` and `pipeline.ts` sections above.
