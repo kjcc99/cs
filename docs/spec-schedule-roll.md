@@ -125,11 +125,11 @@ Rolled · Units changed · Hours changed · Conflicts · Errors · Can't roll �
 
 ---
 
-## Prerequisite: Holiday-Aware Hours in the Splitter
+## Prerequisite: Holiday-Aware Hours in the Splitter — DONE 2026-10-06
 
-`rowGenerator.ts` currently calls `calculateOfficialEndTime`, which counts meeting days as `weeks × days` and ignores holidays. That's wrong for any session `attendance-method.md` marks COUNT_HOLIDAYS (all intersession — Winter/Summer — and non-full-term semester sessions). The main scheduler (`scheduleGenerator.ts`) already counts holidays correctly.
+`rowGenerator.ts` used to call `calculateOfficialEndTime`, which counted meeting days as `weeks × days` and ignored holidays. That was wrong for any session `attendance-method.md` marks COUNT_HOLIDAYS (all intersession — Winter/Summer — and non-full-term semester sessions). The main scheduler (`scheduleGenerator.ts`) already counts holidays correctly.
 
-Fix (confirmed by user 2026-10-06): the splitter computes meeting days, end times, and hrs fields with the same holiday-aware counting as `scheduleGenerator.ts` (reuse that logic; no new rules). This changes split-mode output for affected sessions and lands **before** the roll, so holiday-driven `HOURS` flags work (Summer 2026 loses Fri 7/3; Summer 2027 loses Fri 6/18 and Mon 7/5).
+Fixed (confirmed by user 2026-10-06): the splitter now computes meeting days, end times, and hrs fields with the same holiday-aware counting as `scheduleGenerator.ts` (reuse that logic; no new rules). This changes split-mode output for affected sessions and lands **before** the roll, so holiday-driven `HOURS` flags work (Summer 2026 loses Fri 7/3; Summer 2027 loses Fri 6/18 and Mon 7/5).
 
 ## Open Items
 

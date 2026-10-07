@@ -13,7 +13,7 @@ import {
     SavedSection,
     ExportType
 } from '../../types';
-import { generateSchedule } from '../../utils/scheduleGenerator';
+import { generateSchedule, meetingsPerWeekday } from '../../utils/scheduleGenerator';
 import { computeSmartSplit } from '../../utils/smartSplit';
 import { formatScheduleSimple, formatScheduleDetailed, formatBulkExport, copyToClipboard } from '../../utils/copyUtils';
 import { generateShareUrl } from '../../utils/shareUtils';
@@ -108,7 +108,7 @@ export const MobileView: React.FC<AppViewProps> = ({
         if (smartSplit && smartSplitDays.length > 0) {
             const selTerm = calendar.find(t => t.id === selectedTermId) || calendar[0];
             const selSession = selTerm.sessions.find(s => s.id === selectedSessionId) || selTerm.sessions[0];
-            const result = computeSmartSplit(lectureUnits, labUnits, smartSplitDays, selSession.weeks);
+            const result = computeSmartSplit(lectureUnits, labUnits, smartSplitDays, selSession.weeks, attendanceRules ? meetingsPerWeekday(selTerm, selSession, attendanceRules) : undefined);
             if (!('error' in result)) {
                 saveSection({
                     lectureUnits, lectureDays: result.lectureDays, lecTbaHours: 0,
@@ -135,7 +135,7 @@ export const MobileView: React.FC<AppViewProps> = ({
             ...(currentSectionId ? {} : { name: sectionName })
         });
         showToast(currentSectionId ? "Updated" : "Saved");
-    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedCourseInfo, savedSections, currentSectionId, smartSplit, smartSplitDays, calendar, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId, showToast]);
+    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedCourseInfo, savedSections, currentSectionId, smartSplit, smartSplitDays, calendar, attendanceRules, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId, showToast]);
 
     const handleSaveAsNew = useCallback(() => {
         if (lectureUnits === 0 && labUnits === 0) {
@@ -234,7 +234,7 @@ export const MobileView: React.FC<AppViewProps> = ({
             const selTerm = calendar.find(t => t.id === selectedTermId) || calendar[0];
             const selSession = selTerm.sessions.find(s => s.id === selectedSessionId) || selTerm.sessions[0];
             if (smartSplitDays.length > 0 && lectureUnits > 0 && labUnits > 0) {
-                const result = computeSmartSplit(lectureUnits, labUnits, smartSplitDays, selSession.weeks);
+                const result = computeSmartSplit(lectureUnits, labUnits, smartSplitDays, selSession.weeks, attendanceRules ? meetingsPerWeekday(selTerm, selSession, attendanceRules) : undefined);
                 if (!('error' in result)) {
                     setLectureDays(result.lectureDays);
                     setLabDays(result.labDays);
@@ -247,7 +247,7 @@ export const MobileView: React.FC<AppViewProps> = ({
             setSmartSplit(false);
             setSmartSplitDays([]);
         }
-    }, [smartSplitDays, lectureUnits, labUnits, calendar, selectedTermId, selectedSessionId, setSmartSplit, setSmartSplitDays, setLectureDays, setLabDays, setLecTbaHours, setLabTbaHours, setLectureTimesPerDay, setLabTimesPerDay, setLectureTimeMode, setLabTimeMode, setLectureSplitMode, setLabSplitMode, setLectureHoursPerDay, setLabHoursPerDay, setLabStartTime]);
+    }, [smartSplitDays, lectureUnits, labUnits, calendar, attendanceRules, selectedTermId, selectedSessionId, setSmartSplit, setSmartSplitDays, setLectureDays, setLabDays, setLecTbaHours, setLabTbaHours, setLectureTimesPerDay, setLabTimesPerDay, setLectureTimeMode, setLabTimeMode, setLectureSplitMode, setLabSplitMode, setLectureHoursPerDay, setLabHoursPerDay, setLabStartTime]);
 
     React.useEffect(() => {
         if (smartSplit && (lectureUnits <= 0 || labUnits <= 0)) {
@@ -332,7 +332,7 @@ export const MobileView: React.FC<AppViewProps> = ({
             else if (currentSectionId) name = savedSections.find(s => s.id === currentSectionId)?.name || name;
 
             const temp = getWorkspaceAsSection('temp', name, { startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId });
-            text = exportForSpreadsheet([temp], calendar);
+            text = exportForSpreadsheet([temp], calendar, attendanceRules);
             toastMsg = "Section copied (Spreadsheet)!";
         } else if (summaryType === 'simple') {
             text = formatScheduleSimple(generatedSchedule, timeFormat);
@@ -382,7 +382,7 @@ export const MobileView: React.FC<AppViewProps> = ({
             showToast("No sections to export", "error");
             return;
         }
-        const text = exportForSpreadsheet(savedSections, calendar);
+        const text = exportForSpreadsheet(savedSections, calendar, attendanceRules);
         copyToClipboard(text).then(success => {
             if (success) showToast("All sections copied (Spreadsheet)!");
             else showToast("Failed to copy", "error");
@@ -582,6 +582,7 @@ export const MobileView: React.FC<AppViewProps> = ({
                     settingsAPI={settingsAPI}
                     workspaceAPI={workspaceAPI}
                     calendar={calendar}
+                    attendanceRules={attendanceRules}
                     checkIsModified={checkIsModified}
                     handleLoadSection={handleLoadSection}
                     overlaySectionIds={overlaySectionIds}

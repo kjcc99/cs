@@ -7,7 +7,7 @@ import { useSettings } from './hooks/useSettings';
 import { useCatalog } from './hooks/useCatalog';
 import { useWorkspace } from './hooks/useWorkspace';
 import { useRooms } from './hooks/useRooms';
-import { generateSchedule } from './utils/scheduleGenerator';
+import { generateSchedule, meetingsPerWeekday } from './utils/scheduleGenerator';
 import { computeSmartSplit } from './utils/smartSplit';
 import { ScheduleRequest } from './components/CourseInput';
 import { RuleAndTermContext, AcademicTerm, ScheduleInfo } from './types';
@@ -72,7 +72,7 @@ function App() {
 
         if (smartSplit && smartSplitDays.length > 0 && lectureUnits > 0 && labUnits > 0) {
           // Smart Split path
-          const result = computeSmartSplit(lectureUnits, labUnits, smartSplitDays, selectedSession.weeks);
+          const result = computeSmartSplit(lectureUnits, labUnits, smartSplitDays, selectedSession.weeks, meetingsPerWeekday(selectedTerm, selectedSession, attendanceRules));
           if ('error' in result) {
             const emptyInfo: ScheduleInfo = { contactHoursForTerm: 0, weeklyContactHours: 0, totalScheduledContactHours: 0, contactHoursPerDay: 0, totalBreakMinutesPerDay: 0, actualMeetingDays: 0 };
             setGeneratedSchedule({ lectureInfo: emptyInfo, labInfo: emptyInfo, scheduleBlocks: [], warnings: ['ERROR: ' + result.error] });
@@ -139,7 +139,7 @@ function App() {
   return (
     <ToastProvider>
       {appMode === 'splitter' ? (
-        <SplitterView appMode={appMode} setAppMode={setAppMode} />
+        <SplitterView attendanceRules={attendanceRules} appMode={appMode} setAppMode={setAppMode} />
       ) : (
         isMobile ? <MobileView {...appProps} /> : <DesktopView {...appProps} />
       )}

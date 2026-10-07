@@ -117,8 +117,7 @@ When a CRN classified as "split" has multiple rows (multiple mt=A rows, or multi
 - **LHE**: blanked on both rows
 - **ses #**: renumbered from 1 (lecture first, then lab)
 - **All other fields**: copied from first row of the original CRN group
-- **End time**: calculated via `calculateOfficialEndTime(units, daysCount, startTime, weeks, isLab)` — uses even per-day distribution. Smart split's rebalancing keeps per-day spread within ~5 min, so this is a close approximation.
-- **hrs/d, hrs/wk, hrs/ttl**: recalculated from units using even formula (same as existing spreadsheet export)
+- **End time + hrs/d, hrs/wk, hrs/ttl**: `calculateComponentFields(units, isLab, days, startTime, meetingsByDay)` — even per-day distribution over the **holiday-aware** meeting count (`meetingsPerWeekday`, per `attendance-method.md`), same math as the generator's even path. hrs/d = daily CH, hrs/wk = daily CH × days, hrs/ttl = daily CH × actual meetings (scheduled total). Smart split's rebalancing keeps per-day spread within ~5 min, so even distribution is a close approximation.
 
 ### Output Row Ordering
 - Maintain original paste order
@@ -225,13 +224,12 @@ buildCrosslistMap(groups: CRNGroup[]): Map<string, string>  // xlistCode → pri
 ### `src/splitter/rowGenerator.ts`
 ```
 generateOutputRows(group, classification): OutputRow[]
-calculateHoursFields(units, isLab, daysCount, weeks): { hrsPerDay, hrsPerWeek, hrsTotal }
 daysToCharCodes(days: string[]): string
 charCodesToDays(codes: string): string[]
 renumberSessionNumbers(rows: OutputRow[]): void
 ```
 - For split targets: merges all days from all rows in the group, runs one `computeSmartSplit()`, generates lecture + lab output rows
-- Uses `calculateOfficialEndTime()` from `src/utils/scheduleGenerator.ts` for end time
+- Uses `calculateComponentFields()` from `src/utils/scheduleGenerator.ts` for end time and hrs fields; the classification carries the session's `meetingsByDay`
 - Preserves ses # format (zero-padding) from input
 - Copies fields from first row of group for non-scheduling fields
 
@@ -321,7 +319,8 @@ setAppMode: (mode: 'scheduler' | 'splitter') => void;
 | Function | File | Purpose |
 |----------|------|---------|
 | `computeSmartSplit()` | `src/utils/smartSplit.ts` | Core splitting algorithm |
-| `calculateOfficialEndTime()` | `src/utils/scheduleGenerator.ts:348` | End time from units/days/start/weeks |
+| `meetingsPerWeekday()` | `src/utils/scheduleGenerator.ts` | Holiday-aware meetings per weekday for a term/session |
+| `calculateComponentFields()` | `src/utils/scheduleGenerator.ts` | End time + hrs fields from units/days/start/meetings |
 | `getSessionDates()` | `src/utils/dateUtils.ts:24` | Session date range computation |
 | `copyToClipboard()` | `src/utils/copyUtils.ts:69` | Clipboard API with fallback |
 | `useToast` / `ToastProvider` | `src/components/Toast.tsx` | Notification system |
@@ -376,6 +375,10 @@ setAppMode: (mode: 'scheduler' | 'splitter') => void;
 ---
 
 ## Changelog
+
+### 2026-10-06 — Holiday-aware hours
+
+Splitter end times and hrs fields used `weeks × days` meetings, ignoring holidays, so Summer/Winter and short-session splits were computed as if no holidays existed (the main schedule grid already counted them). Now all paths share `meetingsPerWeekday` / `calculateComponentFields`, and `computeSmartSplit` accepts the holiday-aware meeting counts. hrs/ttl is now the scheduled total (daily CH × actual meetings), matching registrar data, rather than units × rate. No change for full-term semesters (IGNORE_HOLIDAYS).
 
 ### 2026-10-06 — TSV quoting fix (copy-to-spreadsheet row loss)
 

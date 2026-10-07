@@ -10,8 +10,8 @@ import ConfirmModal from '../../ConfirmModal';
 import { useSections } from '../../../hooks/useSections';
 import { useSettings } from '../../../hooks/useSettings';
 import { useWorkspace } from '../../../hooks/useWorkspace';
-import { SavedSection, AcademicTerm, TermSession } from '../../../types';
-import { calculateOfficialEndTime } from '../../../utils/scheduleGenerator';
+import { SavedSection, AcademicTerm, TermSession, AttendanceAccountingRules } from '../../../types';
+import { calculateComponentFields, meetingsPerWeekday, uniformMeetings } from '../../../utils/scheduleGenerator';
 import { formatTime } from '../../../utils/timeUtils';
 import './MobileSidebar.css';
 
@@ -22,6 +22,7 @@ interface MobileSidebarProps {
     settingsAPI: ReturnType<typeof useSettings>;
     workspaceAPI: ReturnType<typeof useWorkspace>;
     calendar: AcademicTerm[];
+    attendanceRules: AttendanceAccountingRules | null;
     checkIsModified: (id: string) => boolean;
     handleLoadSection: (section: SavedSection) => void;
     overlaySectionIds: string[];
@@ -36,7 +37,7 @@ interface MobileSidebarProps {
 
 export const MobileSidebar: React.FC<MobileSidebarProps> = ({
     isOpen, onClose, sectionsAPI, settingsAPI, workspaceAPI,
-    calendar, checkIsModified, handleLoadSection, overlaySectionIds, toggleOverlay,
+    calendar, attendanceRules, checkIsModified, handleLoadSection, overlaySectionIds, toggleOverlay,
     setIsHelpOpen, isSettingsOpen, setIsSettingsOpen,
     handleExportAll, handleExportSpreadsheet, handleShareUrl
 }) => {
@@ -115,9 +116,11 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                     {savedSections.map((section) => {
                                         const termForSection = calendar.find((t: AcademicTerm) => t.id === section.selectedTermId);
                                         const sessionForSection = termForSection?.sessions.find((s: TermSession) => s.id === section.selectedSessionId);
-                                        const weeks = sessionForSection?.weeks || 18;
-                                        const rawLecEnd = calculateOfficialEndTime(section.lectureUnits, section.lectureDays.length, section.startTime, weeks, false);
-                                        const rawLabEnd = calculateOfficialEndTime(section.labUnits, section.labDays.length, section.labStartTime || section.startTime, weeks, true);
+                                        const meetingsByDay = termForSection && sessionForSection && attendanceRules
+                                            ? meetingsPerWeekday(termForSection, sessionForSection, attendanceRules)
+                                            : uniformMeetings(sessionForSection?.weeks || 18);
+                                        const rawLecEnd = calculateComponentFields(section.lectureUnits, false, section.lectureDays, section.startTime, meetingsByDay).endTime;
+                                        const rawLabEnd = calculateComponentFields(section.labUnits, true, section.labDays, section.labStartTime || section.startTime, meetingsByDay).endTime;
 
                                         return (
                                             <SidebarItem

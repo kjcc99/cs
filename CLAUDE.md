@@ -20,6 +20,7 @@
 - 5-minute increments for all start/end times
 - Rules live in `src/data/contact_hours_rules.md`, `course_rules.md`, `attendance-method.md`
 - Existing calculation logic in `scheduleGenerator.ts` and `useRules.ts` is correct and validated
+- Holidays: anything that computes end times or hrs (generator, smart split, spreadsheet export, splitter, sidebar labels) must use `meetingsPerWeekday` + `calculateComponentFields` — never `weeks × days` directly. Full-term semesters ignore holidays; intersession and short sessions count them (`attendance-method.md`)
 
 ## Schema v2 (SavedSection)
 Optional additive fields — missing = legacy behavior:

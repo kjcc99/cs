@@ -6,6 +6,8 @@ import { classifyCRNGroup } from './classifier';
 import { validateCrosslists, buildCrosslistMap } from './crosslistValidator';
 import { generateOutputRows, generateCrosslistSiblingRows } from './rowGenerator';
 import { CatalogHierarchy } from '../hooks/useCatalog';
+import { meetingsPerWeekday, uniformMeetings } from '../utils/scheduleGenerator';
+import { AttendanceAccountingRules } from '../types/rules';
 import { academicCalendar } from '../types/calendar';
 
 import courses2526 from '../data/courses_2526.json';
@@ -33,7 +35,7 @@ export function parseAndGroup(raw: string): { groups: CRNGroup[]; parseWarnings:
     return { groups, parseWarnings: warnings };
 }
 
-export function classifyGroups(groups: CRNGroup[]): ReviewSummary {
+export function classifyGroups(groups: CRNGroup[], attendanceRules: AttendanceAccountingRules): ReviewSummary {
     const calendar = academicCalendar;
 
     // Determine catalog year from section dates
@@ -77,8 +79,11 @@ export function classifyGroups(groups: CRNGroup[]): ReviewSummary {
             calendar
         );
         const weeks = termMatch?.weeks ?? 17; // fallback to full term
+        const meetingsByDay = termMatch
+            ? meetingsPerWeekday(termMatch.term, termMatch.session, attendanceRules)
+            : uniformMeetings(weeks);
 
-        const classification = classifyCRNGroup(group, catalogMatch, weeks);
+        const classification = classifyCRNGroup(group, catalogMatch, weeks, meetingsByDay);
         classifications.set(group.crn, classification);
 
         switch (classification.type) {

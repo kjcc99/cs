@@ -1,7 +1,7 @@
 import { CRNGroup, SectionClassification, OutputRow, SplitterStatus, COL,
     DAY_FULL_TO_CHAR, DAY_CHAR_TO_FULL, DAY_ORDER, OUTPUT_COL_COUNT } from './types';
 import { computeSmartSplit } from '../utils/smartSplit';
-import { calculateOfficialEndTime } from '../utils/scheduleGenerator';
+import { calculateComponentFields } from '../utils/scheduleGenerator';
 
 export function daysToCharCodes(days: string[]): string {
     return DAY_ORDER
@@ -17,24 +17,6 @@ export function charCodesToDays(codes: string): string[] {
         if (full && !days.includes(full)) days.push(full);
     }
     return days.sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b));
-}
-
-export function calculateHoursFields(
-    units: number,
-    isLab: boolean,
-    daysCount: number,
-    weeks: number
-): { hrsPerDay: string; hrsPerWeek: string; hrsTotal: string } {
-    const rate = isLab ? 54 : 18;
-    const totalHours = units * rate;
-    const hrsPerWeek = weeks > 0 ? totalHours / weeks : 0;
-    const hrsPerDay = daysCount > 0 ? hrsPerWeek / daysCount : 0;
-
-    return {
-        hrsPerDay: hrsPerDay > 0 ? hrsPerDay.toFixed(1) : '',
-        hrsPerWeek: hrsPerWeek > 0 ? hrsPerWeek.toFixed(1) : '',
-        hrsTotal: totalHours.toFixed(1)
-    };
 }
 
 function detectSesFormat(group: CRNGroup): (n: number) => string {
@@ -82,8 +64,8 @@ export function generateOutputRows(
     }
 
     // Split target
-    const { lecUnits, labUnits, weeks, startTime, days } = classification;
-    const result = computeSmartSplit(lecUnits, labUnits, days, weeks);
+    const { lecUnits, labUnits, weeks, meetingsByDay, startTime, days } = classification;
+    const result = computeSmartSplit(lecUnits, labUnits, days, weeks, meetingsByDay);
 
     if ('error' in result) {
         return group.rows.map(row =>
@@ -99,17 +81,16 @@ export function generateOutputRows(
     // Lecture row
     if (lecUnits > 0 && result.lectureDays.length > 0) {
         const lecDaysStr = daysToCharCodes(result.lectureDays);
-        const lecEnd = calculateOfficialEndTime(lecUnits, result.lectureDays.length, startTime, weeks, false);
-        const lecHours = calculateHoursFields(lecUnits, false, result.lectureDays.length, weeks);
+        const lecFields = calculateComponentFields(lecUnits, false, result.lectureDays, startTime, meetingsByDay);
 
         const lecCells = [...templateRow];
         lecCells[COL.DAYS] = lecDaysStr;
         lecCells[COL.S_TIME] = startTime;
-        lecCells[COL.E_TIME] = lecEnd;
+        lecCells[COL.E_TIME] = lecFields.endTime;
         lecCells[COL.SES_NUM] = formatSes(sesCounter++);
-        lecCells[COL.HRS_D] = lecHours.hrsPerDay;
-        lecCells[COL.HRS_WK] = lecHours.hrsPerWeek;
-        lecCells[COL.HRS_TTL] = lecHours.hrsTotal;
+        lecCells[COL.HRS_D] = lecFields.hrsPerDay;
+        lecCells[COL.HRS_WK] = lecFields.hrsPerWeek;
+        lecCells[COL.HRS_TTL] = lecFields.hrsTotal;
         lecCells[COL.LHE] = '';
         lecCells[COL.MT] = 'L';
 
@@ -122,23 +103,22 @@ export function generateOutputRows(
 
         let labStart = startTime;
         if (lecUnits > 0 && result.lectureDays.length > 0) {
-            const lecEnd = calculateOfficialEndTime(lecUnits, result.lectureDays.length, startTime, weeks, false);
+            const lecEnd = calculateComponentFields(lecUnits, false, result.lectureDays, startTime, meetingsByDay).endTime;
             const [eh, em] = lecEnd.split(':').map(Number);
             const labStartMin = eh * 60 + em + 10;
             labStart = `${String(Math.floor(labStartMin / 60)).padStart(2, '0')}:${String(labStartMin % 60).padStart(2, '0')}`;
         }
 
-        const labEnd = calculateOfficialEndTime(labUnits, result.labDays.length, labStart, weeks, true);
-        const labHours = calculateHoursFields(labUnits, true, result.labDays.length, weeks);
+        const labFields = calculateComponentFields(labUnits, true, result.labDays, labStart, meetingsByDay);
 
         const labCells = [...templateRow];
         labCells[COL.DAYS] = labDaysStr;
         labCells[COL.S_TIME] = labStart;
-        labCells[COL.E_TIME] = labEnd;
+        labCells[COL.E_TIME] = labFields.endTime;
         labCells[COL.SES_NUM] = formatSes(sesCounter++);
-        labCells[COL.HRS_D] = labHours.hrsPerDay;
-        labCells[COL.HRS_WK] = labHours.hrsPerWeek;
-        labCells[COL.HRS_TTL] = labHours.hrsTotal;
+        labCells[COL.HRS_D] = labFields.hrsPerDay;
+        labCells[COL.HRS_WK] = labFields.hrsPerWeek;
+        labCells[COL.HRS_TTL] = labFields.hrsTotal;
         labCells[COL.LHE] = '';
         labCells[COL.MT] = 'B';
 

@@ -1,8 +1,8 @@
 // src/utils/spreadsheetExport.ts
-import { SavedSection, AcademicTerm } from '../types';
+import { SavedSection, AcademicTerm, AttendanceAccountingRules } from '../types';
 
 import { getSessionDates } from './dateUtils';
-import { calculateOfficialEndTime } from './scheduleGenerator';
+import { calculateComponentFields, meetingsPerWeekday, uniformMeetings } from './scheduleGenerator';
 
 /**
  * Generates a Tab-Separated Values (TSV) string formatted for a specific
@@ -24,13 +24,19 @@ import { calculateOfficialEndTime } from './scheduleGenerator';
  * 
  * All other columns (A-C, J-M, S-W, Y-Z) are padded with empty strings.
  */
-export function exportForSpreadsheet(sections: SavedSection[], calendar: AcademicTerm[]): string {
+export function exportForSpreadsheet(
+    sections: SavedSection[],
+    calendar: AcademicTerm[],
+    attendanceRules: AttendanceAccountingRules | null
+): string {
     const rows: string[][] = [];
 
     sections.forEach(section => {
         const term = calendar.find(t => t.id === section.selectedTermId) || calendar[0];
         const session = term.sessions.find(s => s.id === section.selectedSessionId) || term.sessions[0];
         const { startDate, endDate } = getSessionDates(term, session);
+        // Holiday-aware meeting counts, same as the schedule generator
+        const meetingsByDay = attendanceRules ? meetingsPerWeekday(term, session, attendanceRules) : uniformMeetings(session.weeks);
 
         // Attempt to parse sub/no/sec from the name if it follows the "SUB NO XX" pattern
         const nameParts = section.name.split(' ');
@@ -40,20 +46,14 @@ export function exportForSpreadsheet(sections: SavedSection[], calendar: Academi
 
         // 1. Lecture Row
         if (section.lectureUnits > 0) {
-            const lecEnd = calculateOfficialEndTime(
+            const lec = calculateComponentFields(
                 section.lectureUnits,
-                section.lectureDays.length,
-                section.startTime,
-                session.weeks,
                 false,
+                section.lectureDays,
+                section.startTime,
+                meetingsByDay,
                 section.lecTbaHours || 0
             );
-
-            const totalHours = section.lectureUnits * 18;
-            const effectiveHours = Math.max(0, totalHours - (section.lecTbaHours || 0));
-            
-            const hoursPerWeek = session.weeks > 0 ? effectiveHours / session.weeks : 0;
-            const hoursPerDay = section.lectureDays.length > 0 ? hoursPerWeek / section.lectureDays.length : 0;
 
             const row = new Array(26).fill('');
             row[3] = sub;             // D: sub
@@ -61,12 +61,12 @@ export function exportForSpreadsheet(sections: SavedSection[], calendar: Academi
             row[5] = secNo;           // F: sec
             row[6] = section.lectureDays.join(''); // G: days
             row[7] = section.startTime; // H: s time
-            row[8] = lecEnd;          // I: e time
+            row[8] = lec.endTime;     // I: e time
             row[13] = startDate;      // N: s date
             row[14] = endDate;        // O: e date
-            row[15] = hoursPerDay > 0 ? hoursPerDay.toFixed(1) : ''; // P: hrs/d
-            row[16] = hoursPerWeek > 0 ? hoursPerWeek.toFixed(1) : ''; // Q: hrs/wk
-            row[17] = totalHours.toFixed(1); // R: hrs/ttl
+            row[15] = lec.hrsPerDay;  // P: hrs/d
+            row[16] = lec.hrsPerWeek; // Q: hrs/wk
+            row[17] = lec.hrsTotal;   // R: hrs/ttl
             row[23] = `Lecture${section.lecTbaHours ? ` (+${section.lecTbaHours} TBA hrs)` : ''}`;      // X: Type (comments column)
 
             rows.push(row);
@@ -75,20 +75,14 @@ export function exportForSpreadsheet(sections: SavedSection[], calendar: Academi
         // 2. Lab Row
         if (section.labUnits > 0) {
             const labStart = section.labStartTime || section.startTime;
-            const labEnd = calculateOfficialEndTime(
+            const lab = calculateComponentFields(
                 section.labUnits,
-                section.labDays.length,
-                labStart,
-                session.weeks,
                 true,
+                section.labDays,
+                labStart,
+                meetingsByDay,
                 section.labTbaHours || 0
             );
-
-            const totalHours = section.labUnits * 54;
-            const effectiveHours = Math.max(0, totalHours - (section.labTbaHours || 0));
-            
-            const hoursPerWeek = session.weeks > 0 ? effectiveHours / session.weeks : 0;
-            const hoursPerDay = section.labDays.length > 0 ? hoursPerWeek / section.labDays.length : 0;
 
             const row = new Array(26).fill('');
             row[3] = sub;             // D: sub
@@ -96,12 +90,12 @@ export function exportForSpreadsheet(sections: SavedSection[], calendar: Academi
             row[5] = secNo;           // F: sec
             row[6] = section.labDays.join(''); // G: days
             row[7] = labStart;        // H: s time
-            row[8] = labEnd;          // I: e time
+            row[8] = lab.endTime;     // I: e time
             row[13] = startDate;      // N: s date
             row[14] = endDate;        // O: e date
-            row[15] = hoursPerDay > 0 ? hoursPerDay.toFixed(1) : ''; // P: hrs/d
-            row[16] = hoursPerWeek > 0 ? hoursPerWeek.toFixed(1) : ''; // Q: hrs/wk
-            row[17] = totalHours.toFixed(1); // R: hrs/ttl
+            row[15] = lab.hrsPerDay;  // P: hrs/d
+            row[16] = lab.hrsPerWeek; // Q: hrs/wk
+            row[17] = lab.hrsTotal;   // R: hrs/ttl
             row[23] = `Lab${section.labTbaHours ? ` (+${section.labTbaHours} TBA hrs)` : ''}`;          // X: Type (comments column)
 
             rows.push(row);

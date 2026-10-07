@@ -6,14 +6,16 @@ import { ReviewStage } from './ReviewStage';
 import { ResultsStage } from './ResultsStage';
 import { useToast } from '../components/Toast';
 import { copyToClipboard } from '../utils/copyUtils';
+import { AttendanceAccountingRules } from '../types/rules';
 import './SplitterView.css';
 
 interface SplitterViewProps {
+    attendanceRules: AttendanceAccountingRules;
     appMode: 'scheduler' | 'splitter';
     setAppMode: (mode: 'scheduler' | 'splitter') => void;
 }
 
-const SplitterView: React.FC<SplitterViewProps> = ({ appMode, setAppMode }) => {
+const SplitterView: React.FC<SplitterViewProps> = ({ attendanceRules, appMode, setAppMode }) => {
     const { showToast } = useToast();
 
     const [stage, setStage] = useState<SplitterStage>('paste');
@@ -35,13 +37,13 @@ const SplitterView: React.FC<SplitterViewProps> = ({ appMode, setAppMode }) => {
             setGroups(parsed);
             setParseWarnings(warnings);
 
-            const summary = classifyGroups(parsed);
+            const summary = classifyGroups(parsed, attendanceRules);
             setReviewSummary(summary);
             setStage('review');
         } catch (err: any) {
             showToast(`Parse error: ${err.message || 'Unknown error'}`, 'error');
         }
-    }, [rawInput, showToast]);
+    }, [rawInput, attendanceRules, showToast]);
 
     const handleProcess = useCallback(() => {
         if (!reviewSummary) return;

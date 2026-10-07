@@ -108,7 +108,9 @@ function getCommonStartTime(group: CRNGroup): string {
 export function classifyCRNGroup(
     group: CRNGroup,
     catalogMatch: CatalogMatch | null,
-    weeks: number
+    weeks: number,
+    // Holiday-aware meetings per weekday for the matched session (see meetingsPerWeekday)
+    meetingsByDay: Record<string, number>
 ): SectionClassification {
     // TBA check first
     if (hasTBADays(group)) {
@@ -184,6 +186,7 @@ export function classifyCRNGroup(
                 lecUnits,
                 labUnits,
                 weeks,
+                meetingsByDay,
                 startTime: getCommonStartTime(group),
                 days: collectAllDays(group)
             };
@@ -199,6 +202,7 @@ export function classifyCRNGroup(
                 lecUnits,
                 labUnits,
                 weeks,
+                meetingsByDay,
                 startTime: getCommonStartTime(group),
                 days: collectAllDays(group)
             };

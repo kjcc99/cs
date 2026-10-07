@@ -1,5 +1,5 @@
 // src/utils/copyUtils.ts
-import { GeneratedSchedule, AcademicTerm, SavedSection, ExportType } from '../types';
+import { GeneratedSchedule, AcademicTerm, SavedSection, ExportType, AttendanceAccountingRules } from '../types';
 import { formatTime } from './timeUtils';
 import { exportForSpreadsheet } from './spreadsheetExport';
 
@@ -103,6 +103,7 @@ export const handleCopyAction = async (
         sectionName?: string;
         sections?: SavedSection[];
         calendar: AcademicTerm[];
+        attendanceRules?: AttendanceAccountingRules | null;
         timeFormat: '12h' | '24h';
     },
     showToast: (message: string, type?: any) => void
@@ -112,7 +113,7 @@ export const handleCopyAction = async (
 
     if (type === 'spreadsheet') {
         if (data.sections) {
-            text = exportForSpreadsheet(data.sections, data.calendar);
+            text = exportForSpreadsheet(data.sections, data.calendar, data.attendanceRules ?? null);
             message = "All sections copied in spreadsheet format!";
         } else if (data.schedule && data.sectionName) {
             showToast("Specific section spreadsheet copy not yet refactored to utility", "error");

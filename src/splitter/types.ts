@@ -39,7 +39,7 @@ export interface CRNGroup {
 }
 
 export type SectionClassification =
-    | { type: 'split'; lecUnits: number; labUnits: number; weeks: number; startTime: string; days: string[] }
+    | { type: 'split'; lecUnits: number; labUnits: number; weeks: number; meetingsByDay: Record<string, number>; startTime: string; days: string[] }
     | { type: 'already-split' }
     | { type: 'pass-through'; reason: string }
     | { type: 'tba' }
