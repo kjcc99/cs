@@ -2,6 +2,7 @@ import { CRNGroup, SectionClassification, OutputRow, SplitterStatus, COL,
     DAY_FULL_TO_CHAR, DAY_CHAR_TO_FULL, DAY_ORDER, OUTPUT_COL_COUNT } from './types';
 import { computeSmartSplit } from '../utils/smartSplit';
 import { calculateComponentFields } from '../utils/scheduleGenerator';
+import { instructorsOf, meetingPatternKey } from './classifier';
 
 export function daysToCharCodes(days: string[]): string {
     return DAY_ORDER
@@ -49,8 +50,6 @@ export function generateOutputRows(
     group: CRNGroup,
     classification: SectionClassification
 ): OutputRow[] {
-    const firstRowIdx = group.rows[0]?.rowIndex ?? 0;
-
     if (classification.type !== 'split') {
         const status: SplitterStatus = classification.type === 'error' ? 'error' :
             classification.type === 'tba' ? 'tba' :
@@ -80,6 +79,16 @@ export function generateOutputRows(
     const formatSes = detectSesFormat(group);
     const outputRows: OutputRow[] = [];
     let sesCounter = 1;
+    // One output row per instructor on the section (Banner lists each instructor separately)
+    const instructors = instructorsOf(group);
+    const pushForEachInstructor = (cells: string[], detail: string) => {
+        for (const inst of instructors) {
+            const copy = [...cells];
+            copy[COL.ID] = inst.id;
+            copy[COL.FACULTY] = inst.faculty;
+            outputRows.push(makeOutputRow(copy, 'split', detail, group.crn, inst.rowIndex));
+        }
+    };
 
     // Lecture row
     if (lecUnits > 0 && result.lectureDays.length > 0) {
@@ -97,7 +106,7 @@ export function generateOutputRows(
         lecCells[COL.LHE] = '';
         lecCells[COL.MT] = 'L';
 
-        outputRows.push(makeOutputRow(lecCells, 'split', 'lecture', group.crn, firstRowIdx));
+        pushForEachInstructor(lecCells, 'lecture');
     }
 
     // Lab row — starts after lecture ends + 10 min passing time
@@ -125,7 +134,7 @@ export function generateOutputRows(
         labCells[COL.LHE] = '';
         labCells[COL.MT] = 'B';
 
-        outputRows.push(makeOutputRow(labCells, 'split', 'lab', group.crn, firstRowIdx));
+        pushForEachInstructor(labCells, 'lab');
     }
 
     return outputRows;
@@ -135,25 +144,35 @@ export function generateCrosslistSiblingRows(
     primaryRows: OutputRow[],
     siblingGroup: CRNGroup
 ): OutputRow[] {
-    return primaryRows.map(primaryRow => {
-        const cells = [...primaryRow.cells];
-        // Replace CRN-specific fields with sibling's values
-        const sibRow = siblingGroup.rows[0]?.cells;
-        if (sibRow) {
-            cells[COL.ID] = sibRow[COL.ID];
-            cells[COL.CRN] = sibRow[COL.CRN];
-            cells[COL.SUB] = sibRow[COL.SUB];
-            cells[COL.NUM] = sibRow[COL.NUM];
-            cells[COL.SEC] = sibRow[COL.SEC];
-            cells[COL.FACULTY] = sibRow[COL.FACULTY];
-            cells[COL.MAX] = sibRow[COL.MAX];
-            cells[COL.WAIT] = sibRow[COL.WAIT];
-        }
-        return {
-            ...primaryRow,
-            cells,
-            sourceCRN: siblingGroup.crn,
-            originalRowIndex: siblingGroup.rows[0]?.rowIndex ?? primaryRow.originalRowIndex
-        };
+    // The primary may carry one row per instructor; the sibling gets each meeting pattern
+    // once per *its* instructors instead.
+    const seen = new Set<string>();
+    const patterns = primaryRows.filter(r => {
+        const key = meetingPatternKey(r.cells);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
     });
+    const sibRow = siblingGroup.rows[0]?.cells;
+    const instructors = instructorsOf(siblingGroup);
+    if (instructors.length === 0) instructors.push({ id: '', faculty: '', rowIndex: siblingGroup.rows[0]?.rowIndex ?? 0 });
+    const out: OutputRow[] = [];
+    for (const primaryRow of patterns) {
+        for (const inst of instructors) {
+            const cells = [...primaryRow.cells];
+            // Replace CRN-specific fields with sibling's values
+            if (sibRow) {
+                cells[COL.CRN] = sibRow[COL.CRN];
+                cells[COL.SUB] = sibRow[COL.SUB];
+                cells[COL.NUM] = sibRow[COL.NUM];
+                cells[COL.SEC] = sibRow[COL.SEC];
+                cells[COL.MAX] = sibRow[COL.MAX];
+                cells[COL.WAIT] = sibRow[COL.WAIT];
+            }
+            cells[COL.ID] = inst.id;
+            cells[COL.FACULTY] = inst.faculty;
+            out.push({ ...primaryRow, cells, sourceCRN: siblingGroup.crn, originalRowIndex: inst.rowIndex });
+        }
+    }
+    return out;
 }

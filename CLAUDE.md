@@ -44,6 +44,7 @@ Optional additive fields — missing = legacy behavior:
 - Paste → Review → Results pipeline; spec in `docs/spec-schedule-splitter.md`
 - Roll mode (`roll.ts`, spec `docs/spec-schedule-roll.md`): copies a term to the same season of a later year — re-dates by session, re-checks units against the target catalog, recomputes end times, flags UNITS/HOURS/CONFLICT in column AB, dropped courses go to a separate Can't-roll list
 - Term → catalog mapping lives only in `src/utils/catalogForTerm.ts` (`isFallback` when the AY has no catalog yet — every AY27-28 term today)
+- Banner exports one row per instructor on a meeting pattern. Rows identical except ID/Faculty are one pattern: `uniqueMeetingRows` counts hours/days once, `instructorsOf` emits split output once per instructor. Don't sum `HRS_TTL` over raw rows.
 - TSV in/out must follow Excel quoting: `splitTsvRecords` (parseTsv.ts) reads quoted cells that contain tabs/newlines/`""`; `escapeTsvCell` (pipeline.ts) quotes such cells on export. Don't replace with plain `split('\n')` / `join('\t')` — that silently drops rows on paste into Excel.
 
 ## Commands

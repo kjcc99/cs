@@ -1,5 +1,5 @@
-import { CRNGroup, SectionClassification, COL, DAY_CHAR_TO_FULL, DAY_ORDER,
-    SPLIT_TARGET_MT, PASSTHROUGH_MTS } from './types';
+import { CRNGroup, SpreadsheetRow, SectionClassification, COL, DAY_CHAR_TO_FULL, DAY_ORDER,
+    SPLIT_TARGET_MT, PASSTHROUGH_MTS, INPUT_COL_COUNT } from './types';
 import { CatalogMatch, getFixedUnits, getUnitRange } from './catalogLookup';
 import { fixedHoursOf } from '../hooks/useCatalog';
 import { FixedHours } from '../types/section';
@@ -82,8 +82,44 @@ export function hasTBADays(group: CRNGroup): boolean {
     });
 }
 
+// Banner exports one row per instructor on a meeting pattern, so a section with two
+// instructors on MW 8:00-10:30 arrives as two rows that differ only in ID and Faculty.
+// Hours and days are counted once per pattern; instructors are kept for the output rows.
+export function meetingPatternKey(cells: string[]): string {
+    return cells
+        .slice(0, INPUT_COL_COUNT)
+        .map((c, i) => (i === COL.ID || i === COL.FACULTY ? '' : (c || '').trim()))
+        .join('\u0001');
+}
+
+export function uniqueMeetingRows(group: CRNGroup): SpreadsheetRow[] {
+    const seen = new Set<string>();
+    return group.rows.filter(r => {
+        const key = meetingPatternKey(r.cells);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+}
+
+export interface Instructor { id: string; faculty: string; rowIndex: number }
+
+export function instructorsOf(group: CRNGroup): Instructor[] {
+    const seen = new Set<string>();
+    const list: Instructor[] = [];
+    for (const r of group.rows) {
+        const id = (r.cells[COL.ID] || '').trim();
+        const faculty = (r.cells[COL.FACULTY] || '').trim();
+        const key = `${id}|${faculty}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        list.push({ id, faculty, rowIndex: r.rowIndex });
+    }
+    return list;
+}
+
 export function sumHrsTotal(group: CRNGroup): number {
-    return group.rows.reduce((sum, r) => {
+    return uniqueMeetingRows(group).reduce((sum, r) => {
         const val = parseFloat(r.cells[COL.HRS_TTL]);
         return sum + (isNaN(val) ? 0 : val);
     }, 0);

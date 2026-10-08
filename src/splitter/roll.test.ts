@@ -12,10 +12,10 @@ const rules = parseAttendanceAccountingRules(
 const term = (id: string) => academicCalendar.find(t => t.id === id)!;
 
 interface R { crn: string; sub: string; num: string; days: string; s: string; e: string; ttl: string; mt: string;
-    fac?: string; bldg?: string; rm?: string; sd?: string; ed?: string; lhe?: string; ses?: string }
+    fac?: string; id?: string; bldg?: string; rm?: string; sd?: string; ed?: string; lhe?: string; ses?: string }
 const tsv = (rows: R[]) => rows.map(r => {
     const c = new Array(26).fill('');
-    c[COL.FACULTY] = r.fac ?? ''; c[COL.CRN] = r.crn; c[COL.SUB] = r.sub; c[COL.NUM] = r.num; c[COL.SEC] = '01';
+    c[COL.ID] = r.id ?? ''; c[COL.FACULTY] = r.fac ?? ''; c[COL.CRN] = r.crn; c[COL.SUB] = r.sub; c[COL.NUM] = r.num; c[COL.SEC] = '01';
     c[COL.DAYS] = r.days; c[COL.S_TIME] = r.s; c[COL.E_TIME] = r.e; c[COL.SES_NUM] = r.ses ?? '01';
     c[COL.BLDG] = r.bldg ?? ''; c[COL.RM] = r.rm ?? ''; c[COL.S_DATE] = r.sd ?? '6/15/26'; c[COL.E_DATE] = r.ed ?? '8/7/26';
     c[COL.HRS_TTL] = r.ttl; c[COL.LHE] = r.lhe ?? ''; c[COL.MT] = r.mt;
@@ -200,4 +200,56 @@ describe('fixed-hours courses (WELD 900: 1 lec + 9 lab hrs, one day)', () => {
         expect(row.cells[COL.S_DATE]).toBe('11/27/27');
         expect(row.cells[ROLL_NOTES_COL]).toContain('CONFLICT: 11/27/27 is a holiday');
     });
+});
+
+// Banner lists one row per instructor on a meeting pattern. Hours count once per pattern.
+test('two instructors on one mt=A pattern: hours counted once, split emitted per instructor', () => {
+    const ftw = (id: string, fac: string): R => ({
+        id, fac, crn: '78811', sub: 'FTW', num: '223', days: 'MW', s: '08:00', e: '10:30', ttl: '88.4', mt: 'A',
+        bldg: 'DL', rm: '110', sd: '8/17/2026', ed: '12/5/2026', ses: '1',
+    });
+    const res = roll([ftw('900160691', 'Gilroy, Lori D.'), ftw('900211125', 'Sharp, Charles T.')], 'fa2026', 'fa2027');
+    const rows = byCrn(res, '78811');
+    expect(rows.every(r => r.status !== 'error')).toBe(true);
+    expect(rows.map(r => [r.cells[COL.MT], r.cells[COL.FACULTY]])).toEqual([
+        ['L', 'Gilroy, Lori D.'], ['L', 'Sharp, Charles T.'],
+        ['B', 'Gilroy, Lori D.'], ['B', 'Sharp, Charles T.'],
+    ]);
+    expect(rows[0].cells[COL.ID]).toBe('900160691');
+    expect(rows[1].cells[COL.ID]).toBe('900211125');
+    expect(rows[0].cells).toEqual(expect.arrayContaining([rows[1].cells[COL.E_TIME]]));
+    expect(rows[0].flags).not.toContain('CONFLICT');
+    expect(res.summary.split).toBe(1);
+});
+
+test('duplicated L rows plus A rows (VN 120): recomputed per row, no error', () => {
+    const base = { crn: '79025', sub: 'VN', num: '120', bldg: 'CH', rm: '202' };
+    const res = roll([
+        { ...base, id: '900218740', fac: 'Parkinson, Elinda S.', days: 'MT', s: '08:00', e: '12:50', ses: '1', sd: '8/17/2026', ed: '11/30/2026', ttl: '145', mt: 'L' },
+        { ...base, id: '900227692', fac: 'Watters, Katrina A.', days: 'MT', s: '08:00', e: '12:50', ses: '1', sd: '8/17/2026', ed: '11/30/2026', ttl: '145', mt: 'L' },
+        { ...base, id: '900227692', fac: 'Watters, Katrina A.', days: 'F', s: '08:00', e: '11:20', ses: '2', sd: '12/4/2026', ed: '12/4/2026', ttl: '3.6', mt: 'L' },
+        { ...base, id: '900218740', fac: 'Parkinson, Elinda S.', days: 'WR', s: '06:50', e: '18:40', ses: '3', bldg: 'HOSP', rm: '', sd: '9/30/2026', ed: '11/26/2026', ttl: '192', mt: 'A' },
+    ], 'fa2026', 'fa2027');
+    const rows = byCrn(res, '79025');
+    expect(rows).toHaveLength(4);
+    expect(rows.every(r => r.status !== 'error')).toBe(true);
+    expect(rows.map(r => r.cells[COL.FACULTY])).toEqual([
+        'Parkinson, Elinda S.', 'Watters, Katrina A.', 'Watters, Katrina A.', 'Parkinson, Elinda S.',
+    ]);
+    expect(rows[0].cells[COL.E_TIME]).toBe(rows[1].cells[COL.E_TIME]);
+    expect(rows[0].cells[COL.HRS_TTL]).toBe(rows[1].cells[COL.HRS_TTL]);
+});
+
+test('splitter (not roll) also counts duplicated instructor rows once', () => {
+    const ftw = (id: string, fac: string): R => ({
+        id, fac, crn: '78811', sub: 'FTW', num: '223', days: 'MW', s: '08:00', e: '10:30', ttl: '88.4', mt: 'A',
+        bldg: 'DL', rm: '110', sd: '8/17/2026', ed: '12/5/2026', ses: '1',
+    });
+    const { groups } = parseAndGroup(tsv([ftw('900160691', 'Gilroy, Lori D.'), ftw('900211125', 'Sharp, Charles T.')]));
+    const summary = classifyGroups(groups, rules);
+    expect(summary.classifications.get('78811')).toMatchObject({ type: 'split', lecUnits: 3.5, labUnits: 0.5 });
+    const rows = processGroups(groups, summary).outputRows;
+    expect(rows.map(r => [r.cells[COL.MT], r.cells[COL.ID]])).toEqual([
+        ['L', '900160691'], ['L', '900211125'], ['B', '900160691'], ['B', '900211125'],
+    ]);
 });
