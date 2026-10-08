@@ -134,3 +134,9 @@ test('output has 28 columns; html highlights changed cells', () => {
     expect(rollToTsv(res.outputRows).split('\n').map(l => l.split('\t').length)).toEqual([28, 28]);
     expect(rollToHtml(res.outputRows)).toContain('background-color:#fff2cc');
 });
+
+test('html keeps multi-line cells in one spreadsheet row', () => {
+    const html = rollToHtml([{ cells: ['a\nb', 'OK'], status: 'ok', statusDetail: '', notes: [], flags: [], changedCols: [], conflictCols: [] } as any]);
+    expect(html).toContain('a<br style="mso-data-placement:same-cell">b');
+    expect(html.match(/<tr>/g)).toHaveLength(1);
+});

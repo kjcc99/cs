@@ -650,7 +650,8 @@ const HIGHLIGHT = { changed: '#fff2cc', conflict: '#fce5cd', error: '#f4cccc' };
 
 const escapeHtml = (s: string) => s
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-    .replace(/\r?\n/g, '<br>');
+    // Plain <br> makes Excel split the cell into extra rows and merge the row's other cells across them
+    .replace(/\r?\n/g, '<br style="mso-data-placement:same-cell">');
 
 // HTML table for rich paste (Sheets/Excel keep cell background colors).
 export function rollToHtml(rows: RollOutputRow[]): string {
