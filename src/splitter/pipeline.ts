@@ -1,19 +1,15 @@
 import { CRNGroup, COL, ReviewSummary, SplitterResults, OutputRow } from './types';
 import { parseTsv, groupByCRN } from './parseTsv';
 import { buildCatalogIndex, lookupCourse } from './catalogLookup';
-import { determineCatalogYear, matchTermSession } from './termMatcher';
+import { determineCatalog, matchTermSession } from './termMatcher';
 import { classifyCRNGroup } from './classifier';
 import { validateCrosslists, buildCrosslistMap } from './crosslistValidator';
 import { generateOutputRows, generateCrosslistSiblingRows } from './rowGenerator';
-import { CatalogHierarchy } from '../hooks/useCatalog';
 import { meetingsPerWeekday, uniformMeetings } from '../utils/scheduleGenerator';
 import { AttendanceAccountingRules } from '../types/rules';
 import { academicCalendar } from '../types/calendar';
 
-import courses2526 from '../data/courses_2526.json';
-import courses2627 from '../data/courses_2627.json';
-
-function buildGroups(crnMap: Map<string, import('./types').SpreadsheetRow[]>): CRNGroup[] {
+export function buildGroups(crnMap: Map<string, import('./types').SpreadsheetRow[]>): CRNGroup[] {
     const groups: CRNGroup[] = [];
     crnMap.forEach((rows, crn) => {
         const first = rows[0].cells;
@@ -40,8 +36,7 @@ export function classifyGroups(groups: CRNGroup[], attendanceRules: AttendanceAc
 
     // Determine catalog year from section dates
     const startDates = groups.flatMap(g => g.rows.map(r => r.cells[COL.S_DATE]));
-    const catalogYear = determineCatalogYear(startDates, calendar);
-    const catalog = (catalogYear === 'courses_2526' ? courses2526 : courses2627) as CatalogHierarchy;
+    const catalog = determineCatalog(startDates, calendar);
     const catalogIndex = buildCatalogIndex(catalog);
 
     // Classify each CRN group

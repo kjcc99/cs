@@ -96,6 +96,23 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
     }
 };
 
+// Copy a table as both plain TSV and HTML so spreadsheets that read HTML keep cell colors.
+// Falls back to plain text where rich clipboard writes aren't supported.
+export const copyRichToClipboard = async (text: string, html: string): Promise<boolean> => {
+    if (navigator.clipboard && window.isSecureContext && typeof ClipboardItem !== 'undefined') {
+        try {
+            await navigator.clipboard.write([new ClipboardItem({
+                'text/plain': new Blob([text], { type: 'text/plain' }),
+                'text/html': new Blob([html], { type: 'text/html' }),
+            })]);
+            return true;
+        } catch (err) {
+            console.error('Rich clipboard error:', err);
+        }
+    }
+    return copyToClipboard(text);
+};
+
 export const handleCopyAction = async (
     type: ExportType,
     data: {

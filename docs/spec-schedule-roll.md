@@ -1,5 +1,7 @@
 # Schedule Roll — Implementation Spec
 
+**Status:** implemented 2026-10-08 — `src/splitter/roll.ts`, `RollSetup.tsx`, `RollReviewStage.tsx`, `RollResultsStage.tsx`, `src/utils/catalogForTerm.ts`. Tests: `roll.test.ts`, `SplitterView.roll.test.tsx`. See "Implementation notes" at the end for where the build differs from the plan below.
+
 ## Context
 
 Planning a term usually starts by copying ("rolling") the same term from the prior year — e.g. Summer 2026 → Summer 2027. Dates have to shift to the new term, and every section has to be re-checked against the **target** term's catalog, because units can change between catalog years (35 courses differed between the AY25-26 and AY26-27 catalog files — though some were data errors in AY25-26; AERO 120/121 were fixed 2026-10-06).
@@ -162,3 +164,19 @@ Modified:
 - Winter → Summer pairing isn't offered.
 - Paste the output into Google Sheets: row count matches, notes column lands in AB, colors (if supported) appear.
 - `npx tsc --noEmit` passes.
+
+---
+
+## Implementation notes (2026-10-08)
+
+- **Structure comes from the source catalog.** Each CRN is first classified against the *source* catalog with source dates (what the section is today), then rebuilt with *target* units: combined → split; L/B rows → recompute each component; mt=A on a lecture-only or lab-only course → recompute as that component; passthrough MTs and TBA → dates only. If the source hours didn't match the source catalog, the rolled rows are judged against the target catalog instead and noted `Source hours didn't match AY25-26 catalog`.
+- **Multi-row components** share one daily CH (target hours ÷ meetings across all that component's days); each row keeps its own start time, and its hrs/wk and hrs/ttl are its share.
+- **1.0 CH minimum** is enforced on recomputed rows (Error if a unit drop would make a meeting shorter).
+- **Date offsets** are noted only when more than 2 days (ending Friday when the term ends Saturday is normal).
+- **LHE** is blanked (with a note) only when units changed.
+- **Notes column (AB)** lists tagged notes first: `UNITS: …`, `HOURS: …`, `CONFLICT: …`, then plain notes.
+- **Copy**: "Copy with highlights" writes TSV + an HTML table (cell colors); "Copy plain" writes TSV only. Rich paste into Google Sheets is not yet confirmed — if colors don't come through, the notes column still has everything.
+- **Can't roll** copy: original rows (source dates) + reason in AA.
+- **Catalog per term** lives in `catalogForTerm()` (AY from term id; Summer belongs to the AY it ends). `useCatalog` and the splitter's catalog detection use it too.
+- **Crosslisted sections** are rolled independently (no sibling copying); the overlap check skips rows sharing a crosslist code.
+

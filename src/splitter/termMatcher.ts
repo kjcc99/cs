@@ -1,11 +1,14 @@
 import { AcademicTerm, TermSession } from '../types/calendar';
 import { getSessionDates } from '../utils/dateUtils';
 import { parseFlexDate } from './parseTsv';
+import { CatalogHierarchy } from '../hooks/useCatalog';
+import { catalogForTerm, latestCatalog } from '../utils/catalogForTerm';
 
-export function determineCatalogYear(
+// Term holding the most section start dates, or null if none fall in a known term.
+export function detectTerm(
     startDates: string[],
     calendar: AcademicTerm[]
-): 'courses_2526' | 'courses_2627' {
+): AcademicTerm | null {
     const termCounts = new Map<string, number>();
 
     for (const dateStr of startDates) {
@@ -32,10 +35,12 @@ export function determineCatalogYear(
         }
     });
 
-    // Mirror useCatalog logic
-    if (topTerm === 'su2026') return 'courses_2526';
-    if (topTerm.includes('2025')) return 'courses_2526';
-    return 'courses_2627';
+    return calendar.find(t => t.id === topTerm) ?? null;
+}
+
+export function determineCatalog(startDates: string[], calendar: AcademicTerm[]): CatalogHierarchy {
+    const term = detectTerm(startDates, calendar);
+    return term ? catalogForTerm(term.id).catalog : latestCatalog();
 }
 
 export interface TermSessionMatch {

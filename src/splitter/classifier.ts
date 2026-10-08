@@ -46,7 +46,7 @@ export function resolveUnits(
     return { lecUnits, labUnits: labFixed! };
 }
 
-function parseDaysFromRow(daysStr: string): string[] {
+export function parseDaysFromRow(daysStr: string): string[] {
     const days: string[] = [];
     for (const ch of daysStr) {
         const full = DAY_CHAR_TO_FULL[ch];
@@ -73,21 +73,21 @@ function allRowsArePassthrough(group: CRNGroup): boolean {
     return group.rows.every(r => isPassthroughMT(r.cells[COL.MT].trim().toUpperCase()));
 }
 
-function hasTBADays(group: CRNGroup): boolean {
+export function hasTBADays(group: CRNGroup): boolean {
     return group.rows.some(r => {
         const d = r.cells[COL.DAYS].trim();
         return !d || d.toUpperCase() === 'TBA';
     });
 }
 
-function sumHrsTotal(group: CRNGroup): number {
+export function sumHrsTotal(group: CRNGroup): number {
     return group.rows.reduce((sum, r) => {
         const val = parseFloat(r.cells[COL.HRS_TTL]);
         return sum + (isNaN(val) ? 0 : val);
     }, 0);
 }
 
-function collectAllDays(group: CRNGroup): string[] {
+export function collectAllDays(group: CRNGroup): string[] {
     const daySet = new Set<string>();
     for (const row of group.rows) {
         for (const d of parseDaysFromRow(row.cells[COL.DAYS])) {
@@ -97,7 +97,7 @@ function collectAllDays(group: CRNGroup): string[] {
     return DAY_ORDER.filter(d => daySet.has(d));
 }
 
-function getCommonStartTime(group: CRNGroup): string {
+export function getCommonStartTime(group: CRNGroup): string {
     for (const row of group.rows) {
         const t = row.cells[COL.S_TIME].trim();
         if (t) return t;

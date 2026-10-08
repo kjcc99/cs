@@ -473,3 +473,146 @@
 .splitter-stage .secondary-button:hover {
     background: var(--bg-inset);
 }
+
+/* Roll mode */
+.mode-toggle {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    margin-bottom: 12px;
+    background: var(--bg-inset);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+}
+
+.mode-toggle button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: calc(var(--radius-md) - 2px);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.mode-toggle button.active {
+    background: var(--bg-card);
+    color: var(--primary);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.roll-setup {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.roll-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.roll-field select {
+    min-width: 200px;
+    padding: 7px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-size: 0.85rem;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.roll-arrow {
+    margin-bottom: 9px;
+    color: var(--text-muted);
+}
+
+.roll-hint {
+    margin-bottom: 9px;
+    font-size: 0.8rem;
+    color: #b45309;
+}
+
+.roll-banner {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    background: rgba(245, 158, 11, 0.12);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    border-left-width: 4px;
+    border-radius: var(--radius-md);
+    color: var(--text-main);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.roll-banner svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: #d97706;
+}
+
+.chip-units {
+    background: rgba(234, 179, 8, 0.15);
+    color: #a16207;
+}
+
+.chip-hours {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
+.chip-conflict {
+    background: rgba(249, 115, 22, 0.12);
+    color: #c2410c;
+}
+
+.chip-cantroll {
+    background: rgba(107, 114, 128, 0.12);
+    color: var(--text-muted);
+}
+
+.results-table td.cell-changed {
+    background: rgba(234, 179, 8, 0.18);
+}
+
+.results-table td.cell-conflict {
+    background: rgba(249, 115, 22, 0.2);
+}
+
+.results-table td.notes-cell {
+    min-width: 280px;
+    white-space: normal;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+}
+
+.action-group {
+    display: flex;
+    gap: 8px;
+}
+
+.cant-roll-section {
+    margin-top: 28px;
+}
+
+.cant-roll-section h3 {
+    margin: 0;
+    font-size: 1rem;
+}
