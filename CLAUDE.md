@@ -34,6 +34,12 @@ Optional additive fields — missing = legacy behavior:
 - AY27-28: Fall 2027, Winter 2028, Spring 2028, Summer 2028 (uses AY26-27 catalog as fallback)
 - No Sunday holidays in any term
 
+## Fixed-Hours Courses (catalog `lecHours` / `labHours`)
+- For courses the catalog lists in total contact hours instead of units (currently only WELD 900/901: 1 lec + 9 lab hrs, `lec`/`lab` units = 0). Add per course only after confirming — it's a deliberate exception
+- Each component meets once on a single day; the term calendar and holidays are ignored (`singleMeeting`). Generator, `calculateComponentFields`, sidebar, export all take the optional `fixedHours`
+- Workspace/`SavedSection.fixedHours` carries it; units hold hour equivalents (h/18, h/54) only so "has lecture/lab" checks work — never compute hours from them
+- Splitter: `classifyFixedHours`; roll shifts the single date by the term-start gap, snapped to the same weekday, and flags holidays
+
 ## Schedule Splitter (`src/splitter/`)
 - Paste → Review → Results pipeline; spec in `docs/spec-schedule-splitter.md`
 - Roll mode (`roll.ts`, spec `docs/spec-schedule-roll.md`): copies a term to the same season of a later year — re-dates by session, re-checks units against the target catalog, recomputes end times, flags UNITS/HOURS/CONFLICT in column AB, dropped courses go to a separate Can't-roll list

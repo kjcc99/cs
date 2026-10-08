@@ -64,8 +64,11 @@ export function generateOutputRows(
     }
 
     // Split target
-    const { lecUnits, labUnits, weeks, meetingsByDay, startTime, days } = classification;
-    const result = computeSmartSplit(lecUnits, labUnits, days, weeks, meetingsByDay);
+    const { lecUnits, labUnits, weeks, meetingsByDay, startTime, days, fixedHours } = classification;
+    // Fixed-hours courses: lecture then lab on the one day
+    const result = fixedHours
+        ? { lectureDays: fixedHours.lec > 0 ? days : [], labDays: fixedHours.lab > 0 ? days : [] }
+        : computeSmartSplit(lecUnits, labUnits, days, weeks, meetingsByDay);
 
     if ('error' in result) {
         return group.rows.map(row =>
@@ -81,7 +84,7 @@ export function generateOutputRows(
     // Lecture row
     if (lecUnits > 0 && result.lectureDays.length > 0) {
         const lecDaysStr = daysToCharCodes(result.lectureDays);
-        const lecFields = calculateComponentFields(lecUnits, false, result.lectureDays, startTime, meetingsByDay);
+        const lecFields = calculateComponentFields(lecUnits, false, result.lectureDays, startTime, meetingsByDay, 0, fixedHours?.lec);
 
         const lecCells = [...templateRow];
         lecCells[COL.DAYS] = lecDaysStr;
@@ -103,13 +106,13 @@ export function generateOutputRows(
 
         let labStart = startTime;
         if (lecUnits > 0 && result.lectureDays.length > 0) {
-            const lecEnd = calculateComponentFields(lecUnits, false, result.lectureDays, startTime, meetingsByDay).endTime;
+            const lecEnd = calculateComponentFields(lecUnits, false, result.lectureDays, startTime, meetingsByDay, 0, fixedHours?.lec).endTime;
             const [eh, em] = lecEnd.split(':').map(Number);
             const labStartMin = eh * 60 + em + 10;
             labStart = `${String(Math.floor(labStartMin / 60)).padStart(2, '0')}:${String(labStartMin % 60).padStart(2, '0')}`;
         }
 
-        const labFields = calculateComponentFields(labUnits, true, result.labDays, labStart, meetingsByDay);
+        const labFields = calculateComponentFields(labUnits, true, result.labDays, labStart, meetingsByDay, 0, fixedHours?.lab);
 
         const labCells = [...templateRow];
         labCells[COL.DAYS] = labDaysStr;

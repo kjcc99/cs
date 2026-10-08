@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Edit2, Lock, Unlock, CalendarDays, Clock, ChevronUp } from 'lucide-react';
-import { TimeMode, SplitMode } from '../../../types/section';
+import { TimeMode, SplitMode, FixedHours } from '../../../types/section';
 import CustomSplit from '../../CustomSplit';
 import RoomSelector from '../../RoomSelector';
 import { Building } from '../../../types/rooms';
@@ -40,6 +40,7 @@ interface MobileConfigProps {
     lectureDays: string[];
     setLectureDays: (v: string[]) => void;
     lecTbaHours: number;
+    fixedHours?: FixedHours;
     setLecTbaHours: (v: number) => void;
     labUnits: number;
     setLabUnits: (v: number) => void;
@@ -94,6 +95,7 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
     handleCourseSelect, onClearCourse, selectedCourseInfo,
     lectureUnits, setLectureUnits, lectureDays, setLectureDays,
     lecTbaHours, setLecTbaHours,
+    fixedHours,
     labUnits, setLabUnits, labDays, setLabDays,
     labTbaHours, setLabTbaHours,
     isLecFixed, isLabFixed, lecRange, labRange,
@@ -115,8 +117,9 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
     canSmartSplit, onSmartSplitToggle
 }) => {
     const weeks = selectedSession.weeks || 1;
-    const lecWeeklyCH = Math.max(0, (lectureUnits * 18 - (lecTbaHours || 0))) / weeks;
-    const labWeeklyCH = Math.max(0, (labUnits * 54 - (labTbaHours || 0))) / weeks;
+    // Fixed-hours courses meet once, so the whole total is due on the one day
+    const lecWeeklyCH = fixedHours ? fixedHours.lec : Math.max(0, (lectureUnits * 18 - (lecTbaHours || 0))) / weeks;
+    const labWeeklyCH = fixedHours ? fixedHours.lab : Math.max(0, (labUnits * 54 - (labTbaHours || 0))) / weeks;
     const lecStartForDay = (day: string) => lectureTimeMode === 'perDay' ? (lectureTimesPerDay[day] ?? startTime) : startTime;
     const labEffectiveStart = labStartTime ?? startTime;
     const labStartForDay = (day: string) => labTimeMode === 'perDay' ? (labTimesPerDay[day] ?? labEffectiveStart) : labEffectiveStart;
@@ -318,6 +321,7 @@ export const MobileConfig: React.FC<MobileConfigProps> = ({
                                 labTbaHours={labTbaHours} setLabTbaHours={setLabTbaHours}
                                 isLecFixed={isLecFixed} isLabFixed={isLabFixed}
                                 lecRange={lecRange} labRange={labRange}
+                                fixedHours={fixedHours}
                                 smartSplit={smartSplit}
                                 smartSplitDays={smartSplitDays}
                                 setSmartSplitDays={setSmartSplitDays}

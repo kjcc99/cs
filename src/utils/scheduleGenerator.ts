@@ -116,6 +116,13 @@ export function meetingsPerWeekday(
     return result;
 }
 
+// Fixed-hours courses (catalog lecHours/labHours) meet once on a single day, outside the term calendar.
+export function singleMeeting(days: string[]): Record<string, number> {
+    const result: Record<string, number> = {};
+    for (const day of days) result[day] = 1;
+    return result;
+}
+
 export function countMeetings(days: string[], meetingsByDay: Record<string, number>): number {
     return days.reduce((sum, day) => sum + (meetingsByDay[day] || 0), 0);
 }
@@ -130,18 +137,24 @@ export interface ComponentFields {
 // End time and registrar hours fields for one component on an even split.
 // Mirrors the generator's even path: daily CH = required / actual meetings, rounded to 0.1.
 // hrs/ttl is the scheduled total (daily CH × meetings) plus any TBA hours.
+// fixedHours (fixed-hours courses) replaces units × rate and counts one meeting per day.
 export function calculateComponentFields(
     units: number,
     isLab: boolean,
     days: string[],
     startTime: string,
     meetingsByDay: Record<string, number>,
-    tbaHours: number = 0
+    tbaHours: number = 0,
+    fixedHours?: number
 ): ComponentFields {
     const empty = { endTime: '', hrsPerDay: '', hrsPerWeek: '', hrsTotal: '' };
+    if (fixedHours !== undefined) {
+        units = fixedHours;
+        meetingsByDay = singleMeeting(days);
+    }
     if (!units || days.length === 0 || !startTime) return empty;
 
-    const rate = isLab ? 54 : 18;
+    const rate = fixedHours !== undefined ? 1 : isLab ? 54 : 18;
     const effectiveContactHoursForTerm = Math.max(0, units * rate - tbaHours);
     const actualMeetingDays = countMeetings(days, meetingsByDay);
     if (actualMeetingDays === 0 || effectiveContactHoursForTerm === 0) return empty;
@@ -172,18 +185,26 @@ function calculateDailySchedule(
     tbaHours: number = 0,
     context: RuleAndTermContext,
     warnings: string[],
-    customHoursPerDay?: Partial<Record<string, number>>
+    customHoursPerDay?: Partial<Record<string, number>>,
+    fixedHours?: number
 ): DailyScheduleResult | null {
     const { term, session, attendanceRules } = context;
-    const { weeks } = session;
+    const isFixed = fixedHours !== undefined;
+    const weeks = isFixed ? 1 : session.weeks;
 
-    // 1–2. Count the actual number of meeting days (holiday-aware per attendance rules)
-    const meetingsByDay = meetingsPerWeekday(term, session, attendanceRules);
+    if (isFixed && daysOfWeek.length > 1) {
+        warnings.push(`ERROR: This course meets once — pick a single ${type} day.`);
+        return null;
+    }
+
+    // 1–2. Count the actual number of meeting days (holiday-aware per attendance rules).
+    // Fixed-hours courses ignore the calendar: one meeting on the chosen day.
+    const meetingsByDay = isFixed ? singleMeeting(daysOfWeek) : meetingsPerWeekday(term, session, attendanceRules);
     const actualMeetingDays = countMeetings(daysOfWeek, meetingsByDay);
 
     // 3. Calculate Contact Hours
     const rate = type === 'lecture' ? 18 : 54;
-    const contactHoursForTerm = units * rate;
+    const contactHoursForTerm = isFixed ? fixedHours! : units * rate;
     const effectiveContactHoursForTerm = Math.max(0, contactHoursForTerm - tbaHours);
 
     if (tbaHours > contactHoursForTerm) {
@@ -328,8 +349,8 @@ export function generateSchedule(
 
     if (request.lectureUnits === 0 && request.labUnits === 0) return emptySchedule;
 
-    const lectureResult = calculateDailySchedule(request.lectureUnits, request.lectureDays, 'lecture', request.lecTbaHours || 0, context, warnings, overrides?.lectureHoursPerDay);
-    const labResult = calculateDailySchedule(request.labUnits, request.labDays, 'lab', request.labTbaHours || 0, context, warnings, overrides?.labHoursPerDay);
+    const lectureResult = calculateDailySchedule(request.lectureUnits, request.lectureDays, 'lecture', request.lecTbaHours || 0, context, warnings, overrides?.lectureHoursPerDay, request.fixedHours?.lec);
+    const labResult = calculateDailySchedule(request.labUnits, request.labDays, 'lab', request.labTbaHours || 0, context, warnings, overrides?.labHoursPerDay, request.fixedHours?.lab);
 
     if (!lectureResult || !labResult) {
         return { ...emptySchedule, lectureInfo: lectureResult?.info || emptyInfo, labInfo: labResult?.info || emptyInfo, warnings };

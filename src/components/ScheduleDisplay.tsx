@@ -531,8 +531,8 @@ const ScheduleDisplay: React.FC<ScheduleDisplayProps> = ({ schedule, request, ov
             <div className={`details-container ${isDetailsExpanded ? 'expanded' : ''}`}>
                 {schedule && (
                     <div className="summary-card">
-                        {schedule.lectureInfo.contactHoursForTerm > 0 && <InfoCard title="Lecture Summary" info={schedule.lectureInfo} units={request?.lectureUnits} color="var(--lecture-color)" blocks={schedule.scheduleBlocks.filter(b => b.type === 'lecture')} />}
-                        {schedule.labInfo.contactHoursForTerm > 0 && <InfoCard title="Lab Summary" info={schedule.labInfo} units={request?.labUnits} color="var(--lab-color)" blocks={schedule.scheduleBlocks.filter(b => b.type === 'lab')} />}
+                        {schedule.lectureInfo.contactHoursForTerm > 0 && <InfoCard title="Lecture Summary" info={schedule.lectureInfo} units={request?.fixedHours ? undefined : request?.lectureUnits} color="var(--lecture-color)" blocks={schedule.scheduleBlocks.filter(b => b.type === 'lecture')} />}
+                        {schedule.labInfo.contactHoursForTerm > 0 && <InfoCard title="Lab Summary" info={schedule.labInfo} units={request?.fixedHours ? undefined : request?.labUnits} color="var(--lab-color)" blocks={schedule.scheduleBlocks.filter(b => b.type === 'lab')} />}
                     </div>
                 )}
             </div>

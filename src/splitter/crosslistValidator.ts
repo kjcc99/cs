@@ -63,7 +63,7 @@ export function validateCrosslists(
             if (!match) continue;
             const lecRange = getUnitRange(match.course.lec);
             const labRange = getUnitRange(match.course.lab);
-            unitSets.push(`${lecRange.min}-${lecRange.max}|${labRange.min}-${labRange.max}`);
+            unitSets.push(`${lecRange.min}-${lecRange.max}|${labRange.min}-${labRange.max}|${match.course.lecHours ?? ''}|${match.course.labHours ?? ''}`);
         }
 
         if (unitSets.length > 1) {

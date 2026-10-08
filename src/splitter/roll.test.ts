@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { parseAndGroup } from './pipeline';
+import { parseAndGroup, classifyGroups, processGroups } from './pipeline';
 import { rollGroups, rollTargetsFor, detectSourceTerm, rollToTsv, rollToHtml, ROLL_NOTES_COL } from './roll';
 import { COL } from './types';
 import { parseAttendanceAccountingRules } from '../utils/ruleParser';
@@ -139,4 +139,65 @@ test('html keeps multi-line cells in one spreadsheet row', () => {
     const html = rollToHtml([{ cells: ['a\nb', 'OK'], status: 'ok', statusDetail: '', notes: [], flags: [], changedCols: [], conflictCols: [] } as any]);
     expect(html).toContain('a<br style="mso-data-placement:same-cell">b');
     expect(html.match(/<tr>/g)).toHaveLength(1);
+});
+
+describe('fixed-hours courses (WELD 900: 1 lec + 9 lab hrs, one day)', () => {
+    const weld = (over: Partial<R> = {}): R => ({ crn: '900', sub: 'WELD', num: '900', days: 'S', s: '08:00', e: '17:50', ttl: '10.0', mt: 'A', sd: '10/17/26', ed: '10/17/26', ...over });
+    const cols = (r: { cells: string[] }) => [r.cells[COL.MT], r.cells[COL.DAYS], r.cells[COL.S_TIME], r.cells[COL.E_TIME], r.cells[COL.HRS_TTL], r.cells[COL.S_DATE]];
+
+    test('splitter splits a single-day row into 1 hr lecture + 9 hr lab', () => {
+        const { groups } = parseAndGroup(tsv([weld()]));
+        const summary = classifyGroups(groups, rules);
+        const rows = processGroups(groups, summary).outputRows;
+        expect(rows.map(cols)).toEqual([
+            ['L', 'S', '08:00', '08:50', '1.0', '10/17/26'],
+            ['B', 'S', '09:00', '17:50', '9.0', '10/17/26'],
+        ]);
+    });
+
+    test('splitter rejects more than one day', () => {
+        const { groups } = parseAndGroup(tsv([weld({ days: 'FS' })]));
+        expect(classifyGroups(groups, rules).classifications.get('900')).toMatchObject({ type: 'error', message: expect.stringMatching(/single day/) });
+    });
+
+    test('roll moves the date to the same weekday and splits', () => {
+        const res = roll([weld()], 'fa2026', 'fa2027');
+        expect(byCrn(res, '900').map(cols)).toEqual([
+            ['L', 'S', '08:00', '08:50', '1.0', '10/16/27'],
+            ['B', 'S', '09:00', '17:50', '9.0', '10/16/27'],
+        ]);
+        expect(byCrn(res, '900')[0].cells[COL.STATUS]).toBe('Split');
+    });
+
+    test('roll keeps a correct L + B section as is', () => {
+        const res = roll([
+            weld({ mt: 'L', e: '08:50', ttl: '1.0' }),
+            weld({ mt: 'B', s: '09:00', e: '17:50', ttl: '9.0', ses: '02' }),
+        ], 'fa2026', 'fa2027');
+        const rows = byCrn(res, '900');
+        expect(rows.map(cols)).toEqual([
+            ['L', 'S', '08:00', '08:50', '1.0', '10/16/27'],
+            ['B', 'S', '09:00', '17:50', '9.0', '10/16/27'],
+        ]);
+        expect(rows.flatMap(r => r.flags)).toEqual([]);
+        expect(rows[0].cells[COL.STATUS]).toBe('OK');
+    });
+
+    test('roll fixes old unit-based hours on an L + B section', () => {
+        const res = roll([
+            weld({ mt: 'L', e: '08:50', ttl: '18.0' }),
+            weld({ mt: 'B', s: '09:00', e: '11:40', ttl: '162.0', ses: '02' }),
+        ], 'fa2026', 'fa2027');
+        const [lec, lab] = byCrn(res, '900');
+        expect(lec.cells[COL.HRS_TTL]).toBe('1.0');
+        expect(lab.cells[COL.E_TIME]).toBe('17:50');
+        expect(lab.flags).toContain('HOURS');
+    });
+
+    test('roll flags a date that lands on a holiday', () => {
+        const res = roll([weld({ sd: '11/28/26', ed: '11/28/26' })], 'fa2026', 'fa2027');
+        const row = byCrn(res, '900')[0];
+        expect(row.cells[COL.S_DATE]).toBe('11/27/27');
+        expect(row.cells[ROLL_NOTES_COL]).toContain('CONFLICT: 11/27/27 is a holiday');
+    });
 });

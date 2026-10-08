@@ -119,8 +119,8 @@ export const MobileSidebar: React.FC<MobileSidebarProps> = ({
                                         const meetingsByDay = termForSection && sessionForSection && attendanceRules
                                             ? meetingsPerWeekday(termForSection, sessionForSection, attendanceRules)
                                             : uniformMeetings(sessionForSection?.weeks || 18);
-                                        const rawLecEnd = calculateComponentFields(section.lectureUnits, false, section.lectureDays, section.startTime, meetingsByDay).endTime;
-                                        const rawLabEnd = calculateComponentFields(section.labUnits, true, section.labDays, section.labStartTime || section.startTime, meetingsByDay).endTime;
+                                        const rawLecEnd = calculateComponentFields(section.lectureUnits, false, section.lectureDays, section.startTime, meetingsByDay, 0, section.fixedHours?.lec).endTime;
+                                        const rawLabEnd = calculateComponentFields(section.labUnits, true, section.labDays, section.labStartTime || section.startTime, meetingsByDay, 0, section.fixedHours?.lab).endTime;
 
                                         return (
                                             <SidebarItem

@@ -150,7 +150,9 @@ ${section.labUnits > 0 ? `Lab: ${section.labDays.join('')} ${formattedLabTime}${
 
           {!isCollapsed && !isEditing && (
             <span className="section-units">
-              {(section.lectureUnits + section.labUnits).toFixed(1)}u
+              {section.fixedHours
+                ? `${section.fixedHours.lec + section.fixedHours.lab}h`
+                : `${(section.lectureUnits + section.labUnits).toFixed(1)}u`}
             </span>
           )}
         </div>

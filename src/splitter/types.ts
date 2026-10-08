@@ -1,3 +1,5 @@
+import { FixedHours } from '../types/section';
+
 export const COL = {
     ID: 0, FACULTY: 1, CRN: 2, SUB: 3, NUM: 4, SEC: 5,
     DAYS: 6, S_TIME: 7, E_TIME: 8, SES_NUM: 9, XLIST: 10,
@@ -39,7 +41,7 @@ export interface CRNGroup {
 }
 
 export type SectionClassification =
-    | { type: 'split'; lecUnits: number; labUnits: number; weeks: number; meetingsByDay: Record<string, number>; startTime: string; days: string[] }
+    | { type: 'split'; lecUnits: number; labUnits: number; weeks: number; meetingsByDay: Record<string, number>; startTime: string; days: string[]; fixedHours?: FixedHours }
     | { type: 'already-split' }
     | { type: 'pass-through'; reason: string }
     | { type: 'tba' }

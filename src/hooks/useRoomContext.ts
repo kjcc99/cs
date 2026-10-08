@@ -73,7 +73,8 @@ export function useRoomContext({
                 lecTbaHours: section.lecTbaHours || 0,
                 labUnits: section.labUnits,
                 labDays: section.labDays,
-                labTbaHours: section.labTbaHours || 0
+                labTbaHours: section.labTbaHours || 0,
+                fixedHours: section.fixedHours
             };
             const overrides = {
                 lectureTimesPerDay: section.lectureTimeMode === 'perDay' ? (section.lectureTimesPerDay as Record<string, string>) : undefined,

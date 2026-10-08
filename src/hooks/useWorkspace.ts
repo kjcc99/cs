@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
 import { ScheduleRequest } from '../components/CourseInput';
 import { GeneratedSchedule } from '../types';
-import { Course } from './useCatalog';
+import { Course, fixedHoursOf } from './useCatalog';
+import { FixedHours } from '../types/section';
 
 
 export function useWorkspace() {
@@ -25,6 +26,9 @@ export function useWorkspace() {
 
     const [selectedCourseInfo, setSelectedCourseInfo] = useState<{ sub: string, no: string, title?: string } | null>(null);
 
+    // Set when the selected course is listed in hours (fixed-hours course); units then hold the hour equivalents
+    const [fixedHours, setFixedHours] = useState<FixedHours | undefined>(undefined);
+
     const [smartSplit, setSmartSplit] = useState(false);
     const [smartSplitDays, setSmartSplitDays] = useState<string[]>([]);
 
@@ -34,6 +38,23 @@ export function useWorkspace() {
         // Auto-populate units (handle fixed number or {min, max} object)
         const lecVal = course.lec;
         const labVal = course.lab;
+
+        const fixed = fixedHoursOf(course);
+        setFixedHours(fixed);
+        if (fixed) {
+            // Hour equivalents keep "has lecture/lab" checks working; the math uses fixedHours
+            const lecEq = Math.round(fixed.lec / 18 * 10000) / 10000;
+            const labEq = Math.round(fixed.lab / 54 * 10000) / 10000;
+            setIsLecFixed(true);
+            setIsLabFixed(true);
+            setLecRange({ min: lecEq, max: lecEq });
+            setLabRange({ min: labEq, max: labEq });
+            setLectureUnits(lecEq);
+            setLabUnits(labEq);
+            setSmartSplit(false);
+            setSmartSplitDays([]);
+            return;
+        }
 
         const newLecUnits = typeof lecVal === 'number' ? lecVal : lecVal.min;
         const newLabUnits = typeof labVal === 'number' ? labVal : labVal.min;
@@ -52,6 +73,7 @@ export function useWorkspace() {
 
     const clearCourseSelection = useCallback(() => {
         setSelectedCourseInfo(null);
+        setFixedHours(undefined);
         setIsLecFixed(false);
         setIsLabFixed(false);
         setLecRange({ min: 0, max: 10 });
@@ -76,6 +98,7 @@ export function useWorkspace() {
             selectedTermId: settings.selectedTermId,
             selectedSessionId: settings.selectedSessionId,
             timestamp: Date.now(),
+            ...(fixedHours ? { fixedHours } : {}),
             ...(usesV2 ? {
                 schemaVersion: 2 as const,
                 lectureTimeMode: settings.lectureTimeMode,
@@ -92,7 +115,7 @@ export function useWorkspace() {
                 labRoomId: settings.labRoomId,
             } : {})
         };
-    }, [lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours]);
+    }, [lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, fixedHours]);
 
     return {
         lectureUnits, setLectureUnits,
@@ -109,6 +132,7 @@ export function useWorkspace() {
         lastRequest, setLastRequest,
         isCalculating, setIsCalculating,
         selectedCourseInfo, setSelectedCourseInfo,
+        fixedHours, setFixedHours,
         smartSplit, setSmartSplit,
         smartSplitDays, setSmartSplitDays,
         handleCourseSelect, clearCourseSelection,

@@ -34,7 +34,8 @@ export function exportForSpreadsheet(
     sections.forEach(section => {
         const term = calendar.find(t => t.id === section.selectedTermId) || calendar[0];
         const session = term.sessions.find(s => s.id === section.selectedSessionId) || term.sessions[0];
-        const { startDate, endDate } = getSessionDates(term, session);
+        // Fixed-hours courses meet on one date the app doesn't track: leave dates for the user to fill in
+        const { startDate, endDate } = section.fixedHours ? { startDate: '', endDate: '' } : getSessionDates(term, session);
         // Holiday-aware meeting counts, same as the schedule generator
         const meetingsByDay = attendanceRules ? meetingsPerWeekday(term, session, attendanceRules) : uniformMeetings(session.weeks);
 
@@ -52,7 +53,8 @@ export function exportForSpreadsheet(
                 section.lectureDays,
                 section.startTime,
                 meetingsByDay,
-                section.lecTbaHours || 0
+                section.lecTbaHours || 0,
+                section.fixedHours?.lec
             );
 
             const row = new Array(26).fill('');
@@ -81,7 +83,8 @@ export function exportForSpreadsheet(
                 section.labDays,
                 labStart,
                 meetingsByDay,
-                section.labTbaHours || 0
+                section.labTbaHours || 0,
+                section.fixedHours?.lab
             );
 
             const row = new Array(26).fill('');

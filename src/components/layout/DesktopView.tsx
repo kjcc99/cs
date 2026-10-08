@@ -75,7 +75,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
         labDays, setLabDays, isLecFixed, isLabFixed,
         lecRange, labRange, generatedSchedule, setGeneratedSchedule,
         lastRequest, setLastRequest, isCalculating,
-        selectedCourseInfo, handleCourseSelect, clearCourseSelection,
+        selectedCourseInfo, handleCourseSelect, fixedHours, setFixedHours, clearCourseSelection,
         getWorkspaceAsSection,
         smartSplit, setSmartSplit, smartSplitDays, setSmartSplitDays
     } = workspaceAPI;
@@ -155,12 +155,12 @@ export const DesktopView: React.FC<AppViewProps> = ({
 
         const usesV2 = lectureTimeMode === 'perDay' || labTimeMode === 'perDay' || lectureSplitMode === 'custom' || labSplitMode === 'custom' || !!lectureRoomId || !!labRoomId;
         saveSection({
-            lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId,
+            lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, fixedHours, startTime, labStartTime, selectedTermId, selectedSessionId,
             ...(usesV2 ? { schemaVersion: 2 as const, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId } : {}),
             ...(currentSectionId ? {} : { name: sectionName })
         });
         showToast(currentSectionId ? "Section updated" : "Section saved");
-    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedCourseInfo, savedSections, currentSectionId, smartSplit, smartSplitDays, calendar, attendanceRules, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId, showToast]);
+    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedCourseInfo, fixedHours, savedSections, currentSectionId, smartSplit, smartSplitDays, calendar, attendanceRules, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId, showToast]);
 
     const handleSaveAsNew = useCallback(() => {
         if (lectureUnits === 0 && labUnits === 0) {
@@ -178,12 +178,12 @@ export const DesktopView: React.FC<AppViewProps> = ({
 
         const usesV2 = lectureTimeMode === 'perDay' || labTimeMode === 'perDay' || lectureSplitMode === 'custom' || labSplitMode === 'custom' || !!lectureRoomId || !!labRoomId;
         saveSection({
-            lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId,
+            lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, fixedHours, startTime, labStartTime, selectedTermId, selectedSessionId,
             ...(usesV2 ? { schemaVersion: 2 as const, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, lectureBuildingId, lectureRoomId, labBuildingId, labRoomId } : {}),
             name: sectionName
         }, true);
         showToast("Saved as new copy");
-    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedCourseInfo, savedSections, showToast]);
+    }, [saveSection, lectureUnits, lectureDays, lecTbaHours, labUnits, labDays, labTbaHours, startTime, labStartTime, selectedTermId, selectedSessionId, lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay, lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay, selectedCourseInfo, fixedHours, savedSections, showToast]);
 
 
     const handleLoadSection = useCallback((section: SavedSection) => {
@@ -196,6 +196,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
         setLabUnits(section.labUnits);
         setLabDays(section.labDays);
         setLabTbaHours(section.labTbaHours || 0);
+        setFixedHours(section.fixedHours);
         setStartTime(section.startTime);
         setLabStartTime(section.labStartTime);
         setSelectedTermId(section.selectedTermId);
@@ -223,7 +224,8 @@ export const DesktopView: React.FC<AppViewProps> = ({
                 lecTbaHours: section.lecTbaHours || 0,
                 labUnits: section.labUnits,
                 labDays: section.labDays,
-                labTbaHours: section.labTbaHours || 0
+                labTbaHours: section.labTbaHours || 0,
+                fixedHours: section.fixedHours
             };
             const overrides = {
                 lectureTimesPerDay: section.lectureTimeMode === 'perDay' ? (section.lectureTimesPerDay as Record<string, string>) : undefined,
@@ -234,7 +236,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
             setGeneratedSchedule(generateSchedule(request, context, section.startTime, section.labStartTime, overrides));
             setLastRequest(request);
         }
-    }, [contactHourRules, attendanceRules, calendar, setCurrentSectionId, setLectureUnits, setLectureDays, setLecTbaHours, setLabUnits, setLabDays, setLabTbaHours, setStartTime, setLabStartTime, setSelectedTermId, setSelectedSessionId, setLectureTimeMode, setLabTimeMode, setLectureTimesPerDay, setLabTimesPerDay, setLectureSplitMode, setLabSplitMode, setLectureHoursPerDay, setLabHoursPerDay, setGeneratedSchedule, setLastRequest]);
+    }, [contactHourRules, attendanceRules, calendar, setCurrentSectionId, setLectureUnits, setLectureDays, setLecTbaHours, setLabUnits, setLabDays, setLabTbaHours, setFixedHours, setStartTime, setLabStartTime, setSelectedTermId, setSelectedSessionId, setLectureTimeMode, setLabTimeMode, setLectureTimesPerDay, setLabTimesPerDay, setLectureSplitMode, setLabSplitMode, setLectureHoursPerDay, setLabHoursPerDay, setGeneratedSchedule, setLastRequest]);
 
     const handleCopy = (summaryType: ExportType) => {
         if (!generatedSchedule) return;
@@ -268,6 +270,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
     const clearWorkspace = () => {
         setCurrentSectionId(null);
         if (!selectedCourseInfo) {
+            setFixedHours(undefined);
             setLectureUnits(0);
             setLecTbaHours(0);
             setLabUnits(0);
@@ -374,7 +377,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
         setLabStartTime(labStartTime === null ? '13:00' : null);
     };
 
-    const canSmartSplit = lectureUnits > 0 && labUnits > 0;
+    const canSmartSplit = lectureUnits > 0 && labUnits > 0 && !fixedHours;
 
     const handleSmartSplitToggle = useCallback((enabled: boolean) => {
         if (enabled) {
@@ -505,7 +508,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
         const context = { contactHourRules, attendanceRules, term, session };
         const request = {
             lectureUnits: section.lectureUnits, lectureDays: section.lectureDays,
-            labUnits: section.labUnits, labDays: section.labDays
+            labUnits: section.labUnits, labDays: section.labDays, fixedHours: section.fixedHours
         };
         const overrides = {
             lectureTimesPerDay: section.lectureTimeMode === 'perDay' ? (section.lectureTimesPerDay as Record<string, string>) : undefined,
@@ -638,6 +641,7 @@ export const DesktopView: React.FC<AppViewProps> = ({
                         lectureDays={lectureDays}
                         setLectureDays={setLectureDays}
                         lecTbaHours={lecTbaHours}
+                        fixedHours={fixedHours}
                         setLecTbaHours={setLecTbaHours}
                         labUnits={labUnits}
                         setLabUnits={setLabUnits}

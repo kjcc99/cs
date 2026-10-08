@@ -57,9 +57,11 @@ export const formatBulkExport = (
         const term = calendar.find(t => t.id === section.selectedTermId);
         exportText += `======= ${section.name.toUpperCase()} =======\n`;
         exportText += `Term: ${term?.name || 'Unknown'}\n`;
-        exportText += `Lecture: ${section.lectureUnits} units, Days: ${section.lectureDays.join('')}${section.lecTbaHours ? ` (+ ${section.lecTbaHours} TBA hrs)` : ''}\n`;
+        const lecAmount = section.fixedHours ? `${section.fixedHours.lec} hrs` : `${section.lectureUnits} units`;
+        const labAmount = section.fixedHours ? `${section.fixedHours.lab} hrs` : `${section.labUnits} units`;
+        exportText += `Lecture: ${lecAmount}, Days: ${section.lectureDays.join('')}${section.lecTbaHours ? ` (+ ${section.lecTbaHours} TBA hrs)` : ''}\n`;
         if (section.labUnits > 0) {
-            exportText += `Lab: ${section.labUnits} units, Days: ${section.labDays.join('')}${section.labTbaHours ? ` (+ ${section.labTbaHours} TBA hrs)` : ''}\n`;
+            exportText += `Lab: ${labAmount}, Days: ${section.labDays.join('')}${section.labTbaHours ? ` (+ ${section.labTbaHours} TBA hrs)` : ''}\n`;
         }
         exportText += `Start Time: ${section.startTime}${section.labStartTime ? ` (Lab: ${section.labStartTime})` : ''}\n\n`;
     });

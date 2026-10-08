@@ -383,13 +383,17 @@
                 },
                 {
                     "no": "900",
-                    "lab": 3,
-                    "lec": 1
+                    "lab": 0,
+                    "lec": 0,
+                    "lecHours": 1,
+                    "labHours": 9
                 },
                 {
                     "no": "901",
-                    "lab": 3,
-                    "lec": 1
+                    "lab": 0,
+                    "lec": 0,
+                    "lecHours": 1,
+                    "labHours": 9
                 }
             ],
             "ACRV": [

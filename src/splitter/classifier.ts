@@ -1,6 +1,8 @@
 import { CRNGroup, SectionClassification, COL, DAY_CHAR_TO_FULL, DAY_ORDER,
     SPLIT_TARGET_MT, PASSTHROUGH_MTS } from './types';
 import { CatalogMatch, getFixedUnits, getUnitRange } from './catalogLookup';
+import { fixedHoursOf } from '../hooks/useCatalog';
+import { FixedHours } from '../types/section';
 
 export function resolveUnits(
     course: CatalogMatch['course'],
@@ -105,6 +107,34 @@ export function getCommonStartTime(group: CRNGroup): string {
     return '';
 }
 
+// Fixed-hours courses (catalog lecHours/labHours) meet once on a single day; the term calendar is ignored.
+// checkHours=false (roll) accepts existing L + B rows whatever their hours, so they can be recomputed.
+export function classifyFixedHours(group: CRNGroup, fixed: FixedHours, label: string, checkHours = true): SectionClassification {
+    if (allRowsArePassthrough(group)) {
+        return { type: 'pass-through', reason: 'all meeting types are passthrough' };
+    }
+    const days = collectAllDays(group);
+    if (days.length !== 1) {
+        return { type: 'error', message: `${label} meets once (${fixed.lec} lec + ${fixed.lab} lab hrs) — schedule it on a single day.` };
+    }
+    if (hasBothLAndB(group)) {
+        const totalHours = sumHrsTotal(group);
+        const expected = fixed.lec + fixed.lab;
+        if (!checkHours || Math.abs(totalHours - expected) <= 0.1) return { type: 'already-split' };
+        return { type: 'error', message: `Already has L+B rows but total hours (${totalHours.toFixed(1)}) don't match ${label}'s ${expected} hrs.` };
+    }
+    return {
+        type: 'split',
+        lecUnits: fixed.lec > 0 ? 1 : 0,
+        labUnits: fixed.lab > 0 ? 1 : 0,
+        weeks: 1,
+        meetingsByDay: { [days[0]]: 1 },
+        startTime: getCommonStartTime(group),
+        days,
+        fixedHours: fixed,
+    };
+}
+
 export function classifyCRNGroup(
     group: CRNGroup,
     catalogMatch: CatalogMatch | null,
@@ -123,6 +153,9 @@ export function classifyCRNGroup(
     }
 
     const course = catalogMatch.course;
+    const fixed = fixedHoursOf(course);
+    if (fixed) return classifyFixedHours(group, fixed, `${group.sub} ${group.num}`);
+
     const lecRange = getUnitRange(course.lec);
     const labRange = getUnitRange(course.lab);
     const hasLec = lecRange.max > 0;

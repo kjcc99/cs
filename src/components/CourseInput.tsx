@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import DayPicker from './DayPicker';
 import UnitSelector from './UnitSelector';
 import './CourseInput.css';
+import { FixedHours } from '../types/section';
 
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -13,6 +14,7 @@ export interface ScheduleRequest {
   labUnits: number;
   labDays: string[];
   labTbaHours?: number;
+  fixedHours?: FixedHours;
 }
 
 interface CourseInputProps {
@@ -35,6 +37,7 @@ interface CourseInputProps {
   smartSplit?: boolean;
   smartSplitDays?: string[];
   setSmartSplitDays?: (v: string[]) => void;
+  fixedHours?: FixedHours;
 }
 
 const CourseInput: React.FC<CourseInputProps> = ({
@@ -50,10 +53,15 @@ const CourseInput: React.FC<CourseInputProps> = ({
   labRange = { min: 0, max: 10 },
   smartSplit = false,
   smartSplitDays = [],
-  setSmartSplitDays
+  setSmartSplitDays,
+  fixedHours
 }) => {
   const maxLecContactHours = lectureUnits * 18;
   const maxLabContactHours = labUnits * 54;
+  // Fixed-hours courses meet once: picking a day replaces the selection
+  const singleDay = (days: string[]) => fixedHours ? days.slice(-1) : days;
+  const setLectureDaysChecked = (days: string[]) => setLectureDays(singleDay(days));
+  const setLabDaysChecked = (days: string[]) => setLabDays(singleDay(days));
 
   const [showLecTba, setShowLecTba] = useState(false);
   const [showLabTba, setShowLabTba] = useState(false);
@@ -61,12 +69,14 @@ const CourseInput: React.FC<CourseInputProps> = ({
   const [activePanel, setActivePanel] = useState<'lecture' | 'lab' | null>(null);
 
   const handleLectureDayToggle = (day: string) => {
+    if (fixedHours) { setLectureDays(lectureDays.includes(day) ? [] : [day]); return; }
     const newDays = lectureDays.includes(day) ? lectureDays.filter(d => d !== day) : [...lectureDays, day];
     newDays.sort((a, b) => WEEK_DAYS.indexOf(a) - WEEK_DAYS.indexOf(b));
     setLectureDays(newDays);
   };
 
   const handleLabDayToggle = (day: string) => {
+    if (fixedHours) { setLabDays(labDays.includes(day) ? [] : [day]); return; }
     const newDays = labDays.includes(day) ? labDays.filter(d => d !== day) : [...labDays, day];
     newDays.sort((a, b) => WEEK_DAYS.indexOf(a) - WEEK_DAYS.indexOf(b));
     setLabDays(newDays);
@@ -135,23 +145,32 @@ const CourseInput: React.FC<CourseInputProps> = ({
         <label className="ci-panel-label lec-label">Lecture Component</label>
         <div className="ci-controls">
           <div className="time-sub-group">
-            <span className="micro-label">Units</span>
-            <UnitSelector
-              label="Units"
-              value={lectureUnits}
-              onChange={setLectureUnits}
-              step={0.25}
-              disabled={isLecFixed}
-              min={lecRange.min}
-              max={lecRange.max}
-            />
+            {fixedHours ? (
+              <>
+                <span className="micro-label">Total Hours</span>
+                <UnitSelector label="Hours" value={fixedHours.lec} onChange={() => {}} step={1} disabled min={fixedHours.lec} max={fixedHours.lec} />
+              </>
+            ) : (
+              <>
+                <span className="micro-label">Units</span>
+                <UnitSelector
+                  label="Units"
+                  value={lectureUnits}
+                  onChange={setLectureUnits}
+                  step={0.25}
+                  disabled={isLecFixed}
+                  min={lecRange.min}
+                  max={lecRange.max}
+                />
+              </>
+            )}
           </div>
           <div className="time-sub-group">
-            <span className="micro-label">Meeting Days</span>
-            <DayPicker selectedDays={lectureDays} onDayToggle={handleLectureDayToggle} onSetDays={setLectureDays} />
+            <span className="micro-label">{fixedHours ? 'Meeting Day (one)' : 'Meeting Days'}</span>
+            <DayPicker selectedDays={lectureDays} onDayToggle={handleLectureDayToggle} onSetDays={setLectureDaysChecked} />
           </div>
         </div>
-        {showLecTba ? (
+        {fixedHours ? null : showLecTba ? (
           <div className="tba-input-container">
             <input
               type="number"
@@ -189,23 +208,32 @@ const CourseInput: React.FC<CourseInputProps> = ({
         <label className="ci-panel-label lab-label">Lab Component</label>
         <div className="ci-controls">
           <div className="time-sub-group">
-            <span className="micro-label">Units</span>
-            <UnitSelector
-              label="Units"
-              value={labUnits}
-              onChange={setLabUnits}
-              step={0.25}
-              disabled={isLabFixed}
-              min={labRange.min}
-              max={labRange.max}
-            />
+            {fixedHours ? (
+              <>
+                <span className="micro-label">Total Hours</span>
+                <UnitSelector label="Hours" value={fixedHours.lab} onChange={() => {}} step={1} disabled min={fixedHours.lab} max={fixedHours.lab} />
+              </>
+            ) : (
+              <>
+                <span className="micro-label">Units</span>
+                <UnitSelector
+                  label="Units"
+                  value={labUnits}
+                  onChange={setLabUnits}
+                  step={0.25}
+                  disabled={isLabFixed}
+                  min={labRange.min}
+                  max={labRange.max}
+                />
+              </>
+            )}
           </div>
           <div className="time-sub-group">
-            <span className="micro-label">Meeting Days</span>
-            <DayPicker selectedDays={labDays} onDayToggle={handleLabDayToggle} onSetDays={setLabDays} />
+            <span className="micro-label">{fixedHours ? 'Meeting Day (one)' : 'Meeting Days'}</span>
+            <DayPicker selectedDays={labDays} onDayToggle={handleLabDayToggle} onSetDays={setLabDaysChecked} />
           </div>
         </div>
-        {showLabTba ? (
+        {fixedHours ? null : showLabTba ? (
           <div className="tba-input-container">
             <input
               type="number"

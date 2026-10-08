@@ -47,7 +47,7 @@ function App() {
   }, []);
 
   // Destructure for the useEffect dependencies
-  const { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours, setGeneratedSchedule, setLastRequest, setIsCalculating, smartSplit, smartSplitDays } = workspaceAPI;
+  const { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours, fixedHours, setGeneratedSchedule, setLastRequest, setIsCalculating, smartSplit, smartSplitDays } = workspaceAPI;
   const { startTime, labStartTime, selectedTermId, selectedSessionId,
     lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay,
     lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay } = settingsAPI;
@@ -92,7 +92,7 @@ function App() {
           }
         } else {
           // Manual path
-          const request: ScheduleRequest = { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours };
+          const request: ScheduleRequest = { lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours, fixedHours };
           const overrides = {
             lectureTimesPerDay: lectureTimeMode === 'perDay' ? lectureTimesPerDay : undefined,
             labTimesPerDay: labTimeMode === 'perDay' ? labTimesPerDay : undefined,
@@ -109,7 +109,7 @@ function App() {
 
     return () => clearTimeout(handler);
   }, [
-    lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours,
+    lectureUnits, lectureDays, labUnits, labDays, lecTbaHours, labTbaHours, fixedHours,
     startTime, labStartTime, selectedTermId, selectedSessionId,
     lectureTimeMode, labTimeMode, lectureTimesPerDay, labTimesPerDay,
     lectureSplitMode, labSplitMode, lectureHoursPerDay, labHoursPerDay,

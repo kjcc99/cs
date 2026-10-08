@@ -5,7 +5,7 @@ import { CRNGroup, COL, SplitterStatus, SectionClassification, DAY_CHAR_TO_FULL,
 import { buildCatalogIndex, lookupCourse, CatalogMatch, getFixedUnits, getUnitRange } from './catalogLookup';
 import { matchTermSession, detectTerm } from './termMatcher';
 import {
-    classifyCRNGroup, resolveUnits, parseDaysFromRow, hasTBADays,
+    classifyCRNGroup, classifyFixedHours, resolveUnits, parseDaysFromRow, hasTBADays,
     sumHrsTotal, collectAllDays, getCommonStartTime
 } from './classifier';
 import { generateOutputRows } from './rowGenerator';
@@ -13,9 +13,10 @@ import { parseFlexDate } from './parseTsv';
 import { escapeTsvCell } from './pipeline';
 import { AcademicTerm, TermSession } from '../types/calendar';
 import { AttendanceAccountingRules } from '../types/rules';
-import { Course } from '../hooks/useCatalog';
+import { Course, fixedHoursOf } from '../hooks/useCatalog';
+import { FixedHours } from '../types/section';
 import { meetingsPerWeekday, calculateComponentFields, countMeetings } from '../utils/scheduleGenerator';
-import { getSessionDates, addDays } from '../utils/dateUtils';
+import { getSessionDates, addDays, getDateString } from '../utils/dateUtils';
 import { catalogForTerm, formatAy, termSeason, termYear, TermCatalog } from '../utils/catalogForTerm';
 
 export type RollFlag = 'UNITS' | 'HOURS' | 'CONFLICT';
@@ -436,6 +437,104 @@ function detectConflicts(rows: RollOutputRow[]): void {
 }
 
 // ---------------------------------------------------------------------------
+// Fixed-hours courses (catalog lecHours/labHours, e.g. WELD 900)
+//
+// These meet once on a single date outside the session calendar, so they skip session
+// matching: the date moves by the gap between term starts, then snaps to the same weekday.
+
+function rollSingleDate(cell: string, sourceTerm: AcademicTerm, targetTerm: AcademicTerm): { cell: string; date: Date } | null {
+    const d = parseFlexDate(cell);
+    if (!d) return null;
+    const shifted = addDays(d, dayDiff(isoToDate(targetTerm.startDate), isoToDate(sourceTerm.startDate)));
+    let delta = (d.getDay() - shifted.getDay() + 7) % 7;
+    if (delta > 3) delta -= 7;
+    const date = addDays(shifted, delta);
+    return { cell: formatDateLike(cell, date), date };
+}
+
+function rollFixedHours(
+    group: CRNGroup,
+    fixed: FixedHours,
+    sourceFixed: FixedHours | undefined,
+    sourceTerm: AcademicTerm,
+    targetTerm: AcademicTerm
+): { rows: RollOutputRow[]; split: boolean; unitsChanged: boolean } | { error: string; cells: string[][] } {
+    const label = `${group.sub} ${group.num}`;
+    const first = group.rows[0].cells;
+    const start = parseFlexDate(first[COL.S_DATE]);
+    if (!start) return { error: 'Missing or unreadable start date.', cells: group.rows.map(r => r.cells) };
+    if (dayDiff(start, isoToDate(sourceTerm.startDate)) < -7 || dayDiff(start, isoToDate(sourceTerm.endDate)) > 0) {
+        return { error: `Start date ${first[COL.S_DATE]} isn't in ${sourceTerm.name}.`, cells: group.rows.map(r => r.cells) };
+    }
+
+    const notes: RollNote[] = [];
+    const rolledCells = group.rows.map(r => {
+        const out = [...r.cells];
+        for (const col of [COL.S_DATE, COL.E_DATE]) {
+            const rolled = rollSingleDate(r.cells[col], sourceTerm, targetTerm);
+            if (!rolled) continue;
+            out[col] = rolled.cell;
+            const iso = getDateString(rolled.date);
+            const text = targetTerm.holidays.includes(iso)
+                ? `${rolled.cell} is a holiday`
+                : (iso < targetTerm.startDate || iso > targetTerm.endDate) ? `${rolled.cell} is outside ${targetTerm.name}` : '';
+            if (text && !notes.some(n => n.text === text)) notes.push({ tag: 'CONFLICT', text });
+        }
+        return out;
+    });
+    const rolledGroup: CRNGroup = { ...group, rows: group.rows.map((r, i) => ({ ...r, cells: rolledCells[i] })) };
+
+    const hoursChanged = !!sourceFixed && (sourceFixed.lec !== fixed.lec || sourceFixed.lab !== fixed.lab);
+    if (hoursChanged) {
+        notes.unshift({ tag: 'UNITS', text: `Hours ${sourceFixed!.lec} lec + ${sourceFixed!.lab} lab → ${fixed.lec} lec + ${fixed.lab} lab` });
+    }
+
+    const cls = hasTBADays(group) ? { type: 'tba' as const } : classifyFixedHours(rolledGroup, fixed, label, false);
+    if (cls.type === 'error') return { error: cls.message, cells: rolledCells };
+    if (cls.type === 'tba' || cls.type === 'pass-through') {
+        return { rows: rolledCells.map(c => makeRow(c, group, cls.type === 'tba' ? 'tba' : 'pass-through', '', notes)), split: false, unitsChanged: hoursChanged };
+    }
+    if (cls.type === 'split') {
+        const generated = generateOutputRows(rolledGroup, cls);
+        if (generated.some(r => r.status === 'error')) return { error: generated[0].statusDetail, cells: rolledCells };
+        const rows = generated.map(r => {
+            const row = makeRow(r.cells, group, 'split', r.statusDetail, notes);
+            row.changedCols = [...SPLIT_CHANGED_COLS];
+            return row;
+        });
+        rows[0].notes.push({ text: `Split into lecture + lab (${rows.length} rows)` });
+        return { rows, split: true, unitsChanged: hoursChanged };
+    }
+
+    // Already L + B: recompute each row's end time and hours from the target catalog
+    const rows = group.rows.map((srcRow, i) => {
+        const row = makeRow(rolledCells[i], group, 'already-split', '', notes);
+        const mt = srcRow.cells[COL.MT].trim().toUpperCase();
+        const hours = mt === 'L' ? fixed.lec : mt === 'B' ? fixed.lab : 0;
+        const start = row.cells[COL.S_TIME];
+        if (!hours || !start) return row;
+        const days = parseDaysFromRow(row.cells[COL.DAYS]);
+        const fields = calculateComponentFields(0, mt === 'B', days, start, {}, 0, hours);
+        const updates: Array<[number, string]> = [
+            [COL.E_TIME, fields.endTime], [COL.HRS_D, fields.hrsPerDay],
+            [COL.HRS_WK, fields.hrsPerWeek], [COL.HRS_TTL, fields.hrsTotal],
+        ];
+        for (const [col, value] of updates) {
+            const differs = col === COL.E_TIME ? value !== srcRow.cells[col].trim() : hrsDiffer(value, srcRow.cells[col]);
+            row.cells[col] = value;
+            if (differs) row.changedCols.push(col);
+        }
+        if (row.changedCols.includes(COL.E_TIME)) {
+            row.notes.push({ tag: hoursChanged ? 'UNITS' : 'HOURS', text: `End ${formatTime12(srcRow.cells[COL.E_TIME])} → ${formatTime12(fields.endTime)}` });
+        } else if (row.changedCols.includes(COL.HRS_TTL)) {
+            row.notes.push({ tag: hoursChanged ? 'UNITS' : 'HOURS', text: `Hrs ${srcRow.cells[COL.HRS_TTL] || '—'} → ${row.cells[COL.HRS_TTL]}` });
+        }
+        return row;
+    });
+    return { rows, split: false, unitsChanged: hoursChanged };
+}
+
+// ---------------------------------------------------------------------------
 // Main
 
 export function rollGroups(
@@ -465,6 +564,29 @@ export function rollGroups(
             errorDetails.push({ crn: group.crn, sub: group.sub, num: group.num, message });
             return rows;
         };
+
+        // Fixed-hours courses meet on one date outside the session calendar
+        const fixedMatch = lookupCourse(tgtIndex, group.sub, group.num);
+        const fixed = fixedMatch ? fixedHoursOf(fixedMatch.course) : undefined;
+        if (fixed) {
+            const srcFixedMatch = lookupCourse(srcIndex, group.sub, group.num);
+            const result = rollFixedHours(group, fixed, srcFixedMatch ? fixedHoursOf(srcFixedMatch.course) : undefined, sourceTerm, targetTerm);
+            if ('error' in result) {
+                outputRows.push(...fail(result.error, result.cells));
+                continue;
+            }
+            const late = result.rows.find(r => (toMinutes(r.cells[COL.E_TIME]) ?? 0) >= 1440);
+            if (late) {
+                outputRows.push(...fail(`Recomputed end time crosses midnight (${formatTime12(late.cells[COL.E_TIME])}); old times kept.`, group.rows.map(r => r.cells)));
+                continue;
+            }
+            result.rows.forEach(r => { r.flags = Array.from(new Set(r.notes.filter(n => n.tag).map(n => n.tag!))); });
+            if (result.split) split++;
+            if (result.unitsChanged) unitsChanged++;
+            else if (result.rows.some(r => r.flags.includes('HOURS'))) hoursChanged++;
+            outputRows.push(...result.rows);
+            continue;
+        }
 
         const sessions = matchSessions(group, sourceTerm, targetTerm);
         if ('error' in sessions) {
